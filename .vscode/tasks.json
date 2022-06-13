@@ -4,8 +4,11 @@
         {
             "label": "Run Task",
             "type": "shell",
-            "command": "clear; cargo run",
+            "command": "cargo run -p dos-shared",
             "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"

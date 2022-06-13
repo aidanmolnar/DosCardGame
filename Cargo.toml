@@ -1,8 +1,7 @@
-[package]
-name = "dos"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-bevy = { version = "0.7.0", features = ["dynamic"] }
-rand = {version = "0.8.5"}
+[workspace]
+members = [
+    "client",
+    "server",
+    "shared",
+]
+resolver = "2"
