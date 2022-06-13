@@ -3,15 +3,54 @@
     "tasks": [
         {
             "label": "Run Task",
+            "dependsOn": ["Build Lib", "Run Both"],
+            "dependsOrder": "sequence"
+
+        },
+        {
+            "label": "Run Both",
+            "dependsOn": ["Run Server", "Run Client"],
+            "dependsOrder": "parallel"
+        },
+        {
+            "label": "Run Client",
             "type": "shell",
-            "command": "cargo run -p dos-shared",
+            "command": "cargo run -p dos-client",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
             "presentation": {
                 "reveal": "always",
-                "panel": "shared"
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+        },
+        {
+            "label": "Run Server",
+            "type": "shell",
+            "command": "cargo run -p dos-server",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
+            },
+            "problemMatcher": [],
+        },
+        {
+            "label": "Build Lib",
+            "type": "shell",
+            "command": "cargo build -p dos-shared",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated"
             },
             "problemMatcher": []
         }
