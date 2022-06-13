@@ -1,25 +1,31 @@
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 
+mod cards;
+use cards::*;
+
+mod agent;
+use agent::*;
 
 #[derive(Debug)]
-pub struct DosGame {
+pub struct DosGame<'a> {
     deck: Vec<Card>,
     discard_pile: Vec<Card>,
-    players: Vec<Player>,
+    players: Vec<Player<'a>>,
     current_turn: u8,
 }
 
 
 // Need a server representation and a client represention...
 // What should be shared vs distinct?
-impl DosGame {
+impl<'a> DosGame<'a> {
 
-    pub fn turn(&mut self) {
-
+    pub fn turn(&mut self, turn: Turn) {
+        match turn {
+            Turn::Draw => {}
+            Turn::PlayCard{card} => {}
+        }
     }
-
-
 
     pub fn deal_in_players(&mut self) {
         for _ in 0..7 {
@@ -61,8 +67,20 @@ impl DosGame {
     }
 }
 
+// TODO: Implment this method
+pub fn can_play(top_card: Card, played_card: Card) -> bool {
+    return true
+}
+
+pub enum Turn {
+    Draw,
+    PlayCard {
+        card: Card,
+    },
+}
+
 // Should players be initialized and dealt cards?  yes?
-pub fn new_game(num_players: u8) -> DosGame {
+pub fn new_game<'a>(num_players: u8) -> DosGame<'a> {
 
     let deck = new_deck();
 
@@ -71,6 +89,7 @@ pub fn new_game(num_players: u8) -> DosGame {
         players.push(Player {
             id: i,
             hand: Vec::new(),
+            agent: &Bot{}
         })
     }
 
@@ -82,73 +101,7 @@ pub fn new_game(num_players: u8) -> DosGame {
     }
 }
 
-fn new_deck() -> Vec<Card> {
-    let mut deck = Vec::new();
 
-    add_color_cards(&mut deck, Color::Red);
-    add_color_cards(&mut deck, Color::Green);
-    add_color_cards(&mut deck, Color::Blue);
-    add_color_cards(&mut deck, Color::Yellow);
 
-    for _ in 0..4 {
-        deck.push(Card::Wild{});
-        deck.push(Card::DrawFour{});
-    }
 
-    deck.shuffle(&mut thread_rng());
 
-    deck
-}
-
-// Adds all the colored cards for one color
-fn add_color_cards(deck: &mut Vec<Card>, color: Color) {
-    // Add the basic numbered cards
-    deck.push(Card::Basic { color: Color::Red, value: 0 });
-    for i in 1..=9 {
-        deck.push(Card::Basic { color, value: i });
-        deck.push(Card::Basic { color, value: i });
-    }
-
-    // Adds action cards
-    deck.push(Card::Reverse{color});
-    deck.push(Card::Reverse{color});
-    deck.push(Card::Skip{color});
-    deck.push(Card::Skip{color});
-    deck.push(Card::DrawTwo{color});
-    deck.push(Card::DrawTwo{color});
-}
-
-#[derive(Debug)]
-pub struct Player {
-    id: u8,
-    hand: Vec<Card>,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Card {
-    Basic {
-        color: Color,
-        value: u8,
-    },
-    Reverse {
-        color: Color,
-    },
-    Skip {
-        color: Color,
-    },
-    DrawTwo {
-        color: Color,
-    },
-    DrawFour {
-    },
-    Wild {
-    },
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum Color {
-    Red,
-    Blue,
-    Green,
-    Yellow,
-}
