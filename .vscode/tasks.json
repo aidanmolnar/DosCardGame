@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Run Task",
-            "dependsOn": ["Build Lib", "Run Both"],
+            "dependsOn": ["Terminate All Tasks","Build Lib", "Build Client", "Build Server", "Run Both"],
             "dependsOrder": "sequence"
 
         },
@@ -14,11 +14,10 @@
         },
         {
             "label": "Run Client",
-            "type": "shell",
-            "command": "cargo run -p dos-client",
+            "command": "dos-client.exe",
             "group": "test",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/target/debug/"
             },
             "presentation": {
                 "reveal": "always",
@@ -28,11 +27,10 @@
         },
         {
             "label": "Run Server",
-            "type": "shell",
-            "command": "cargo run -p dos-server",
+            "command": "dos-server.exe",
             "group": "test",
             "options": {
-                "cwd": "${workspaceFolder}"
+                "cwd": "${workspaceFolder}/target/debug"
             },
             "presentation": {
                 "reveal": "always",
@@ -50,9 +48,43 @@
             },
             "presentation": {
                 "reveal": "always",
-                "panel": "dedicated"
+                "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "Build Client",
+            "type": "shell",
+            "command": "cargo build -p dos-client",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build Server",
+            "type": "shell",
+            "command": "cargo build -p dos-server",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Terminate All Tasks",
+            "command": "${command:workbench.action.terminal.killAll}",
+            "type": "shell",
+            "problemMatcher": [],
         }
     ]
-  }
+}

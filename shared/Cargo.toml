@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = { version = "0.7.0", features = ["dynamic"] }
+bevy = { version = "0.7.0"}
 rand = {version = "0.8.5"}
