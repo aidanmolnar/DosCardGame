@@ -806,6 +806,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bincode"
+version = "1.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "bindgen"
 version = "0.59.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1304,6 +1313,9 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bevy_egui",
+ "bincode",
+ "dos-shared",
+ "iyes_loopless",
 ]
 
 [[package]]
@@ -1311,6 +1323,9 @@ name = "dos-server"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bincode",
+ "dos-shared",
+ "iyes_loopless",
 ]
 
 [[package]]
@@ -1319,6 +1334,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "rand",
+ "serde",
 ]
 
 [[package]]
@@ -1834,6 +1850,18 @@ name = "itoa"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "112c678d4050afce233f4f2852bb2eb519230b3cf12f33585275537d7e41578d"
+
+[[package]]
+name = "iyes_loopless"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2de41e79e600b6d8a49878c3a15c1ab0852c2d982dd638dfacd95d7eadab5193"
+dependencies = [
+ "bevy_app",
+ "bevy_core",
+ "bevy_ecs",
+ "bevy_utils",
+]
 
 [[package]]
 name = "jni"
