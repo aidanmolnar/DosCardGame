@@ -10,6 +10,7 @@ pub struct Integer {
 pub enum LobbyUpdateServer {
     CurrentPlayers { player_names: Vec<String> },
     YouAreLobbyLeader,
+    Disconnect,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

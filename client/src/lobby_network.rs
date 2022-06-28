@@ -40,6 +40,9 @@ fn handle_lobby_update(mp_state: &mut ResMut<MultiplayerState>, lobby_update: Lo
         LobbyUpdateServer::YouAreLobbyLeader => {
             mp_state.is_lobby_leader = true;
         }
+        LobbyUpdateServer::Disconnect => {
+            disconnect(mp_state);
+        }
     }
 }
 

@@ -41,14 +41,12 @@ pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiSt
             if let Ok(stream) = connect(&ui_state.ip, &ui_state.name) {
                 mp_state.stream = Some(stream);
                 //commands.insert_resource(NextState(GameState::InGame));
-
+                ui_state.error = "";
             } else {
                 ui_state.error = "Connection Failed";
             }
         } else if mp_state.stream.is_some() && ui.button("Disconnect").clicked(){
             disconnect(&mut mp_state);
-
-            
         }
         
         if !ui_state.error.is_empty() {

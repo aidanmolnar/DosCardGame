@@ -1,6 +1,7 @@
 use std::net::TcpListener;
 
 use bevy::prelude::*;
+use bevy::ecs::event::Events;
 use iyes_loopless::prelude::*;
 
 mod lobby_network;
@@ -27,6 +28,8 @@ fn main() {
 
         .add_loopless_state(GameState::MainMenu)
 
+        .init_resource::<Events<PlayerCountChange>>()
+
          // Main menu systems
         .add_system_set(
             ConditionSet::new()
@@ -35,7 +38,8 @@ fn main() {
                 .into()
         )
 
-        .add_system(lobby_network_system)
+        .add_system(lobby_network_system.label("main_network"))
+        .add_system(handle_playercount_change_system.run_on_event::<PlayerCountChange>().before("main_network"))
         
         .run()
 }
