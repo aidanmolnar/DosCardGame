@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use std::io;
+
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Integer {
@@ -19,11 +19,3 @@ pub enum LobbyUpdateClient {
     StartGame,
 }
 
-pub fn handle_error(e: Box<bincode::ErrorKind>) {
-    match *e {
-        bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
-        _ => {
-            println!("Failed to receive data: {}", e);
-        }
-    }
-}
