@@ -1,10 +1,8 @@
-use std::thread;
-use std::net::{TcpListener, TcpStream, Shutdown};
-use std::io::{Read, Write};
+use std::net::{TcpListener, TcpStream};
+use std::io::{Write};
 use std::io;
 
 use bevy::prelude::*;
-use bevy::ecs::event::Events;
 use iyes_loopless::prelude::*;
 
 use dos_shared::*;
@@ -15,20 +13,14 @@ use::bincode;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum GameState {
     MainMenu,
-    InGame,
+    //InGame,
 }
 
 #[derive(Default)]
 struct MultiplayerState {
     streams: Vec<TcpStream>,
-    names: Vec<String>,
+    player_names: Vec<String>,
 }
-
-#[derive(Debug)]
-struct ConnectEvent {}
-
-#[derive(Debug)]
-struct DisconnectEvent {}
 
 fn main() {
 
@@ -41,12 +33,7 @@ fn main() {
         .init_resource::<MultiplayerState>()
         .insert_resource(listener) // TODO: How to integrate this with iyes?? Deallocate once in game??
 
-        .add_event::<ConnectEvent>()
-        .add_event::<DisconnectEvent>()
-
         .add_loopless_state(GameState::MainMenu)
-        .add_system(check_for_disconnects)
-        .add_system(connect_event_listener)
 
          // Main menu systems
         .add_system_set(
@@ -55,54 +42,69 @@ fn main() {
                 .with_system(listen_for_connections)
                 .into()
         )
-        
 
+        .add_system(update_lobby)
+        
         .run()
 }
 
-fn connect_event_listener(mut events: EventReader<ConnectEvent>) {
-    for event in events.iter() {
-        println!("EVENT: {:?}", event);
-    }
-}
-
-// yeah ecactly. Handle disconnects by realizing the client hasn't responded correctly... during read/write
-//might evolve into a larger function for hnadling netowrk updates in general
-fn check_for_disconnects(mut mp_state: ResMut<MultiplayerState>) {
+fn update_lobby(mut mp_state: ResMut<MultiplayerState>) {
 
     let mut to_remove = Vec::new();
 
-    let mut data = [0];
     for (i, stream) in mp_state.streams.iter().enumerate() {
-        match stream.peek(&mut data) {
-            Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
-            }
-            Err(e) if e.kind() == io::ErrorKind::ConnectionAborted => {
-                if let Err(e2) = stream.shutdown(Shutdown::Both) {
-                    println!("Error shutting down tcpstream: {:?}",e2)
+        match bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(stream) {
+            Ok(lobby_update) => {
+                //println!("{:?}", lobby_update);
+
+                match lobby_update {
+                    LobbyUpdateClient::Disconnect => {
+                        println!("{:?} disconnected", &mp_state.player_names.get(i));
+                        to_remove.push(i);
+                    }
+                    LobbyUpdateClient::Connect{..} => {
+                        println!("Client sent a second connect message?");
+                    }
+                    LobbyUpdateClient::StartGame => {
+                        if i == 0 {
+                            println!("Should start the game!");
+                        } else {
+                            println!("Non-lobby leader sent start game message");
+                        }
+                    }
                 }
 
-                to_remove.push(i);
-                println!("Connection Aborted: {:?}",e)
-            }
-
+            },
             Err(e) => {
-                println!("Hello? {:?}",e.kind())
+                handle_error(e);
             }
-            Ok(_) => {}
         }
     }
 
-    // Reverse so that indices are accurate positions
-    to_remove.reverse();
+    if !to_remove.is_empty() {
+        // We need to remove in reverse order otherwise later indicies will be off because array has shrunk
+        to_remove.reverse();
 
-    for i in to_remove {
-        mp_state.streams.remove(i);
+        for i in &to_remove {
+            mp_state.player_names.remove(*i);
+            mp_state.streams.remove(*i);
+        }
+
+        if to_remove.contains(&0) {
+            if let Some(first_stream) = mp_state.streams.get(0) {
+                // TODO: Shouldn't panic
+                bincode::serialize_into(first_stream, &LobbyUpdateServer::YouAreLobbyLeader).expect("uh oh");
+            }
+        }
+
+        // TODO: Shouldn't panic
+        send_current_players_update(&mut mp_state).expect("uh oh");
     }
+    
 
 }
 
-fn listen_for_connections(listener: Res<TcpListener>, mut mp_state: ResMut<MultiplayerState>, events: EventWriter<ConnectEvent>) {
+fn listen_for_connections(listener: Res<TcpListener>, mut mp_state: ResMut<MultiplayerState>) {
     // accept connections and process them
     //println!("Server listening on port 3333");
     
@@ -110,36 +112,49 @@ fn listen_for_connections(listener: Res<TcpListener>, mut mp_state: ResMut<Multi
         Ok(connection) => {
             let stream = connection.0;
 
-            if let Err(e) = connect(&mut mp_state, stream, events) {
+            if let Err(e) = connect(&mut mp_state, stream) {
                 println!("Error: {}", e);
+                //panic!("{e}")
             }
         }
         Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
         }
         Err(e) => {
             println!("Error: {}", e);
+            //panic!("{e}")
             /* connection failed */
         }
     }
-    
-
-    // TODO: May be unnecessary
-    //commands.remove_resource::<TcpListener>();
 }
 
-fn connect(mp_state: &mut ResMut<MultiplayerState>, stream: TcpStream, mut events: EventWriter<ConnectEvent>) -> Result<(), Box<dyn std::error::Error>> {
+// TODO: this should be in a thread so one slow/malicious client connecting doesn't stall the whole server
+// Would need to wrap mp state somehow or defer state updates?
+fn connect(mp_state: &mut ResMut<MultiplayerState>, stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
     println!("New connection: {}", stream.peer_addr().unwrap());
 
-    // let mut events = Events::<ConnectEvent>::default();
-    events.send(ConnectEvent{});
-
-    let client_connect = bincode::deserialize_from::<&TcpStream, ClientConnect>(&stream)?;
+    let client_connect = bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream)?;
     println!("Client name: {:?}",client_connect);
 
-    mp_state.names.push(client_connect.name);
-    mp_state.streams.push(stream);
+    if let LobbyUpdateClient::Connect {name} = client_connect {
+        if mp_state.streams.is_empty() {
+            bincode::serialize_into(&stream, &LobbyUpdateServer::YouAreLobbyLeader)?;
+        }
 
-    let x = LobbyUpdate::PlayerCount{players: mp_state.names.clone()};
+        mp_state.player_names.push(name);
+        mp_state.streams.push(stream);
+
+    } else {
+        // TODO: Shouldn't panic
+        panic!("Didnt receive update");
+    }
+
+    send_current_players_update(mp_state)?;
+
+    Ok(())
+}
+
+fn send_current_players_update(mp_state: &mut ResMut<MultiplayerState>) -> Result<(), Box<dyn std::error::Error>>{
+    let x = LobbyUpdateServer::CurrentPlayers{player_names: mp_state.player_names.clone()};
     let data = bincode::serialize(&x).unwrap();
 
     for mut stream in &mp_state.streams {
