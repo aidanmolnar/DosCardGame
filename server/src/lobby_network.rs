@@ -1,13 +1,14 @@
-use std::net::{TcpListener, TcpStream};
-use std::io::Write;
-use std::io;
-
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
 use bevy::ecs::event::Events;
 
 use dos_shared::*;
+use super::GameState;
 
 use::bincode;
+use std::net::{TcpListener, TcpStream};
+use std::io::Write;
+use std::io;
 
 #[derive(Default)]
 pub struct MultiplayerState {
@@ -26,7 +27,18 @@ pub struct NetPlayer {
     pub stream: TcpStream,
 }
 
-pub struct PlayerCountChange {}
+pub struct PlayerCountChange;
+
+pub fn leave_lobby_system (
+    query: Query<&NetPlayer>
+) {
+    for player in query.iter() {
+        if let Err(e) = bincode::serialize_into(&player.stream, &LobbyUpdateServer::StartGame) {
+            println!("Leave lobby message failed to send {e}");
+            // TODO: might need to disconnect client here, or return to lobby?
+        }
+    }
+}
 
 
 pub fn lobby_network_system(query: Query<(Entity, &NetPlayer, &TurnId)>, mut events: EventWriter<PlayerCountChange>, mut commands: Commands) {
@@ -45,7 +57,8 @@ pub fn lobby_network_system(query: Query<(Entity, &NetPlayer, &TurnId)>, mut eve
     }
 }
 
-// Abysmal name for this function
+// TODO: Break into sub functions
+// Rename this to something less wordy and more descriptive
 pub fn handle_playercount_change_system(
     mut query: Query<(Entity, &mut NetPlayer, Option< &mut TurnId>)>, 
     mut events: ResMut<Events<PlayerCountChange>>,
@@ -55,16 +68,16 @@ pub fn handle_playercount_change_system(
         println!("Player count change, reassigning ids");
         events.clear();
 
-        // Sort entities so ids can be reassigned
+        // Sort entities by existing id so ids can be reassigned
         let mut entities = query.iter_mut().collect::<Vec<_>>();
         entities.sort_by_key(|e| 
             match &e.2 {
                 Some(i) => {i.id}
-                None => {255}
+                None => {255} // Players without an id are added to end
             }
         );
 
-        // Reassign ids
+        // Reassign ids starting from 0
         for (i,(entity, _, turn_id_opt))in entities.iter_mut().enumerate() {
             match turn_id_opt {
                 Some(turn_id) => {turn_id.id = i as u8},
@@ -74,19 +87,25 @@ pub fn handle_playercount_change_system(
             }
         }
 
-        // Update all the people
-        let names = entities.iter().map(|x| x.1.name.clone()).collect::<Vec<_>>();
-
-        let x = LobbyUpdateServer::CurrentPlayers{player_names: names};
-        let data = bincode::serialize(&x).unwrap();
-
-        for (_,mut player,_) in query.iter_mut() {
-            player.stream.write_all(&data).expect("RIOT");
+        // Send lobby leader notification
+        if let Some(first) = entities.get(0) {
+            if let Err(e) = bincode::serialize_into(&first.1.stream, &LobbyUpdateServer::YouAreLobbyLeader) {
+                println!("Error sending message to lobby leader {}: {e}", first.1.name)
+            }
         }
 
-        // Send lobby leader notification
+        // Update all the people
+        let names = entities.iter().map(|x| x.1.name.clone()).collect::<Vec<_>>();
+        let data = bincode::serialize(&LobbyUpdateServer::CurrentPlayers{player_names: names}).unwrap();
+
+        for (_,mut player,_) in query.iter_mut() {
+            if let Err(e) = player.stream.write_all(&data) {
+                println!("Error sending message to {}: {e}", player.name)
+            }
+        }
+
+        
     }
-    
 }
 
 
@@ -110,6 +129,7 @@ fn handle_lobby_update(
         }
         LobbyUpdateClient::StartGame => {
             if turn_id.id == 0 {
+                commands.insert_resource(NextState(GameState::InGame));
                 println!("Should start the game!");
             } else {
                 println!("Non-lobby leader sent start game message");
@@ -152,15 +172,11 @@ fn handle_lobby_update_error(
 pub fn listen_for_connections(listener: Res<TcpListener>, commands: Commands, events: EventWriter<PlayerCountChange>) {
     // accept connections and process them
     //println!("Server listening on port 3333");
-    
     match listener.accept() {
         Ok(connection) => {
             let stream = connection.0;
 
-            if let Err(e) = connect(commands, events, stream) {
-                println!("Error: {}", e);
-                //panic!("{e}")
-            }
+            connect(commands, events, stream);
         }
         Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
         }
@@ -174,10 +190,13 @@ pub fn listen_for_connections(listener: Res<TcpListener>, commands: Commands, ev
 
 // TODO: this should be in a thread so one slow/malicious client connecting doesn't stall the whole server
 // Would need to wrap mp state somehow or defer state updates?
-fn connect(mut commands: Commands, mut events: EventWriter<PlayerCountChange>, stream: TcpStream) -> Result<(), Box<dyn std::error::Error>> {
+fn connect(mut commands: Commands, mut events: EventWriter<PlayerCountChange>, stream: TcpStream){
     println!("New connection: {}", stream.peer_addr().unwrap());
 
-    let client_connect = bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream)?;
+    let client_connect = match bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream) {
+        Ok(c) => {c}
+        Err(e) => {panic!("{e}")}
+    };
     println!("Client name: {:?}",client_connect);
 
     if let LobbyUpdateClient::Connect {name} = client_connect {
@@ -202,6 +221,5 @@ fn connect(mut commands: Commands, mut events: EventWriter<PlayerCountChange>, s
     // TODO: Send current player updates
     //send_current_players_update(mp_state)?;
 
-    Ok(())
 }
 

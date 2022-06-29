@@ -1,14 +1,28 @@
 mod lobby_network;
 use lobby_network::*;
+
+mod game_network;
+use game_network::*;
+
 mod mainmenu_ui;
 use mainmenu_ui::*;
 
-use bevy::app::AppExit;
+mod graphics;
+use graphics::*;
+
+//use bevy::app::AppExit;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use bevy_egui::EguiPlugin;
 
 const DEFAULT_IP: &str = "localhost:3333";
+
+/// Application State
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum GameState {
+    MainMenu,
+    InGame,
+}
 
 // https://github.com/IyesGames/iyes_loopless/blob/main/examples/menu.rs
 fn main() {
@@ -17,6 +31,15 @@ fn main() {
         .add_plugin(EguiPlugin)
         .init_resource::<UiState>()
         .init_resource::<MultiplayerState>()
+
+        .add_startup_system(load_assets)
+        .insert_resource(WindowDescriptor {
+            title: "Dos!".to_string(),
+            width: 1920.,
+            height: 1080.,
+            resizable: true,
+            ..default()
+        })
 
         .add_loopless_state(GameState::MainMenu)
 
@@ -27,40 +50,20 @@ fn main() {
                 .with_system(lobby_ui)
                 .with_system(lobby_network_system
                     .run_if_resource_exists::<MultiplayerState>())
-                //
                 .into()
         )
 
-        // Stage and systems for ensuring AppExit event is captured
-        .add_stage_after(
-            CoreStage::Last,
-            "very_last",
-            SystemStage::single_threaded()
+        // In Game systems
+        .add_system_set(
+            ConditionSet::new()
+                .run_in_state(GameState::InGame)
+                .with_system(game_network_system)
+                .into()
         )
-        .add_system_to_stage("very_last", close_event_listener
-            .run_on_event::<AppExit>()
-            .run_if_resource_exists::<MultiplayerState>()
 
-        )
+        .add_enter_system(GameState::InGame,show_cards_test)
+       
         
         .run()
-}
-
-/// Application State
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum GameState {
-    MainMenu,
-    //InGame,
-}
-
-
-
-fn close_event_listener(mp_state: Res<MultiplayerState>) {
-    println!("App Exit Event");
-
-    if let Some(stream) = &mp_state.stream {
-        end_connection(stream);
-    }
-    
 }
 

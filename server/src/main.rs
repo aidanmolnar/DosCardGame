@@ -7,13 +7,15 @@ use iyes_loopless::prelude::*;
 mod lobby_network;
 use lobby_network::*;
 
+mod game_network;
+use game_network::*;
+
 /// Application State
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum GameState {
     MainMenu,
-    //InGame,
+    InGame,
 }
-
 
 fn main() {
     // TODO: Maybe move to network file?
@@ -29,18 +31,24 @@ fn main() {
         .add_loopless_state(GameState::MainMenu)
 
         .init_resource::<Events<PlayerCountChange>>()
+        .add_exit_system(GameState::MainMenu, leave_lobby_system)
+        .add_enter_system(GameState::InGame, enter_game_system)
 
-         // Main menu systems
-        .add_system_set(
-            ConditionSet::new()
-                .run_in_state(GameState::MainMenu)
-                .with_system(listen_for_connections) // This might run all the time to allow players to reconnect
-                .into()
-        )
 
-        .add_system(lobby_network_system.label("main_network"))
-        .add_system(handle_playercount_change_system.run_on_event::<PlayerCountChange>().before("main_network"))
-        
+        // Main menu systems
+        .add_system(lobby_network_system
+            .run_in_state(GameState::MainMenu)
+            .after("handle_changes"))
+
+        .add_system(listen_for_connections
+            .run_in_state(GameState::MainMenu)
+            .after("handle_changes"))
+
+        .add_system(handle_playercount_change_system
+            .run_in_state(GameState::MainMenu)
+            .run_on_event::<PlayerCountChange>()
+            .label("handle_changes"))
+         
         .run()
 }
 

@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "Run Task",
-            "dependsOn": ["Terminate All Tasks","Build Lib", "Build Client", "Build Server", "Run Both"],
+            "dependsOn": ["Terminate All Tasks", "Copy Assets", "Build Lib", "Build Client", "Build Server", "Run Both"],
             "dependsOrder": "sequence"
 
         },
@@ -70,6 +70,20 @@
             "label": "Build Server",
             "type": "shell",
             "command": "cargo build -p dos-server",
+            "group": "test",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Copy Assets",
+            "type": "shell",
+            "command": "xcopy '${workspaceFolder}\\client\\assets\\' '${workspaceFolder}\\target\\debug\\assets\\' /Y /I",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"

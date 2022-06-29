@@ -1,12 +1,14 @@
 use dos_shared::*;
+use super::GameState;
 
 use std::net::TcpStream;
 use std::io;
 
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
 
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct MultiplayerState {
     pub stream: Option<TcpStream>,
     pub player_names: Vec<String>,
@@ -14,7 +16,7 @@ pub struct MultiplayerState {
 }
 
 // Recieves and handles messages from the server
-pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>) {
+pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>, mut commands: Commands) {
     let stream =
         match &mp_state.stream {
             None => return,
@@ -23,7 +25,7 @@ pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>) {
     
     match bincode::deserialize_from::<&TcpStream, LobbyUpdateServer>(stream) {
         Ok(lobby_update) => {
-            handle_lobby_update(&mut mp_state, lobby_update);
+            handle_lobby_update(&mut mp_state, lobby_update, &mut commands);
         },
         Err(e) => {
             handle_lobby_update_error(&mut mp_state,e, );
@@ -32,9 +34,14 @@ pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>) {
 }
 
 // Adjusts multiplayer state based on server message
-fn handle_lobby_update(mp_state: &mut ResMut<MultiplayerState>, lobby_update: LobbyUpdateServer) {
+fn handle_lobby_update(
+    mp_state: &mut ResMut<MultiplayerState>, 
+    lobby_update: LobbyUpdateServer,
+    commands: &mut Commands,
+) {
     match lobby_update {
         LobbyUpdateServer::CurrentPlayers{player_names} => {
+            println!("GOT UPDATE: {:?}",player_names);
             mp_state.player_names = player_names;
         }
         LobbyUpdateServer::YouAreLobbyLeader => {
@@ -42,6 +49,9 @@ fn handle_lobby_update(mp_state: &mut ResMut<MultiplayerState>, lobby_update: Lo
         }
         LobbyUpdateServer::Disconnect => {
             disconnect(mp_state);
+        }
+        LobbyUpdateServer::StartGame => {
+            commands.insert_resource(NextState(GameState::InGame));
         }
     }
 }
@@ -77,9 +87,9 @@ pub fn connect(address: &str, name: &str) -> Result<TcpStream, Box<dyn std::erro
             println!("Successfully connected to server {address}");
 
             // Immediately send the client info (name)
-            bincode::serialize_into(&stream, &LobbyUpdateClient::Connect{name: name.to_string()})?;
+            bincode::serialize_into(&stream, &LobbyUpdateClient::Connect{name: name.to_string()}).expect("sending error");
      
-            stream.set_nonblocking(true)?;
+            stream.set_nonblocking(true).expect("nonblocking failure");
  
             Ok(stream)
         },

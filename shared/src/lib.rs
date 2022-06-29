@@ -1,5 +1,7 @@
 use serde::{Serialize, Deserialize};
 
+pub mod cards;
+use cards::*;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Integer {
@@ -11,6 +13,7 @@ pub enum LobbyUpdateServer {
     CurrentPlayers { player_names: Vec<String> },
     YouAreLobbyLeader,
     Disconnect,
+    StartGame,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -20,3 +23,7 @@ pub enum LobbyUpdateClient {
     StartGame,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GameUpdateServer {
+    DealIn {cards: Vec<Card>},
+}

@@ -38,15 +38,24 @@ pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiSt
         });
         
         if mp_state.stream.is_none() && ui.button("Connect").clicked() {
+            println!("Before C: {:?}",mp_state);
+
             if let Ok(stream) = connect(&ui_state.ip, &ui_state.name) {
                 mp_state.stream = Some(stream);
-                //commands.insert_resource(NextState(GameState::InGame));
+                
                 ui_state.error = "";
             } else {
                 ui_state.error = "Connection Failed";
             }
+
+            println!("After C: {:?}",mp_state);
+
         } else if mp_state.stream.is_some() && ui.button("Disconnect").clicked(){
+            println!("Before DC: {:?}",mp_state);
+
             disconnect(&mut mp_state);
+
+            println!("After DC: {:?}",mp_state);
         }
         
         if !ui_state.error.is_empty() {
