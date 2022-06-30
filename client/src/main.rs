@@ -27,19 +27,21 @@ pub enum GameState {
 // https://github.com/IyesGames/iyes_loopless/blob/main/examples/menu.rs
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
-        .init_resource::<UiState>()
-        .init_resource::<MultiplayerState>()
-
-        .add_startup_system(load_assets)
         .insert_resource(WindowDescriptor {
             title: "Dos!".to_string(),
             width: 1920.,
             height: 1080.,
             resizable: true,
+            position: Some(Vec2::ZERO),
             ..default()
         })
+        .add_plugins(DefaultPlugins)
+        .add_plugin(EguiPlugin)
+
+        .init_resource::<UiState>()
+        .init_resource::<MultiplayerState>()
+
+        .add_startup_system(load_assets)
 
         .add_loopless_state(GameState::MainMenu)
 
@@ -58,10 +60,12 @@ fn main() {
             ConditionSet::new()
                 .run_in_state(GameState::InGame)
                 .with_system(game_network_system)
+                .with_system(move_targets)
+                .with_system(set_targets)
                 .into()
         )
 
-        .add_enter_system(GameState::InGame,show_cards_test)
+        .add_enter_system(GameState::InGame,add_camera)
        
         
         .run()

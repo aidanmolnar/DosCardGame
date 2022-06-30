@@ -21,71 +21,114 @@ pub fn load_assets(
     commands.insert_resource(CardTetxureAtlas{atlas: texture_atlas_handle})
 }
 
+fn get_index(card: &Card) -> usize {
+    let offset = match card.color {
+        CardColor::Red    => {   0}
+        CardColor::Yellow => {  13}
+        CardColor::Green  => {2*13}
+        CardColor::Blue   => {3*13}
+        CardColor::Wild   => {4*13} 
+    };
 
+    offset + match card.ty {
+        CardType::Basic(i) => {i as usize}
+        CardType::Skip =>     {10}
+        CardType::Reverse =>  {11}
+        CardType::DrawTwo =>  {12}
+        CardType::Wild =>     {0}
+        CardType::DrawFour => {1}
+    }
+}
+
+
+// TODO
+pub fn add_camera(
+    mut commands: Commands
+) {
+    let mut camera = OrthographicCameraBundle::new_2d();
+    camera.orthographic_projection.scaling_mode = ScalingMode::FixedVertical;
+    camera.orthographic_projection.scale = 1024.;
+
+    commands.spawn_bundle(camera);
+}
+
+#[derive(Component)]
+pub struct PlayingCard {
+    card: Card,
+}
+
+#[derive(Component)]
+pub struct Target {
+    start: Vec3,
+    end: Vec3,
+    timer: Timer,
+}
 
 pub fn add_card(
-    mut commands: Commands,
-    atlas: Res<CardTetxureAtlas>,
-    texture_atlases: ResMut<Assets<TextureAtlas>>,
+    card: &Card,
+    translation: Vec3,
+    commands: &mut Commands,
+    atlas: &Res<CardTetxureAtlas>,
+    texture_atlases: &Res<Assets<TextureAtlas>>,
 ) {
-
-    let card = Card::Basic{color: dos_shared::cards::Color::Green, value: 9};
 
     let texture_atlas_handle = texture_atlases.get_handle(&atlas.atlas);
     commands
         .spawn_bundle(SpriteSheetBundle {
             sprite: TextureAtlasSprite { index: get_index(card), ..default() },
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_translation(Vec3::ZERO),
+            transform: Transform::from_translation(translation).with_scale(Vec3::splat(1.0)),
             ..default()
-        });
+        }).insert(
+            PlayingCard {
+            card: *card,
+        }).insert(
+            Target {
+            start: translation,
+            end: translation,
+            timer: Timer::from_seconds(0.01,false),
+        }); 
 }
 
-fn get_index(card: Card) -> usize {
-    match card {
-        Card::Basic { color, value } => {get_color_offset(color) + value as usize},
-        Card::Skip {color}               => {get_color_offset(color) + 11},
-        Card::Reverse {color}            => {get_color_offset(color) + 12},
-        Card::DrawTwo {color}            => {get_color_offset(color) + 13},
-        Card::Wild {}                           => {4*13+1},
-        Card::DrawFour {}                       => {4*13+2},
+pub const MAX_HAND_WIDTH: f32 = 3000.;
+pub const MAX_HAND_SPACING: f32 = 120.;
+
+pub fn move_targets (
+    mut query: Query<(&mut Target, &mut Transform)>,
+    time: Res<Time>,
+) {
+    for (mut target, mut transform) in query.iter_mut() {
+        target.timer.tick(time.delta());
+        transform.translation = target.start + (target.end - target.start) * target.timer.percent();
     }
-}
+}  
 
-fn get_color_offset(color: dos_shared::cards::Color) -> usize {
-    match color {
-        dos_shared::cards::Color::Red    => {   0}
-        dos_shared::cards::Color::Yellow => {  13}
-        dos_shared::cards::Color::Green  => {2*13}
-        dos_shared::cards::Color::Blue   => {3*13}
-    }
-}
-
-// TODO
-pub fn add_camera() {
-
-}
-
-
-pub fn show_cards_test(
-    mut commands: Commands,
-    texture_atlases: ResMut<Assets<TextureAtlas>>,
-    atlas: Res<CardTetxureAtlas>,
+pub fn set_targets (
+    mut query: Query<(&mut Target, &Transform, &PlayingCard)>,
 ) {
 
-    
-    
-    let mut camera = OrthographicCameraBundle::new_2d();
-    camera.orthographic_projection.scaling_mode = ScalingMode::FixedVertical;
-    camera.orthographic_projection.scale = 1000.0;
+    // Sort entities by the card type
+    let mut entities  = query.iter_mut().collect::<Vec<_>>();
+    entities.sort_by_key(|e| e.2.card);
 
-    commands.spawn_bundle(camera);
+    // Clamps hand width while also keeping cards clustered
+    let len = entities.len();
+    let max = f32::min(MAX_HAND_WIDTH, len as f32 * MAX_HAND_SPACING);
 
+    for (i, (target, transform, player)) in entities.iter_mut().enumerate() {
 
-    add_card(commands, atlas, texture_atlases)
+        // TODO: this might be skippable? can wait for current animation to end?
+        // Calculate the intended destination of the card
+        let pos: f32 = max * ((i as f32 / (len-1) as f32) - 0.5);
+        let new_dest = Vec3::new(pos,-700.,0.);
 
-    // commands.spawn_bundle(SpriteBundle {
-    //     texture: asset_server.load("cards_test.png"),
-    //     ..default()
-    // });
+        if new_dest != target.end {
+            println!("recalculating {}", new_dest);
+            target.start = transform.translation;
+            target.end = new_dest;
+            target.timer = Timer::from_seconds(2., false);
+        }
+        
+    }
+
 }

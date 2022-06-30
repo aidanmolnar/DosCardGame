@@ -1,5 +1,6 @@
 
 use super::lobby_network::*;
+use super::graphics::*;
 use dos_shared::*;
 use dos_shared::cards::*;
 
@@ -9,6 +10,8 @@ use bevy::prelude::*;
 use std::net::TcpStream;
 use std::io;
 
+
+
 struct GameState {
     hand: Vec<Card>, // Maybe each card should be its own entity?
 }
@@ -16,7 +19,9 @@ struct GameState {
 // Recieves and handles messages from the server
 pub fn game_network_system(
     mut mp_state: ResMut<MultiplayerState>, 
-    mut commands: Commands
+    mut commands: Commands,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    card_atlas: Res<CardTetxureAtlas>,
 ) {
     let stream =
         match &mp_state.stream {
@@ -27,12 +32,22 @@ pub fn game_network_system(
     match bincode::deserialize_from::<&TcpStream, GameUpdateServer>(stream) {
         Ok(game_update) => {
             match game_update {
-                GameUpdateServer::DealIn { cards } => {
-                    println!("{:?}", cards);
+                GameUpdateServer::DealIn { mut cards } => {
+                    println!("Original: {:?}", cards);
+
+                    cards.sort();
+
+                    println!("Sorted: {:?}", cards);
                     
                     commands.insert_resource( GameState {
-                        hand: cards,
-                    })
+                        hand: cards.clone(),
+                    });
+
+                    
+                    for card in cards.iter() {
+                        add_card(card, Vec3::new(0.,0.,0.), &mut commands, &card_atlas, &texture_atlases);
+                    }
+
                 }
             }
         },

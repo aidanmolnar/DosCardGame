@@ -5,7 +5,7 @@ use super::lobby_network::*;
 use bevy::prelude::*;
 
 
-const NUM_STARTING_CARDS: u8 = 10;
+const NUM_STARTING_CARDS: u8 = 100;
 
 #[derive(Debug)]
 pub struct GameState {

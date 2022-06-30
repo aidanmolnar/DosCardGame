@@ -195,7 +195,11 @@ fn connect(mut commands: Commands, mut events: EventWriter<PlayerCountChange>, s
 
     let client_connect = match bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream) {
         Ok(c) => {c}
-        Err(e) => {panic!("{e}")}
+        Err(e) => {
+            println!("Aborting new connection");
+            stream.shutdown(std::net::Shutdown::Both).expect("Couldn't close stream?");
+            return;
+    }
     };
     println!("Client name: {:?}",client_connect);
 
