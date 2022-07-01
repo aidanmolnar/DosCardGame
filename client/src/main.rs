@@ -12,6 +12,7 @@ use graphics::*;
 
 //use bevy::app::AppExit;
 use bevy::prelude::*;
+use bevy::ecs::event::Events;
 use iyes_loopless::prelude::*;
 use bevy_egui::EguiPlugin;
 
@@ -58,16 +59,25 @@ fn main() {
         // In Game systems
         .add_system_set(
             ConditionSet::new()
+                .label("main")
                 .run_in_state(GameState::InGame)
                 .with_system(game_network_system)
                 .with_system(move_targets)
-                .with_system(set_targets_your_cards)
-                .with_system(set_targets_other_cards)
+                
                 .into()
         )
 
+        .init_resource::<Events<OpponentCardChanged>>()
+
+        .add_system(set_targets_your_cards
+            .run_in_state(GameState::InGame))
+        .add_system(set_targets_other_cards
+            .run_in_state(GameState::InGame)
+            .run_on_event::<OpponentCardChanged>().
+            before("main"))
+
         .add_enter_system(GameState::InGame,add_camera)
-       
+        .add_enter_system(GameState::InGame,setup_graphics)
         
         .run()
 }

@@ -22,6 +22,8 @@ pub fn game_network_system(
     mut commands: Commands,
     texture_atlases: Res<Assets<TextureAtlas>>,
     card_atlas: Res<CardTetxureAtlas>,
+    mut card_tracker: ResMut<OpponentCardTracker>,
+    mut events: EventWriter<OpponentCardChanged>,
 ) {
     let stream =
         match &mp_state.stream {
@@ -54,7 +56,9 @@ pub fn game_network_system(
                                         j as u8,
                                         Vec3::new(0.,0.,0.), 
                                         &mut commands, &card_atlas, 
-                                        &texture_atlases
+                                        &texture_atlases,
+                                        &mut card_tracker,
+                                        &mut events,
                                     );
                                 }
 
