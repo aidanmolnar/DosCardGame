@@ -67,13 +67,11 @@ fn main() {
                 .into()
         )
 
-        .init_resource::<Events<OpponentCardChanged>>()
+        .init_resource::<Events<CardChanged>>()
 
-        .add_system(set_targets_your_cards
-            .run_in_state(GameState::InGame))
-        .add_system(set_targets_other_cards
+        .add_system(set_card_targets
             .run_in_state(GameState::InGame)
-            .run_on_event::<OpponentCardChanged>().
+            .run_on_event::<CardChanged>().
             before("main"))
 
         .add_enter_system(GameState::InGame,add_camera)
