@@ -70,7 +70,7 @@ pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiSt
             }
         }
 
-        if mp_state.is_lobby_leader {
+        if mp_state.stream.is_some() && mp_state.turn_id == 0 {
             ui.label("You are the Lobby Leader");
             if ui.button("Start Game").clicked() {
                 send_start_game(mp_state.stream.as_ref());

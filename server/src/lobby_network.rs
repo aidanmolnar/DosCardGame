@@ -7,7 +7,6 @@ use super::GameState;
 
 use::bincode;
 use std::net::{TcpListener, TcpStream};
-use std::io::Write;
 use std::io;
 
 #[derive(Default)]
@@ -77,7 +76,7 @@ pub fn handle_playercount_change_system(
             }
         );
 
-        // Reassign ids starting from 0
+        // Reassign turn ids starting from 0
         for (i,(entity, _, turn_id_opt))in entities.iter_mut().enumerate() {
             match turn_id_opt {
                 Some(turn_id) => {turn_id.id = i as u8},
@@ -87,23 +86,20 @@ pub fn handle_playercount_change_system(
             }
         }
 
-        // Send lobby leader notification
-        if let Some(first) = entities.get(0) {
-            if let Err(e) = bincode::serialize_into(&first.1.stream, &LobbyUpdateServer::YouAreLobbyLeader) {
-                println!("Error sending message to lobby leader {}: {e}", first.1.name)
-            }
-        }
-
-        // Update all the people
+        // Collect player names
         let names = entities.iter().map(|x| x.1.name.clone()).collect::<Vec<_>>();
-        let data = bincode::serialize(&LobbyUpdateServer::CurrentPlayers{player_names: names}).unwrap();
 
-        for (_,mut player,_) in query.iter_mut() {
-            if let Err(e) = player.stream.write_all(&data) {
-                println!("Error sending message to {}: {e}", player.name)
+        // Update all the players about the current lobby state
+        for (i,(_,player,_)) in entities.iter().enumerate() {
+            if let Err(e) = bincode::serialize_into(&player.stream, 
+                &LobbyUpdateServer::CurrentPlayers{
+                    player_names: names.clone(), 
+                    turn_id: i as u8}) 
+            {
+                println!("Error sending message to lobby leader {}: {e}", player.name)
+                // TODO: Should disconnect
             }
         }
-
         
     }
 }
@@ -196,7 +192,7 @@ fn connect(mut commands: Commands, mut events: EventWriter<PlayerCountChange>, s
     let client_connect = match bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream) {
         Ok(c) => {c}
         Err(e) => {
-            println!("Aborting new connection");
+            println!("Aborting new connection: {e}");
             stream.shutdown(std::net::Shutdown::Both).expect("Couldn't close stream?");
             return;
     }

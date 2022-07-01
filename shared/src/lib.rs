@@ -3,6 +3,8 @@ use serde::{Serialize, Deserialize};
 pub mod cards;
 use cards::*;
 
+pub const NUM_STARTING_CARDS: u8 = 50;
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Integer {
     x: i32,
@@ -10,8 +12,8 @@ pub struct Integer {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyUpdateServer {
-    CurrentPlayers { player_names: Vec<String> },
-    YouAreLobbyLeader,
+    CurrentPlayers { player_names: Vec<String>, turn_id: u8},
+    //YouAreLobbyLeader,
     Disconnect,
     StartGame,
 }
@@ -25,5 +27,5 @@ pub enum LobbyUpdateClient {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameUpdateServer {
-    DealIn {cards: Vec<Card>},
+    DealIn {your_cards: Vec<Card>, card_counts: Vec<u8>},
 }

@@ -1,4 +1,3 @@
-use bevy::prelude::Component;
 use rand::thread_rng;
 use rand::seq::SliceRandom;
 

@@ -5,8 +5,6 @@ use super::lobby_network::*;
 use bevy::prelude::*;
 
 
-const NUM_STARTING_CARDS: u8 = 100;
-
 #[derive(Debug)]
 pub struct GameState {
     deck: Vec<Card>,
@@ -41,15 +39,23 @@ pub fn enter_game_system(
             }
         }
     }
+
+    let counts = hands.iter().map(|x| x.cards.len() as u8).collect::<Vec<_>>();
     
     // TODO: there is probably a better/more functional way to do this that doesn't require cloning the hands
     for (i,(entity, player)) in query.iter().enumerate() {
         let hand = hands.get(i).unwrap();
         commands.entity(entity).insert(hand.clone());
 
-        if let Err(e) = bincode::serialize_into(&player.stream, &GameUpdateServer::DealIn{cards: hand.cards.clone()}) {
-            println!("Leave lobby message failed to send {e}");
-            // TODO: might need to disconnect client here, or return to lobby?
+        if let Err(e) = bincode::serialize_into(
+            &player.stream, 
+            &GameUpdateServer::DealIn{
+                your_cards: hand.cards.clone(),
+                card_counts: counts.clone()
+            }) {
+
+                println!("Leave lobby message failed to send {e}");
+                // TODO: might need to disconnect client here, or return to lobby?
         }
     }
 

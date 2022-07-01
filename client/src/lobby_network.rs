@@ -12,7 +12,7 @@ use iyes_loopless::prelude::*;
 pub struct MultiplayerState {
     pub stream: Option<TcpStream>,
     pub player_names: Vec<String>,
-    pub is_lobby_leader: bool,
+    pub turn_id: u8,
 }
 
 // Recieves and handles messages from the server
@@ -40,13 +40,12 @@ fn handle_lobby_update(
     commands: &mut Commands,
 ) {
     match lobby_update {
-        LobbyUpdateServer::CurrentPlayers{player_names} => {
+        LobbyUpdateServer::CurrentPlayers{player_names, turn_id} => {
             println!("GOT UPDATE: {:?}",player_names);
             mp_state.player_names = player_names;
+            mp_state.turn_id = turn_id;
         }
-        LobbyUpdateServer::YouAreLobbyLeader => {
-            mp_state.is_lobby_leader = true;
-        }
+
         LobbyUpdateServer::Disconnect => {
             disconnect(mp_state);
         }
@@ -114,7 +113,6 @@ pub fn disconnect(mp_state: &mut ResMut<MultiplayerState>) {
     // Reset state to default
     mp_state.stream = None;
     mp_state.player_names = Vec::new();
-    mp_state.is_lobby_leader = false;
 }
 
 // Closes the connection to the server

@@ -61,7 +61,8 @@ fn main() {
                 .run_in_state(GameState::InGame)
                 .with_system(game_network_system)
                 .with_system(move_targets)
-                .with_system(set_targets)
+                .with_system(set_targets_your_cards)
+                .with_system(set_targets_other_cards)
                 .into()
         )
 

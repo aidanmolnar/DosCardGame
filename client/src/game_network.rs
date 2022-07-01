@@ -2,7 +2,7 @@
 use super::lobby_network::*;
 use super::graphics::*;
 use dos_shared::*;
-use dos_shared::cards::*;
+//use dos_shared::cards::*;
 
 use bevy::prelude::*;
 //use iyes_loopless::prelude::*;
@@ -12,9 +12,9 @@ use std::io;
 
 
 
-struct GameState {
-    hand: Vec<Card>, // Maybe each card should be its own entity?
-}
+// struct GameState {
+//     hand: Vec<Card>, // Maybe each card should be its own entity?
+// }
 
 // Recieves and handles messages from the server
 pub fn game_network_system(
@@ -32,20 +32,37 @@ pub fn game_network_system(
     match bincode::deserialize_from::<&TcpStream, GameUpdateServer>(stream) {
         Ok(game_update) => {
             match game_update {
-                GameUpdateServer::DealIn { mut cards } => {
-                    println!("Original: {:?}", cards);
+                GameUpdateServer::DealIn { your_cards: cards, mut card_counts } => {
+                    println!("Got cards: {:?}", cards);
 
-                    cards.sort();
+                    // Deal out the hands from the deck
+                    for j in 0..NUM_STARTING_CARDS {
+                        for (i,count) in card_counts.iter_mut().enumerate() {
+                            if *count > 0 {
+                                *count -= 1;
 
-                    println!("Sorted: {:?}", cards);
-                    
-                    commands.insert_resource( GameState {
-                        hand: cards.clone(),
-                    });
+                                if i as u8 == mp_state.turn_id {
+                                    add_your_card(
+                                        *cards.get(j as usize).unwrap(), 
+                                        Vec3::new(0.,0.,0.), 
+                                        &mut commands, &card_atlas, 
+                                        &texture_atlases
+                                    );
+                                } else {
+                                    add_other_card(
+                                        i as u8, 
+                                        j as u8,
+                                        Vec3::new(0.,0.,0.), 
+                                        &mut commands, &card_atlas, 
+                                        &texture_atlases
+                                    );
+                                }
 
-                    
-                    for card in cards.iter() {
-                        add_card(card, Vec3::new(0.,0.,0.), &mut commands, &card_atlas, &texture_atlases);
+
+                            } else {
+                                break;
+                            }
+                        }
                     }
 
                 }
