@@ -1,10 +1,13 @@
 use dos_shared::cards::*;
 use super::lobby_network::MultiplayerState;
-use super::game_network::ResourceReference;
 
 use bevy::prelude::*;
+use bevy_mod_picking::*;
 use bevy::ecs::event::Events;
 use bevy::render::camera::ScalingMode;
+use bevy::ecs::system::SystemParam;
+use bevy::sprite::MaterialMesh2dBundle;
+use bevy::sprite::Mesh2dHandle;
 
 // Asset path to card sprites
 const CARDS_PATH: &str = "UNO_cards.png";
@@ -22,24 +25,26 @@ const OPPONENT_ARC_HEIGHT: f32 = 600.;
 const MAX_OPPONENT_HAND_WIDTH: f32 = (MAX_HAND_WIDTH - OPPONENT_ARC_WIDTH) / 2. - 250.;
 const OPPONENT_ARC_ANGLE: f32 = std::f32::consts::PI * 0.8;
 
-
-
-pub struct CardTetxureAtlas {
+pub struct CardHandles {
     atlas: Handle<TextureAtlas>,
+    mesh: Handle<Mesh>,
 }
 
 pub fn load_assets (
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut commands: Commands
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let texture_handle = asset_server.load(CARDS_PATH);
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(240.0, 360.0), 13, 5);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-    commands.insert_resource(CardTetxureAtlas{atlas: texture_atlas_handle})
+    let mesh_handle = meshes.add(Mesh::from(shape::Quad::default()));
+    commands.insert_resource(CardHandles{atlas: texture_atlas_handle, mesh: mesh_handle});
 }
 
+// Get the index of the card from the sprite sheet
 fn get_index(card: &Card) -> usize {
     let offset = match card.color {
         CardColor::Red    => {   0}
@@ -60,13 +65,24 @@ fn get_index(card: &Card) -> usize {
 }
 
 pub fn add_camera(
-    mut commands: Commands
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.orthographic_projection.scaling_mode = ScalingMode::FixedVertical;
     camera.orthographic_projection.scale = 1024.;
 
-    commands.spawn_bundle(camera);
+    commands.spawn_bundle(camera).insert_bundle(PickingCameraBundle::default());
+
+    commands
+        .spawn_bundle(MaterialMesh2dBundle {
+            mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+            transform: Transform::default().with_scale(Vec3::splat(128.)),
+            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            ..default()
+        })
+        .insert_bundle(PickableBundle::default());
 }
 
 
@@ -80,7 +96,7 @@ pub struct Target {
 pub fn deal_card (
     owner_id: u8,
     card_value: Option<Card>,
-    r: &mut ResourceReference,
+    r: &mut DealCardResources,
 ) {
     // Get sprite info
     let index = if let Some(card_value) = card_value {
@@ -88,12 +104,15 @@ pub fn deal_card (
     } else {
         CARD_BACK_SPRITE_INDEX // Card back sprite index
     };
-    let texture_atlas_handle = r.texture_atlases.get_handle(&r.card_atlas.atlas);
+    let texture_atlas_handle = r.texture_atlases.get_handle(&r.card_handles.atlas);
+    let mesh_handle = r.meshes.get_handle(&r.card_handles.mesh);
     
     let entity = spawn_card_entity(
-        &mut r.commands,
         index,
         texture_atlas_handle,
+        mesh_handle,
+        r,
+        owner_id == r.mp_state.turn_id,
     );
     
     // Add the card to the card tracker (TODO: break into another function)
@@ -109,24 +128,43 @@ pub fn deal_card (
 }
 
 fn spawn_card_entity(
-    commands: &mut Commands,
+    //commands: &mut Commands,
     sprite_index: usize,
     texture_atlas_handle: Handle<TextureAtlas>,
+    mesh_handle: Handle<Mesh>,
+    r: &mut DealCardResources,
+    pickable: bool,
 ) -> Entity {
     let translation = Vec3::new(DECK_LOCATION.0, DECK_LOCATION.1, 0.);
 
-    commands
-    .spawn_bundle(SpriteSheetBundle {
+    let mut entity_commands = r.commands.spawn();
+    entity_commands.insert_bundle(SpriteSheetBundle {
         sprite: TextureAtlasSprite { index: sprite_index, ..default() },
         texture_atlas: texture_atlas_handle,
         transform: Transform::from_translation(translation).with_scale(Vec3::splat(1.0)),
         ..default()
-    }).insert(
-        Target {
+    });
+    
+    
+    entity_commands.insert( Target {
         start: translation,
         end: translation,
         timer: Timer::from_seconds(0.01,false),
-    }).id() 
+    });
+    
+    if pickable {
+        println!("added pickable");
+        entity_commands
+            .insert_bundle(MaterialMesh2dBundle {
+                mesh: r.meshes.add(Mesh::from(shape::Quad::new(Vec2::new(240.,360.)))).into(),
+                material: r.materials.add(ColorMaterial::from(Color::Rgba { red: 0., green: 0., blue: 0., alpha: 0. })),
+                ..default()
+            });
+
+        entity_commands.insert_bundle(PickableBundle::default());
+    }
+    
+    entity_commands.id() 
 }
 
 // System for animating cards to their target locations
@@ -135,8 +173,11 @@ pub fn move_targets (
     time: Res<Time>,
 ) {
     for (mut target, mut transform) in query.iter_mut() {
+
         target.timer.tick(time.delta());
+        // LERP towards target end location
         transform.translation = target.start + (target.end - target.start) * target.timer.percent();
+        
     }
 }  
 
@@ -187,6 +228,8 @@ impl CardTracker {
         }
         // TODO: Consider teammates?
     }
+
+    // TODO: remove card
 }
 
 
@@ -228,13 +271,26 @@ pub fn setup_graphics(
 
             centers.push( (center_x,center_y));
         }
-        
     }
 
-    commands.insert_resource(HandLocations{centers})
-    
+    commands.insert_resource(HandLocations{centers});
+
 }
 
+pub fn add_deck(
+    mut commands: Commands,
+    texture_atlases: Res<Assets<TextureAtlas>>,
+    card_atlas: Res<CardHandles>,
+) {
+    let texture_atlas_handle = texture_atlases.get_handle(&card_atlas.atlas);
+    // Add the deck
+    commands.spawn_bundle(SpriteSheetBundle {
+        sprite: TextureAtlasSprite { index: CARD_BACK_SPRITE_INDEX, ..default() },
+        texture_atlas: texture_atlas_handle,
+        transform: Transform::from_translation(Vec3::new(DECK_LOCATION.0, DECK_LOCATION.1, 0.)).with_scale(Vec3::splat(1.0)),
+        ..default()
+    });
+}
 
 
 pub struct CardChanged {owner_id: u8}
@@ -260,11 +316,54 @@ pub fn set_card_targets (
         for (hand_position, entity) in hand.iter().enumerate() {
             let (mut target, transform) = query.get_mut(*entity).unwrap();
             let pos = max_width * arange_1d(hand.len(), hand_position); 
-            let new_dest = Vec3::new(*center_x + pos, *center_y, (hand_position as f32) / 10.);
+            let new_dest = Vec3::new(*center_x + pos, *center_y, 2. + (hand_position as f32) / 10.);
 
             target.start = transform.translation;
             target.end = new_dest;
-            target.timer = Timer::from_seconds(2., false);
+            target.timer = Timer::from_seconds(0.1, false);
         }
     }
+}
+
+#[derive(Component)]
+pub struct DelayedDealtCard {
+    pub timer: Timer,
+    pub owner_id: u8,
+    pub card_value: Option<Card>,
+}
+
+pub fn delayed_dealing_system (
+    mut query: Query<(Entity, &mut DelayedDealtCard)>,
+    time: Res<Time>,
+    mut commands: Commands,
+    mut deal_card_resources: DealCardResources,
+) {
+    for (entity, mut delayed_card) in query.iter_mut() {
+        delayed_card.timer.tick(time.delta());
+
+        if delayed_card.timer.finished() {
+            deal_card(
+                delayed_card.owner_id,
+                delayed_card.card_value,
+                &mut deal_card_resources
+            );
+            commands.entity(entity).remove::<DelayedDealtCard>();
+        }
+
+        
+    }
+}
+
+// Bundle of resources to make passing information to functions cleaner
+// TODO: rename/reconsider
+#[derive(SystemParam)] 
+pub struct DealCardResources<'w, 's> {
+    pub commands: Commands<'w, 's>,
+    pub mp_state: ResMut<'w, MultiplayerState>, 
+    pub card_tracker: ResMut<'w, CardTracker>,
+    pub events: EventWriter<'w,'s,  CardChanged>,
+    pub texture_atlases: Res<'w, Assets<TextureAtlas>>,
+    pub card_handles: Res<'w, CardHandles>,
+    pub meshes : ResMut<'w, Assets<Mesh>>,
+    pub materials : ResMut<'w, Assets<ColorMaterial>>,
 }

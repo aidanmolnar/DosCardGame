@@ -3,7 +3,7 @@ use serde::{Serialize, Deserialize};
 pub mod cards;
 use cards::*;
 
-pub const NUM_STARTING_CARDS: u8 = 50;
+pub const NUM_STARTING_CARDS: u8 = 10;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Integer {

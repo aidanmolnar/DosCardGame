@@ -53,7 +53,6 @@ pub fn enter_game_system(
                 your_cards: hand.cards.clone(),
                 card_counts: counts.clone()
             }) {
-
                 println!("Leave lobby message failed to send {e}");
                 // TODO: might need to disconnect client here, or return to lobby?
         }

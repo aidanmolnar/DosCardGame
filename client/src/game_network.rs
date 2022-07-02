@@ -4,6 +4,7 @@ use dos_shared::*;
 use dos_shared::cards::*;
 
 use bevy::prelude::*;
+
 //use iyes_loopless::prelude::*;
 
 use std::net::TcpStream;
@@ -14,10 +15,6 @@ use std::io;
 pub fn game_network_system(
     mut mp_state: ResMut<MultiplayerState>, 
     commands: Commands,
-    texture_atlases: Res<Assets<TextureAtlas>>,
-    card_atlas: Res<CardTetxureAtlas>,
-    card_tracker: ResMut<CardTracker>,
-    events: EventWriter<CardChanged>,
 ) {
     let stream =
         match &mp_state.stream {
@@ -28,15 +25,9 @@ pub fn game_network_system(
     match bincode::deserialize_from::<&TcpStream, GameUpdateServer>(stream) {
         Ok(game_update) => {
             handle_game_update(
-                game_update,
-                &mut ResourceReference {
-                    commands,
-                    mp_state,
-                    card_tracker,
-                    events,
-                    texture_atlases,
-                    card_atlas,
-                })
+            game_update,
+            commands,
+            mp_state)
         },
         Err(e) => {
             handle_game_update_error(&mut mp_state, e)
@@ -44,51 +35,58 @@ pub fn game_network_system(
     }
 }
 
-fn handle_game_update(game_update: GameUpdateServer, reference: &mut ResourceReference) {
+fn handle_game_update(
+    game_update: GameUpdateServer, 
+    commands: Commands,
+    mp_state: ResMut<MultiplayerState>) {
     match game_update {
         GameUpdateServer::DealIn { your_cards, card_counts } => {
             println!("Got cards: {:?}", your_cards);
-            deal_cards(
+            deal_out_cards(
                 your_cards, 
                 card_counts,
-                reference,
+                commands,
+                mp_state,
             );
         }
     }
 }
 
-// Bundle of resources to make passing information to functions cleaner
-// TODO: rename/reconsider
-pub struct ResourceReference<'a,'b> {
-    pub commands: Commands<'a, 'b>,
-    pub mp_state: ResMut<'b, MultiplayerState>, 
-    pub card_tracker: ResMut<'b, CardTracker>,
-    pub events: EventWriter<'b,'b,  CardChanged>,
-    pub texture_atlases: Res<'b, Assets<TextureAtlas>>,
-    pub card_atlas: Res<'b, CardTetxureAtlas>,
-}
 
-fn deal_cards(
+
+// Move to grpahics?
+fn deal_out_cards(
     your_cards: Vec<Card>, 
     mut card_counts: Vec<u8>,
-    reference: &mut ResourceReference
+    mut commands: Commands,
+    mp_state: ResMut<MultiplayerState>,
 ) {
+
+    let delay_delta = 0.25;
+    let mut delay_total = 0.0;
+
     // Deal out the hands from the deck
+    // This is probably more complicated than it needs to be, can make assumptions about how server deals out cards.  Remove card counts from message?
+    // TODO: Simplify
     for j in 0..NUM_STARTING_CARDS {
-        for (i,count) in card_counts.iter_mut().enumerate() {
+        for (card_owner_id,count) in card_counts.iter_mut().enumerate() {
             if *count > 0 {
                 *count -= 1;
 
-                let card_value = if i == reference.mp_state.turn_id as usize {
+                let card_value = if card_owner_id == mp_state.turn_id as usize {
                     Some(*your_cards.get(j as usize).unwrap())
                 } else {
                     None
                 };
 
-                deal_card(
-                    i as u8,
-                    card_value, 
-                    reference);
+                commands.spawn().insert(DelayedDealtCard {
+                    timer: Timer::from_seconds(delay_total, false),
+                    owner_id: card_owner_id as u8,
+                    card_value,
+                });
+
+                delay_total += delay_delta;
+                
             } else {
                 break;
             }

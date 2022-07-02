@@ -15,6 +15,7 @@ use bevy::prelude::*;
 use bevy::ecs::event::Events;
 use iyes_loopless::prelude::*;
 use bevy_egui::EguiPlugin;
+use bevy_mod_picking::*;
 
 const DEFAULT_IP: &str = "localhost:3333";
 
@@ -38,6 +39,9 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
+
+        .add_plugin(PickingPlugin)
+        .add_plugin(InteractablePickingPlugin)
 
         .init_resource::<UiState>()
         .init_resource::<MultiplayerState>()
@@ -63,7 +67,7 @@ fn main() {
                 .run_in_state(GameState::InGame)
                 .with_system(game_network_system)
                 .with_system(move_targets)
-                
+                .with_system(delayed_dealing_system)
                 .into()
         )
 
@@ -76,7 +80,19 @@ fn main() {
 
         .add_enter_system(GameState::InGame,add_camera)
         .add_enter_system(GameState::InGame,setup_graphics)
+        //.add_enter_system(GameState::InGame,add_deck)
+        .add_system_to_stage(CoreStage::PostUpdate, print_events.run_in_state(GameState::InGame))
         
         .run()
 }
 
+pub fn print_events(mut events: EventReader<PickingEvent>) {
+
+    for event in events.iter() {
+        match event {
+            PickingEvent::Selection(e) => info!("A selection event happened: {:?}", e),
+            PickingEvent::Hover(e) => info!("Egads! A hover event!? {:?}", e),
+            PickingEvent::Clicked(e) => info!("Gee Willikers, it's a click! {:?}", e),
+        }
+    }
+}
