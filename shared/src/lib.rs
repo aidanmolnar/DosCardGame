@@ -4,6 +4,7 @@ pub mod cards;
 use cards::*;
 
 pub const NUM_STARTING_CARDS: u8 = 10;
+pub const DEFAULT_IP: &str = "localhost:3333";
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Integer {

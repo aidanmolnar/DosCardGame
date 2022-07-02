@@ -1,5 +1,6 @@
 use dos_shared::*;
 use super::GameState;
+use super::MultiplayerState;
 
 use std::net::TcpStream;
 use std::io;
@@ -8,12 +9,6 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 
-#[derive(Default, Debug)]
-pub struct MultiplayerState {
-    pub stream: Option<TcpStream>,
-    pub player_names: Vec<String>,
-    pub turn_id: u8,
-}
 
 // Recieves and handles messages from the server
 pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>, mut commands: Commands) {
@@ -118,6 +113,7 @@ pub fn disconnect(mp_state: &mut ResMut<MultiplayerState>) {
 // Closes the connection to the server
 pub fn end_connection(stream: &TcpStream) {
     // Send a disconnect message to exit gracefully on server-side if possible
+    // TODO: this may not be necessary
     if let Err(e) = bincode::serialize_into(stream, &LobbyUpdateClient::Disconnect{}) {
         println!("Disconnect message send error: {:?}", e);
     }

@@ -1,6 +1,6 @@
-
-use super::DEFAULT_IP;
-use super::lobby_network::*;
+use dos_shared::DEFAULT_IP;
+use super::networking::*;
+use super::MultiplayerState;
 
 
 use bevy::prelude::*;
