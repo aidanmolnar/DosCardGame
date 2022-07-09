@@ -21,8 +21,8 @@ impl Plugin for LobbyPlugin {
             ConditionSet::new()
                 .run_in_state(GameState::MainMenu)
                 .with_system(lobby_ui)
-                .with_system(lobby_network_system
-                    .run_if_resource_exists::<MultiplayerState>())
+                .with_system(handle_connection_task)
+                .with_system(lobby_network_system)
                 .into()
         );
     }

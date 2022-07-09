@@ -4,12 +4,24 @@ use super::MultiplayerState;
 
 
 use bevy::prelude::*;
+use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy_egui::{egui::{self, Color32}, EguiContext};
+
+use std::net::TcpStream;
+use std::io;
+use futures_lite::future;
 
 pub struct UiState {
     ip: String,
     name: String,
     error: &'static str,
+    status: ConnectionStatus,
+}
+
+enum ConnectionStatus {
+    Unconnected,
+    Connecting,
+    Connected,
 }
 
 impl Default for UiState {
@@ -18,10 +30,18 @@ impl Default for UiState {
             ip: DEFAULT_IP.to_string(), 
             name: "".to_string(),
             error: "", 
+            status: ConnectionStatus::Unconnected,
     }}
 }
 
-pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiState>, mut mp_state: ResMut<MultiplayerState>) {
+pub fn lobby_ui(
+    mut egui_context: ResMut<EguiContext>, 
+    mut ui_state: ResMut<UiState>, 
+    mut mp_state: ResMut<MultiplayerState>,
+    mut commands: Commands,
+    thread_pool: Res<AsyncComputeTaskPool>,
+) {
+
     egui::SidePanel::left("left_panel").show(
         egui_context.ctx_mut(), |ui| {
 
@@ -36,26 +56,32 @@ pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiSt
             ui.label("Name: ");
             ui.text_edit_singleline(&mut ui_state.name);
         });
-        
-        if mp_state.stream.is_none() && ui.button("Connect").clicked() {
-            println!("Before C: {:?}",mp_state);
 
-            if let Ok(stream) = connect(&ui_state.ip, &ui_state.name) {
-                mp_state.stream = Some(stream);
+        match ui_state.status {
+            ConnectionStatus::Unconnected => {
+
+                if ui.button("Connect").clicked() {
+
+                    let address = ui_state.ip.clone();
+                    let name = ui_state.name.clone();
+
+                    let task = thread_pool.spawn(async move {
+                        connect(&address, &name)
+                    });
+                    ui_state.status = ConnectionStatus::Connecting;
+                    commands.spawn().insert(task);
+                }
                 
-                ui_state.error = "";
-            } else {
-                ui_state.error = "Connection Failed";
-            }
-
-            println!("After C: {:?}",mp_state);
-
-        } else if mp_state.stream.is_some() && ui.button("Disconnect").clicked(){
-            println!("Before DC: {:?}",mp_state);
-
-            disconnect(&mut mp_state);
-
-            println!("After DC: {:?}",mp_state);
+            },
+            ConnectionStatus::Connecting => {
+                ui.add(egui::Button::new("Connecting..."));
+            },
+            ConnectionStatus::Connected => {
+                if ui.button("Disconnect").clicked() {
+                    disconnect(&mut mp_state);
+                    ui_state.status = ConnectionStatus::Unconnected;
+                }
+            },
         }
         
         if !ui_state.error.is_empty() {
@@ -79,4 +105,32 @@ pub fn lobby_ui(mut egui_context: ResMut<EguiContext>, mut ui_state: ResMut<UiSt
         }
 
     });
+}
+
+pub fn handle_connection_task(
+    mut transform_tasks: Query<(Entity, &mut Task<Result<TcpStream, io::Error>>)>,
+    mut commands: Commands,
+    mut mp_state: ResMut<MultiplayerState>,
+    mut ui_state: ResMut<UiState>,
+) {
+    for (entity, mut task) in transform_tasks.iter_mut() {
+
+        if let Some(connection_response) = future::block_on(future::poll_once(&mut *task)) {
+
+            match connection_response {
+                Ok(stream) => {
+                    mp_state.stream = Some(stream);
+                    ui_state.error = "";
+                    ui_state.status = ConnectionStatus::Connected;
+                }
+                Err(e) => {
+                    println!("{e}");
+                    ui_state.error = "Connection Failed";
+                    ui_state.status = ConnectionStatus::Unconnected;
+                }
+            }
+
+            commands.entity(entity).despawn();
+        }
+    }
 }

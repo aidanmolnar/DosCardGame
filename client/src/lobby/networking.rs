@@ -75,7 +75,7 @@ pub fn send_start_game (stream: Option<&TcpStream>)  {
 
 // Attempts to establish a connection with a given network address
 // Sends the player name if successful
-pub fn connect(address: &str, name: &str) -> Result<TcpStream, Box<dyn std::error::Error>> {
+pub fn connect(address: &str, name: &str) -> Result<TcpStream, io::Error> {
     match TcpStream::connect(address) {
         Ok(stream) => {
             println!("Successfully connected to server {address}");
@@ -89,7 +89,7 @@ pub fn connect(address: &str, name: &str) -> Result<TcpStream, Box<dyn std::erro
         },
         Err(e) => {
             println!("Failed to connect: {}", e);
-            Err(Box::new(e))
+            Err(e)
         }
     }
 }
