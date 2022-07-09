@@ -42,7 +42,7 @@ fn handle_lobby_update(
         }
 
         LobbyUpdateServer::Disconnect => {
-            disconnect(mp_state);
+            mp_state.set_disconnected();
         }
         LobbyUpdateServer::StartGame => {
             commands.insert_resource(NextState(GameState::InGame));
@@ -59,7 +59,7 @@ fn handle_lobby_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<bin
             println!("Message receive error: {}", e);
             println!("Disconnecting!");
 
-            disconnect(mp_state);
+            mp_state.set_disconnected();
         }
     }
 }
@@ -73,52 +73,5 @@ pub fn send_start_game (stream: Option<&TcpStream>)  {
     }
 }
 
-// Attempts to establish a connection with a given network address
-// Sends the player name if successful
-pub fn connect(address: &str, name: &str) -> Result<TcpStream, io::Error> {
-    match TcpStream::connect(address) {
-        Ok(stream) => {
-            println!("Successfully connected to server {address}");
 
-            // Immediately send the client info (name)
-            bincode::serialize_into(&stream, &LobbyUpdateClient::Connect{name: name.to_string()}).expect("sending error");
-     
-            stream.set_nonblocking(true).expect("nonblocking failure");
- 
-            Ok(stream)
-        },
-        Err(e) => {
-            println!("Failed to connect: {}", e);
-            Err(e)
-        }
-    }
-}
 
-// Closes the connection to the server and resets the client's mutliplayer state
-pub fn disconnect(mp_state: &mut ResMut<MultiplayerState>) {
-    // unwrap stream
-    let stream =
-        match &mp_state.stream {
-            None => return,
-            Some(i) => i,
-    };
-
-    end_connection(stream);
-
-    // Reset state to default
-    mp_state.stream = None;
-    mp_state.player_names = Vec::new();
-}
-
-// Closes the connection to the server
-pub fn end_connection(stream: &TcpStream) {
-    // Send a disconnect message to exit gracefully on server-side if possible
-    // TODO: this may not be necessary
-    if let Err(e) = bincode::serialize_into(stream, &LobbyUpdateClient::Disconnect{}) {
-        println!("Disconnect message send error: {:?}", e);
-    }
-
-    if let Err(e) = stream.shutdown(std::net::Shutdown::Both) {
-        println!("Exit shutdown error: {:?}", e);
-    }
-}

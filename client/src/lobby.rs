@@ -5,9 +5,11 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 pub mod networking; // TODO: move connecting/disconnecting to a higher level module so this can be private
-use networking::lobby_network_system;
-
 mod ui;
+mod connecting;
+
+use connecting::handle_connection_task;
+use networking::lobby_network_system;
 use ui::*;
 
 pub struct LobbyPlugin;

@@ -7,3 +7,14 @@ pub struct MultiplayerState {
     pub player_names: Vec<String>,
     pub turn_id: u8,
 }
+
+impl MultiplayerState {
+    pub fn set_connected(&mut self, stream: TcpStream) {
+        self.stream = Some(stream);
+    }
+
+    pub fn set_disconnected(&mut self) {
+        self.stream = None;
+        self.player_names = Vec::new();
+    }
+}

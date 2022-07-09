@@ -1,15 +1,14 @@
 use dos_shared::DEFAULT_IP;
 use super::networking::*;
+use super::connecting::create_connection_task;
 use super::MultiplayerState;
 
-
 use bevy::prelude::*;
-use bevy::tasks::{AsyncComputeTaskPool, Task};
+use bevy::tasks::AsyncComputeTaskPool;
 use bevy_egui::{egui::{self, Color32}, EguiContext};
 
-use std::net::TcpStream;
-use std::io;
-use futures_lite::future;
+
+// TODO: break up into sub modules (1 for UI state, 1 for building the lobby ui?)
 
 pub struct UiState {
     ip: String,
@@ -18,8 +17,19 @@ pub struct UiState {
     status: ConnectionStatus,
 }
 
+impl UiState {
+    pub fn set_connected(&mut self) {
+        self.error = "";
+        self.status = ConnectionStatus::Connected;
+    }
+    pub fn set_disconnected(&mut self, error_message: &'static str) {
+        self.error = error_message;
+        self.status = ConnectionStatus::Disconnected;
+    }
+}
+
 enum ConnectionStatus {
-    Unconnected,
+    Disconnected,
     Connecting,
     Connected,
 }
@@ -30,10 +40,11 @@ impl Default for UiState {
             ip: DEFAULT_IP.to_string(), 
             name: "".to_string(),
             error: "", 
-            status: ConnectionStatus::Unconnected,
+            status: ConnectionStatus::Disconnected,
     }}
 }
 
+// TODO: break up into smaller functions
 pub fn lobby_ui(
     mut egui_context: ResMut<EguiContext>, 
     mut ui_state: ResMut<UiState>, 
@@ -58,7 +69,7 @@ pub fn lobby_ui(
         });
 
         match ui_state.status {
-            ConnectionStatus::Unconnected => {
+            ConnectionStatus::Disconnected => {
 
                 if ui.button("Connect").clicked() {
 
@@ -66,7 +77,7 @@ pub fn lobby_ui(
                     let name = ui_state.name.clone();
 
                     let task = thread_pool.spawn(async move {
-                        connect(&address, &name)
+                        create_connection_task(&address, &name)
                     });
                     ui_state.status = ConnectionStatus::Connecting;
                     commands.spawn().insert(task);
@@ -78,8 +89,8 @@ pub fn lobby_ui(
             },
             ConnectionStatus::Connected => {
                 if ui.button("Disconnect").clicked() {
-                    disconnect(&mut mp_state);
-                    ui_state.status = ConnectionStatus::Unconnected;
+                    mp_state.set_disconnected();
+                    ui_state.status = ConnectionStatus::Disconnected;
                 }
             },
         }
@@ -107,30 +118,3 @@ pub fn lobby_ui(
     });
 }
 
-pub fn handle_connection_task(
-    mut transform_tasks: Query<(Entity, &mut Task<Result<TcpStream, io::Error>>)>,
-    mut commands: Commands,
-    mut mp_state: ResMut<MultiplayerState>,
-    mut ui_state: ResMut<UiState>,
-) {
-    for (entity, mut task) in transform_tasks.iter_mut() {
-
-        if let Some(connection_response) = future::block_on(future::poll_once(&mut *task)) {
-
-            match connection_response {
-                Ok(stream) => {
-                    mp_state.stream = Some(stream);
-                    ui_state.error = "";
-                    ui_state.status = ConnectionStatus::Connected;
-                }
-                Err(e) => {
-                    println!("{e}");
-                    ui_state.error = "Connection Failed";
-                    ui_state.status = ConnectionStatus::Unconnected;
-                }
-            }
-
-            commands.entity(entity).despawn();
-        }
-    }
-}

@@ -1,7 +1,6 @@
 use dos_shared::*;
 use super::MultiplayerState;
 
-use crate::lobby::networking::disconnect;
 use super::dealing::deal_out_cards;
 
 use bevy::prelude::*;
@@ -64,7 +63,7 @@ fn handle_game_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<binc
             println!("Message receive error: {}", e);
             println!("Disconnecting!");
 
-            disconnect(mp_state);
+            mp_state.set_disconnected();
 
             // TODO: return to lobby?
         }
