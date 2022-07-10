@@ -32,8 +32,6 @@ impl Plugin for GamePlugin {
 
         .add_plugin(GraphicsPlugin)
        
-        
-        
         .init_resource::<CardTracker>();
     }
 }

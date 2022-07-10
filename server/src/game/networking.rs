@@ -1,6 +1,6 @@
 use dos_shared::cards::*;
 use dos_shared::*;
-use super::lobby_network::*;
+use super::multiplayer::{NetPlayer, TurnId};
 
 use bevy::prelude::*;
 
@@ -19,7 +19,7 @@ pub struct Hand {
 
 pub fn enter_game_system(
     mut commands: Commands,
-    query: Query<(Entity, &NetPlayer)>,
+    query: Query<(Entity, &NetPlayer, &TurnId)>,
 ) {
     let mut deck = new_deck(); // Get a standard shuffled deck of cards
 
@@ -43,7 +43,7 @@ pub fn enter_game_system(
     let counts = hands.iter().map(|x| x.cards.len() as u8).collect::<Vec<_>>();
     
     // TODO: there is probably a better/more functional way to do this that doesn't require cloning the hands
-    for (i,(entity, player)) in query.iter().enumerate() {
+    for (i,(entity, player, turn_id)) in query.iter().enumerate() {
         let hand = hands.get(i).unwrap();
         commands.entity(entity).insert(hand.clone());
 
@@ -52,9 +52,19 @@ pub fn enter_game_system(
             &GameUpdateServer::DealIn{
                 your_cards: hand.cards.clone(),
                 card_counts: counts.clone()
-            }) {
-                println!("Leave lobby message failed to send {e}");
-                // TODO: might need to disconnect client here, or return to lobby?
+            }
+        ) {
+            println!("Deal in message failed to send {e}");
+            // TODO: might need to disconnect client here, or return to lobby?
+        }
+
+        if turn_id.id == 0 {
+            if let Err(e) = bincode::serialize_into(
+                &player.stream, 
+                &GameUpdateServer::YourTurn) {
+                    println!("Leave lobby message failed to send {e}");
+                    // TODO: might need to disconnect client here, or return to lobby?
+            }
         }
     }
 

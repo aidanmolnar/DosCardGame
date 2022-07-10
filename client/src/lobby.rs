@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 use iyes_loopless::prelude::*;
 
-pub mod networking; // TODO: move connecting/disconnecting to a higher level module so this can be private
+mod networking;
 mod ui;
 mod connecting;
 

@@ -29,4 +29,5 @@ pub enum LobbyUpdateClient {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GameUpdateServer {
     DealIn {your_cards: Vec<Card>, card_counts: Vec<u8>},
+    YourTurn,
 }

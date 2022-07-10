@@ -47,10 +47,11 @@ fn handle_game_update(
                 mp_state,
             );
         }
+        GameUpdateServer::YourTurn => {
+            println!("Your turn!");
+        }
     }
 }
-
-
 
 // Checks if error is just non-blocking error
 // Otherwise disconnects

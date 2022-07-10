@@ -2,14 +2,13 @@ use super::GameState;
 use super::card_tracker::CardTracker;
 use super::MultiplayerState;
 
-// TODO: keep these private -> see dealing
 pub mod animations;
-mod arange;
-pub mod assets;
-pub mod card_indexing;
-pub mod interface_constants;
-mod setup_graphics;
 pub mod spawn_card;
+mod arange;
+mod assets;
+mod card_indexing;
+mod interface_constants;
+mod setup_graphics;
 
 use animations::{HandUpdated, AnimationPlugin};
 use assets::load_assets;

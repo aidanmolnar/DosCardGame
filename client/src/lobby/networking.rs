@@ -8,8 +8,6 @@ use std::io;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-
-
 // Recieves and handles messages from the server
 pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>, mut commands: Commands) {
     let stream =
