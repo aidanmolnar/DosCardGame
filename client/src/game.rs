@@ -26,9 +26,8 @@ impl Plugin for GamePlugin {
 
         .add_system(game_network_system
             .run_in_state(GameState::InGame))
-        .add_system(delayed_dealing_system
+        .add_system_to_stage(CoreStage::Update, delayed_dealing_system
             .run_in_state(GameState::InGame)
-            .label("dealing") // TODO: clean up this dependency
         )
 
         .add_plugin(GraphicsPlugin)

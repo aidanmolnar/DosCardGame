@@ -52,8 +52,6 @@ fn handle_game_update(
 
 
 
-
-
 // Checks if error is just non-blocking error
 // Otherwise disconnects
 fn handle_game_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<bincode::ErrorKind>) {

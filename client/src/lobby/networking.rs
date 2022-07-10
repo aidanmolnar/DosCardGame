@@ -40,7 +40,6 @@ fn handle_lobby_update(
             mp_state.player_names = player_names;
             mp_state.turn_id = turn_id;
         }
-
         LobbyUpdateServer::Disconnect => {
             mp_state.set_disconnected();
         }

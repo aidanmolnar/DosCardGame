@@ -2,6 +2,7 @@ use super::GameState;
 use super::MultiplayerState;
 
 use bevy::prelude::*;
+use bevy_egui::EguiPlugin;
 use iyes_loopless::prelude::*;
 
 pub mod networking; // TODO: move connecting/disconnecting to a higher level module so this can be private
@@ -17,6 +18,7 @@ pub struct LobbyPlugin;
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
         app
+        .add_plugin(EguiPlugin)
         .init_resource::<UiState>()
         .init_resource::<MultiplayerState>() // This should be moved to a more generic location
         .add_system_set(

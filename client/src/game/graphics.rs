@@ -9,10 +9,12 @@ pub mod assets;
 pub mod card_indexing;
 pub mod interface_constants;
 mod setup_graphics;
+pub mod spawn_card;
 
-use animations::{HandUpdated, run_animations, set_card_targets};
+use animations::{HandUpdated, AnimationPlugin};
 use assets::load_assets;
 use setup_graphics::{add_deck_sprite, add_camera, calculate_hand_locations};
+use spawn_card::SpawnCardSystems;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -25,14 +27,8 @@ impl Plugin for GraphicsPlugin {
         app
         .init_resource::<Events<HandUpdated>>()
 
-        // Animation systems
-        .add_system(run_animations
-            .run_in_state(GameState::InGame))
-        .add_system(set_card_targets
-            .run_in_state(GameState::InGame)
-            .run_on_event::<HandUpdated>()
-            .before("dealing") // TODO: Clean up this dependency
-            )
+        .add_plugin(SpawnCardSystems)
+        .add_plugin(AnimationPlugin)
         
         // On state startup
         .add_enter_system(GameState::InGame, add_deck_sprite)

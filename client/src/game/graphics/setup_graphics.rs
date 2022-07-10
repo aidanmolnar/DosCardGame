@@ -13,7 +13,7 @@ pub struct HandLocations{
     pub centers: Vec<(f32,f32)>,
 }
 
-// TODO: split this up
+// TODO: split this up, make it more readable
 pub fn calculate_hand_locations (
     mut commands: Commands,
     mp_state: Res<MultiplayerState>,
@@ -70,7 +70,7 @@ pub fn add_camera(
 ) {
     let mut camera = OrthographicCameraBundle::new_2d();
     camera.orthographic_projection.scaling_mode = ScalingMode::FixedVertical;
-    camera.orthographic_projection.scale = 1024.;
+    camera.orthographic_projection.scale = HEIGHT_SCALE / 2.;
 
     commands.spawn_bundle(camera).insert_bundle(PickingCameraBundle::default());
 }

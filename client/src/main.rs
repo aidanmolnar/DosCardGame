@@ -10,7 +10,7 @@ use multiplayer::MultiplayerState;
 use bevy::prelude::*;
 
 use iyes_loopless::prelude::*;
-use bevy_egui::EguiPlugin;
+
 use bevy_mod_picking::*;
 
 /// Application State
@@ -36,14 +36,14 @@ fn main() {
 
         // Core plugins
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
+        
 
-        // Game plugins
+        // Dos plugins
         .add_plugin(LobbyPlugin)
         .add_plugin(GamePlugin)
             
 
-        .add_system_to_stage(CoreStage::PostUpdate, print_events.run_in_state(GameState::InGame))
+        //.add_system_to_stage(CoreStage::PostUpdate, print_events.run_in_state(GameState::InGame))
         
         .run()
 }

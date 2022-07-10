@@ -28,6 +28,7 @@ impl CardTracker {
             } else {
                 self.map.push(vec![card_entity]);
             }
+            
         // Handles case where the card owner is an opponent
         } else if let Some(vec) = self.map.get_mut(card_owner_id as usize) {
             vec.push(card_entity);
