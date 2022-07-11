@@ -83,7 +83,7 @@ fn listen_for_connections(
 fn create_connection_task(stream: TcpStream) -> Option<(String, TcpStream)> {
     println!("New connection: {}", stream.peer_addr().unwrap());
 
-    let client_connect = match bincode::deserialize_from::<&TcpStream, LobbyUpdateClient>(&stream) {
+    let client_connect = match bincode::deserialize_from::<&TcpStream, messages::lobby::FromClient>(&stream) {
         Ok(c) => {c}
         Err(e) => {
             println!("Aborting new connection: {e}");
@@ -94,7 +94,7 @@ fn create_connection_task(stream: TcpStream) -> Option<(String, TcpStream)> {
     };
     println!("Client name: {:?}",client_connect);
 
-    if let LobbyUpdateClient::Connect {name} = client_connect {
+    if let messages::lobby::FromClient::Connect {name} = client_connect {
         Some((name, stream))
     } else {
         None
@@ -137,6 +137,8 @@ fn handle_connection_task(
     }
 }
 
+// TODO: Is there a way to handle this by spawning an event or resource or entity 
+//       so that all of these resources don't need to be passed around
 pub fn disconnect(
     entity: Entity, 
     player: &NetPlayer,
@@ -146,7 +148,7 @@ pub fn disconnect(
 ) {
     println!("disconnect ocurred");
 
-    if let Err(e) = bincode::serialize_into(&player.stream, &LobbyUpdateServer::Disconnect) {
+    if let Err(e) = bincode::serialize_into(&player.stream, &messages::lobby::FromServer::Disconnect) {
         println!("Disconnect message failed to send {e}");
     }
 
@@ -179,7 +181,7 @@ pub fn handle_playercount_change_system(
 
             if let Some(player) = player_option {
                 if let Err(e) = bincode::serialize_into(&player.stream, 
-                    &LobbyUpdateServer::CurrentPlayers{
+                    &messages::lobby::FromServer::CurrentPlayers{
                         player_names: names.clone(), 
                         turn_id: i as u8}) 
                 {

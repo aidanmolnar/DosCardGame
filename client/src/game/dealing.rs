@@ -1,4 +1,4 @@
-use dos_shared::{cards::*, NUM_STARTING_CARDS};
+use dos_shared::cards::Card;
 
 use super::MultiplayerState;
 use super::card_tracker::CardTracker;
@@ -12,41 +12,34 @@ use bevy::prelude::*;
 
 pub fn deal_out_cards(
     your_cards: Vec<Card>, 
-    mut card_counts: Vec<u8>,
+    deck_size: usize,
     mut commands: Commands,
     mp_state: ResMut<MultiplayerState>,
 ) {
-
-    let delay_delta = 0.05;
+    let delay_delta = 0.25;
     let mut delay_total = 0.0;
+    let mut card_index = 0;
 
-    // Deal out the hands from the deck
-    // This is probably more complicated than it needs to be, can make assumptions about how server deals out cards.  Remove card counts from message?
-    // TODO: Simplify
-    for j in 0..NUM_STARTING_CARDS {
-        for (card_owner_id,count) in card_counts.iter_mut().enumerate() {
-            if *count > 0 {
-                *count -= 1;
-
-                let card_value = if card_owner_id == mp_state.turn_id as usize {
-                    Some(*your_cards.get(j as usize).unwrap())
-                } else {
-                    None
-                };
-
-                commands.spawn().insert(DelayedDealtCard {
-                    timer: Timer::from_seconds(delay_total, false),
-                    owner_id: card_owner_id as u8,
-                    card_value,
-                });
-
-                delay_total += delay_delta;
-                
+    dos_shared::deal_cards(
+        mp_state.player_names.len(),
+        deck_size,
+        |player_id| {
+            let card_value = if player_id == mp_state.turn_id as usize {
+                card_index += 1;
+                Some(*your_cards.get(card_index-1).unwrap())
             } else {
-                break;
-            }
+                None
+            };
+
+            commands.spawn().insert(DelayedDealtCard {
+                timer: Timer::from_seconds(delay_total, false),
+                owner_id: player_id as u8,
+                card_value,
+            });
+
+            delay_total += delay_delta;
         }
-    }
+    );
 }
 
 #[derive(Component)]
@@ -89,7 +82,6 @@ pub fn deal_card (
     events: &mut EventWriter<HandUpdated>,
     mp_state: &Res<MultiplayerState>,
 ) {
-    
     let entity = spawn_card_entity(
         card_value,
         owner_id == mp_state.turn_id,

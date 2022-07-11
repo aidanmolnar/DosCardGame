@@ -1,4 +1,4 @@
-use dos_shared::*;
+use dos_shared::messages::lobby::*;
 use super::GameState;
 use super::MultiplayerState;
 use super::UiState;
@@ -21,7 +21,7 @@ pub fn lobby_network_system(
             Some(i) => i,
     };
     
-    match bincode::deserialize_from::<&TcpStream, LobbyUpdateServer>(stream) {
+    match bincode::deserialize_from::<&TcpStream, FromServer>(stream) {
         Ok(lobby_update) => {
             handle_lobby_update(&mut mp_state, lobby_update, &mut commands);
         },
@@ -38,19 +38,19 @@ pub fn lobby_network_system(
 // Adjusts multiplayer state based on server message
 fn handle_lobby_update(
     mp_state: &mut ResMut<MultiplayerState>, 
-    lobby_update: LobbyUpdateServer,
+    lobby_update: FromServer,
     commands: &mut Commands,
 ) {
     match lobby_update {
-        LobbyUpdateServer::CurrentPlayers{player_names, turn_id} => {
+        FromServer::CurrentPlayers{player_names, turn_id} => {
             println!("GOT UPDATE: {:?}",player_names);
             mp_state.player_names = player_names;
             mp_state.turn_id = turn_id;
         }
-        LobbyUpdateServer::Disconnect => {
+        FromServer::Disconnect => {
             mp_state.set_disconnected();
         }
-        LobbyUpdateServer::StartGame => {
+        FromServer::StartGame => {
             commands.insert_resource(NextState(GameState::InGame));
         }
     }
@@ -78,7 +78,7 @@ fn handle_lobby_update_error(
 // Signals the server to start the game
 pub fn send_start_game (stream: Option<&TcpStream>)  {
     if let Some(stream) = stream {
-        if let Err(e) = bincode::serialize_into(stream, &LobbyUpdateClient::StartGame) {
+        if let Err(e) = bincode::serialize_into(stream, &FromClient::StartGame) {
             println!("{e}");
         }
     }

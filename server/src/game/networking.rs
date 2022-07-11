@@ -1,5 +1,5 @@
-use dos_shared::cards::*;
-use dos_shared::*;
+use dos_shared::messages::game::*;
+use dos_shared::cards::{Card,new_deck};
 use super::multiplayer::{NetPlayer, Agent};
 
 use bevy::prelude::*;
@@ -17,6 +17,7 @@ pub struct Hand {
     cards: Vec<Card>
 }
 
+// TODO: break up into smaller pieces
 pub fn enter_game_system(
     mut commands: Commands,
     query: Query<(Entity, &NetPlayer, &Agent)>,
@@ -29,18 +30,13 @@ pub fn enter_game_system(
         hands.push(Hand {cards: Vec::new()});
     }
 
-    // Deal out the hands from the deck
-    for _ in 0..NUM_STARTING_CARDS {
-        for hand in hands.iter_mut() {
-            if let Some(card) = deck.pop() {
-                hand.cards.push(card);
-            } else {
-                break; // Deck is out of cards
-            }
-        }
-    }
-
-    let counts = hands.iter().map(|x| x.cards.len() as u8).collect::<Vec<_>>();
+    dos_shared::deal_cards(
+        hands.len(),
+        deck.len(),
+        |player_id: usize| {
+            hands.get_mut(player_id).unwrap().cards.push(deck.pop().unwrap());
+        },
+    );
     
     // TODO: there is probably a better/more functional way to do this that doesn't require cloning the hands
     for (i,(entity, player, agent)) in query.iter().enumerate() {
@@ -49,9 +45,9 @@ pub fn enter_game_system(
 
         if let Err(e) = bincode::serialize_into(
             &player.stream, 
-            &GameUpdateServer::DealIn{
+            &FromServer::DealIn{
                 your_cards: hand.cards.clone(),
-                card_counts: counts.clone()
+                deck_size: deck.len(),
             }
         ) {
             println!("Deal in message failed to send {e}");
@@ -61,9 +57,10 @@ pub fn enter_game_system(
         if agent.turn_id == 0 {
             if let Err(e) = bincode::serialize_into(
                 &player.stream, 
-                &GameUpdateServer::YourTurn) {
-                    println!("Leave lobby message failed to send {e}");
-                    // TODO: might need to disconnect client here, or return to lobby?
+                &FromServer::YourTurn
+            ) {
+                println!("Leave lobby message failed to send {e}");
+                // TODO: might need to disconnect client here, or return to lobby?
             }
         }
     }

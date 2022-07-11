@@ -21,7 +21,7 @@ pub fn create_connection_task(address: &str, name: &str) -> Result<TcpStream, io
             println!("Successfully connected to server {address}");
 
             // Immediately send the client info (name)
-            if bincode::serialize_into(&stream, &LobbyUpdateClient::Connect{name: name.to_string()}).is_err() {
+            if bincode::serialize_into(&stream, &messages::lobby::FromClient::Connect{name: name.to_string()}).is_err() {
                 println!("Failed to send message");
                 return Err(io::Error::new(io::ErrorKind::Other, "Failed to send message"));
             }

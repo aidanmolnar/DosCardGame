@@ -1,4 +1,4 @@
-use dos_shared::*;
+use dos_shared::messages::game::*;
 use super::MultiplayerState;
 
 use super::dealing::deal_out_cards;
@@ -8,6 +8,8 @@ use bevy::prelude::*;
 use std::net::TcpStream;
 use std::io;
 
+#[derive(Default)]
+struct YourTurn;
 
 // Recieves and handles messages from the server
 pub fn game_network_system(
@@ -20,7 +22,7 @@ pub fn game_network_system(
             Some(i) => i,
     };
     
-    match bincode::deserialize_from::<&TcpStream, GameUpdateServer>(stream) {
+    match bincode::deserialize_from::<&TcpStream,FromServer>(stream) {
         Ok(game_update) => {
             handle_game_update(
             game_update,
@@ -34,28 +36,32 @@ pub fn game_network_system(
 }
 
 fn handle_game_update(
-    game_update: GameUpdateServer, 
-    commands: Commands,
+    game_update: FromServer, 
+    mut commands: Commands,
     mp_state: ResMut<MultiplayerState>) {
     match game_update {
-        GameUpdateServer::DealIn { your_cards, card_counts } => {
+        FromServer::DealIn { your_cards, deck_size } => {
             println!("Got cards: {:?}", your_cards);
             deal_out_cards(
                 your_cards, 
-                card_counts,
+                deck_size,
                 commands,
                 mp_state,
             );
         }
-        GameUpdateServer::YourTurn => {
+        FromServer::YourTurn => {
             println!("Your turn!");
+            commands.init_resource::<YourTurn>();
         }
     }
 }
 
 // Checks if error is just non-blocking error
 // Otherwise disconnects
-fn handle_game_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<bincode::ErrorKind>) {
+fn handle_game_update_error(
+    mp_state: &mut ResMut<MultiplayerState>, 
+    e: Box<bincode::ErrorKind>
+) {
     match *e {
         bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
         _ => {
