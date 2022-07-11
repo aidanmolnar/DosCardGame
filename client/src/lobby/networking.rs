@@ -1,6 +1,7 @@
 use dos_shared::*;
 use super::GameState;
 use super::MultiplayerState;
+use super::UiState;
 
 use std::net::TcpStream;
 use std::io;
@@ -9,7 +10,11 @@ use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
 // Recieves and handles messages from the server
-pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>, mut commands: Commands) {
+pub fn lobby_network_system(
+    mut mp_state: ResMut<MultiplayerState>, 
+    mut ui_state: ResMut<UiState>,
+    mut commands: Commands
+) {
     let stream =
         match &mp_state.stream {
             None => return,
@@ -21,7 +26,11 @@ pub fn lobby_network_system(mut mp_state: ResMut<MultiplayerState>, mut commands
             handle_lobby_update(&mut mp_state, lobby_update, &mut commands);
         },
         Err(e) => {
-            handle_lobby_update_error(&mut mp_state,e, );
+            handle_lobby_update_error(
+                &mut mp_state,
+                &mut ui_state,
+                e, 
+            );
         }
     }
 }
@@ -49,7 +58,11 @@ fn handle_lobby_update(
 
 // Checks if error is just non-blocking error
 // Otherwise disconnects
-fn handle_lobby_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<bincode::ErrorKind>) {
+fn handle_lobby_update_error(
+    mp_state: &mut ResMut<MultiplayerState>, 
+    ui_state: &mut ResMut<UiState>,
+    e: Box<bincode::ErrorKind>
+) {
     match *e {
         bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
         _ => {
@@ -57,6 +70,7 @@ fn handle_lobby_update_error(mp_state: &mut ResMut<MultiplayerState>, e: Box<bin
             println!("Disconnecting!");
 
             mp_state.set_disconnected();
+            ui_state.set_disconnected("Connection Terminated");
         }
     }
 }

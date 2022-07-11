@@ -25,6 +25,7 @@ fn main() {
         // Starting State
         .add_loopless_state(GameState::MainMenu)
 
+        // Dos Plugins
         .add_plugin(ConnectionListeningPlugin)
         .add_plugin(LobbyPlugin)
         .add_plugin(GamePlugin)

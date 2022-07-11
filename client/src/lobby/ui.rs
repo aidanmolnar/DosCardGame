@@ -52,7 +52,6 @@ pub fn lobby_ui(
     mut commands: Commands,
     thread_pool: Res<AsyncComputeTaskPool>,
 ) {
-
     egui::SidePanel::left("left_panel").show(
         egui_context.ctx_mut(), |ui| {
 

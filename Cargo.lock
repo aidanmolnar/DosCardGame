@@ -1347,6 +1347,7 @@ dependencies = [
  "bevy",
  "bincode",
  "dos-shared",
+ "futures-lite",
  "iyes_loopless",
 ]
 

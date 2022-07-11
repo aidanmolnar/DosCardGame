@@ -22,7 +22,7 @@ pub enum LobbyUpdateServer {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LobbyUpdateClient {
     Connect {name: String},
-    Disconnect,
+    //Disconnect,
     StartGame,
 }
 
