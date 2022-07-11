@@ -40,11 +40,12 @@ fn handle_game_update(
     mut commands: Commands,
     mp_state: ResMut<MultiplayerState>) {
     match game_update {
-        FromServer::DealIn { your_cards, deck_size } => {
+        FromServer::DealIn { your_cards, deck_size, to_discard_pile} => {
             println!("Got cards: {:?}", your_cards);
             deal_out_cards(
                 your_cards, 
                 deck_size,
+                to_discard_pile,
                 commands,
                 mp_state,
             );

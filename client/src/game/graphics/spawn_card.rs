@@ -3,7 +3,7 @@ use dos_shared::cards::*;
 use super::interface_constants::*;
 use super::card_indexing::SpriteIndex;
 use super::assets::CardHandles;
-use super::animations::{Target, LinearAnimation};
+use super::animations::{Target, LinearAnimation, Discarded};
 
 use bevy::prelude::*;
 use bevy_mod_picking::PickableBundle;
@@ -22,6 +22,7 @@ impl Plugin for SpawnCardSystems {
 #[derive(Component)]
 struct CardBlueprint {
     card: Option<Card>,
+    discarded: bool
 }
 
 #[derive(Component)]
@@ -31,11 +32,12 @@ struct PickableBlueprint;
 pub fn spawn_card_entity(
     card: Option<Card>,
     pickable: bool,
+    discarded: bool,
     commands: &mut Commands,
 ) -> Entity {
     let mut entity_commands = commands.spawn();
 
-    entity_commands.insert(CardBlueprint{card});
+    entity_commands.insert(CardBlueprint{card, discarded});
 
     if pickable {
         entity_commands.insert(PickableBlueprint);
@@ -53,7 +55,9 @@ fn build_cards (
     let translation = Vec3::new(DECK_LOCATION.0, DECK_LOCATION.1, 0.);
 
     for (entity, blueprint) in query.iter() {
-        commands.entity(entity).insert_bundle(
+        let mut entity_commands = commands.entity(entity);
+
+        entity_commands.insert_bundle(
             SpriteSheetBundle {
                 sprite: TextureAtlasSprite { 
                     index: blueprint.card.get_sprite_index(), 
@@ -62,11 +66,23 @@ fn build_cards (
                 texture_atlas: texture_atlases.get_handle(&card_handles.atlas),
                 transform: Transform::from_translation(translation).with_scale(Vec3::splat(1.0)),
                 ..default()
-        }).insert( LinearAnimation {
-            start: Transform::from_translation(translation),
-            end: Transform::from_translation(translation),
-            timer: Timer::from_seconds(0.01,false),
-        }).insert( Target {
+        });
+
+        if blueprint.discarded {
+            entity_commands.insert( LinearAnimation {
+                start: Transform::from_translation(translation),
+                end: Transform::from_translation(Vec3::new(DISCARD_LOCATION.0,DISCARD_LOCATION.1,0.)),
+                timer: Timer::from_seconds(0.2,false),
+            }).insert(Discarded);
+        } else {
+            entity_commands.insert( LinearAnimation {
+                start: Transform::from_translation(translation),
+                end: Transform::from_translation(translation),
+                timer: Timer::from_seconds(0.01,false),
+            });
+        }
+
+        entity_commands.insert( Target {
             target: translation,
         }).remove::<CardBlueprint>();
     }

@@ -60,6 +60,7 @@ impl LinearAnimation{
     // }
 }
 
+// Event for recalculating hand positions
 pub struct HandUpdated {
     pub owner_id: u8
 }
@@ -69,9 +70,13 @@ pub struct Target {
     pub target: Vec3,
 }
 
+#[derive(Component)]
+pub struct Discarded;
+
+// Only runs on hand updated event
 // TODO: add comments, don't expect entity to have animation already, just defer processing the event to the next frame
 pub fn set_card_targets (
-    mut query: Query<(&mut Target,&mut LinearAnimation, &Transform)>,
+    mut query: Query<(&mut Target, &mut LinearAnimation, &Transform, Option<&Discarded>)>,
     mut events: ResMut<Events<HandUpdated>>,
     other_locations: Res<HandLocations>,
     card_tracker: Res<CardTracker>,
@@ -89,7 +94,12 @@ pub fn set_card_targets (
         };
 
         for (hand_position, entity) in hand.iter().enumerate() {
-            let (mut target, mut animation, transform) = query.get_mut(*entity).unwrap();
+            let (mut target, mut animation, transform, discarded) = query.get_mut(*entity).unwrap();
+
+            // Skip retargeting if the card is discarded
+            if discarded.is_some() {
+                continue;
+            }
 
             let pos = max_width * arange_1d(hand.len(), hand_position); 
 
@@ -125,7 +135,7 @@ fn horizontal_offset(hand_size: usize) -> Vec3 {
 }
 
 // TODO: clean up, break up into smaller pieces, comment, etc
-// TODO: Run this retargeting system after the set_card_targets somehow to fix jenky dealing behavior
+// TODO: Somehow run this retargeting system after the set_card_targets to fix jenky dealing behavior
 //       Will need to find highlighted card from query instead of events
 // Sets position / scale of cards in your hand based on mouse hovering
 pub fn your_hand_animation_system (
