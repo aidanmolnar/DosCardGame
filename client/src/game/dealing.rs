@@ -1,12 +1,7 @@
 use dos_shared::cards::Card;
 
 use super::MultiplayerState;
-use super::card_tracker::CardTracker;
-
-// TODO: move functions that need these into graphics
-
-use super::graphics::animations::HandUpdated;
-use super::graphics::spawn_card::spawn_card_entity;
+use super::GameManager;
 
 use bevy::prelude::*;
 
@@ -57,6 +52,7 @@ pub fn deal_out_cards(
     }
 }
 
+// TODO: simplify this
 #[derive(Component)]
 pub struct DelayedDealtCard {
     pub timer: Timer,
@@ -68,52 +64,24 @@ pub struct DelayedDealtCard {
 pub fn delayed_dealing_system (
     mut query: Query<(Entity, &mut DelayedDealtCard)>,
     mut commands: Commands,
-    mut card_tracker: ResMut<CardTracker>,
-    mut events: EventWriter<HandUpdated>,
-    mp_state: Res<MultiplayerState>,
+    mut game_manager: ResMut<GameManager>,
     time: Res<Time>,
 ) {
     for (entity, mut delayed_card) in query.iter_mut() {
         delayed_card.timer.tick(time.delta());
 
         if delayed_card.timer.finished() {
-            deal_card(
-                delayed_card.into_inner(),
-                &mut commands,
-                &mut card_tracker,
-                &mut events,
-                &mp_state,
-            );
+
+            // TODO: simplify this
+            if delayed_card.owner_id as usize == game_manager.player_id {
+                game_manager.deal_to_you(&mut commands, delayed_card.card_value.unwrap());
+            } else if delayed_card.owner_id == 255 {
+                game_manager.deal_to_discard_pile(&mut commands, delayed_card.card_value.unwrap());
+            } else {
+                game_manager.deal_to_opponent(&mut commands, delayed_card.owner_id as usize);
+            }
+            
             commands.entity(entity).remove::<DelayedDealtCard>();
         }
     }
-}
-
-pub fn deal_card (
-    delayed_dealt_card: &DelayedDealtCard,
-    commands: &mut Commands,
-    card_tracker: &mut ResMut<CardTracker>,
-    events: &mut EventWriter<HandUpdated>,
-    mp_state: &Res<MultiplayerState>,
-) {
-    let entity = spawn_card_entity(
-        delayed_dealt_card.card_value,
-        delayed_dealt_card.owner_id == mp_state.turn_id,
-        delayed_dealt_card.discarded,
-        commands,
-    );
-    
-    if !delayed_dealt_card.discarded {
-        // Add the card to the card tracker
-        card_tracker.add_card(
-            delayed_dealt_card.card_value,
-            entity,
-            delayed_dealt_card.owner_id,
-            mp_state.turn_id,
-        );
-
-        // Sends event to update card target locations
-        events.send(HandUpdated{owner_id: delayed_dealt_card.owner_id})
-    }
-    
 }

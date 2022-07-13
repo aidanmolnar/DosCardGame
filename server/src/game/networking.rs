@@ -23,6 +23,7 @@ pub fn enter_game_system(
     query: Query<(Entity, &NetPlayer, &Agent)>,
 ) {
     let mut deck = new_deck(); // Get a standard shuffled deck of cards
+    let deck_size = deck.len();
 
     // Create a vector of "hands" of cards
     let mut hands = Vec::new();
@@ -38,6 +39,7 @@ pub fn enter_game_system(
         },
     );
 
+    // Discards cards until a non wild one is found
     let mut discard_pile = Vec::new();
     loop {
         let card = deck.pop().unwrap();
@@ -59,7 +61,7 @@ pub fn enter_game_system(
             &player.stream, 
             &FromServer::DealIn{
                 your_cards: hand.cards.clone(),
-                deck_size: deck.len(),
+                deck_size,
                 to_discard_pile: discard_pile.clone(),
             }
         ) {

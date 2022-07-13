@@ -3,6 +3,14 @@ use rand::seq::SliceRandom;
 
 use serde::{Serialize, Deserialize};
 
+#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+pub struct Card {
+    pub color: CardColor, //TODO: This doesn't have to be an option.. could be included in color
+    pub ty: CardType,
+}
+
+
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
@@ -15,12 +23,6 @@ pub enum CardColor {
     Wild,
 }
 
-#[derive(Copy, Clone, Serialize, Deserialize, Debug)]
-#[derive(PartialEq, Eq, PartialOrd, Ord)]
-pub struct Card {
-    pub color: CardColor, //TODO: This doesn't have to be an option.. could be included in color
-    pub ty: CardType,
-}
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]

@@ -1,3 +1,5 @@
+use dos_shared::GameState;
+
 mod connection_listening;
 mod multiplayer;
 mod lobby;
@@ -9,14 +11,6 @@ use connection_listening::ConnectionListeningPlugin;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-
-// Move to shared...
-/// Application State
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum GameState {
-    MainMenu,
-    InGame,
-}
 
 fn main() {
     App::new()

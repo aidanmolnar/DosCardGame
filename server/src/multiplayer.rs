@@ -1,6 +1,7 @@
-
 use bevy::prelude::*;
 use std::net::TcpStream;
+
+// TODO: Reconsider the location of these structs
 
 // Maintains an ordered list of agents
 #[derive(Default)]

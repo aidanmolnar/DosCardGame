@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 // Asset path to card sprites

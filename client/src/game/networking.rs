@@ -42,6 +42,8 @@ fn handle_game_update(
     match game_update {
         FromServer::DealIn { your_cards, deck_size, to_discard_pile} => {
             println!("Got cards: {:?}", your_cards);
+            println!("Deck size: {:?}", deck_size);
+
             deal_out_cards(
                 your_cards, 
                 deck_size,

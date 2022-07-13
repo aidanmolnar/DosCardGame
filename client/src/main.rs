@@ -1,3 +1,5 @@
+use dos_shared::GameState;
+
 mod lobby;
 mod game;
 mod multiplayer;
@@ -6,18 +8,8 @@ use game::GamePlugin;
 use lobby::LobbyPlugin;
 use multiplayer::MultiplayerState;
 
-//use bevy::app::AppExit;
 use bevy::prelude::*;
-
 use iyes_loopless::prelude::*;
-
-// TODO: Move to shared
-/// Application State
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum GameState {
-    MainMenu,
-    InGame,
-}
 
 fn main() {
     App::new()
