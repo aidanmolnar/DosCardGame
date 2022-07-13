@@ -2,16 +2,19 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
 
-#[derive(Default)]
-pub struct FocusedCard (pub Option<Entity>);
+use super::super::super::game_manager::GameManager;
 
-use super::game_manager::AnimateCards;
+#[derive(Component)]
+pub struct MouseOffset {
+    pub offset: Vec3,
+    pub scale: f32,
+}
 
 // Only run on picking event
-pub fn card_focus_system (
+pub fn focus_system (
     mut commands: Commands,
+    mut game_manager: ResMut<GameManager>,
     mut events: EventReader<PickingEvent>,
-    mut focused_card: ResMut<FocusedCard>,
 ) {
     let mut option = None;
     let mut update_event = false;
@@ -28,7 +31,7 @@ pub fn card_focus_system (
     }
     
     if update_event {
-        commands.spawn().insert(AnimateCards::YourHand);
-        focused_card.0 = option;
+        game_manager.tracker.focused_card = option;
+        game_manager.tracker.update_your_focus(&mut commands);
     }
 }

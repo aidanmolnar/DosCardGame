@@ -73,7 +73,7 @@ pub fn delayed_dealing_system (
         if delayed_card.timer.finished() {
 
             // TODO: simplify this
-            if delayed_card.owner_id as usize == game_manager.player_id {
+            if delayed_card.owner_id as usize == game_manager.tracker.player_id {
                 game_manager.deal_to_you(&mut commands, delayed_card.card_value.unwrap());
             } else if delayed_card.owner_id == 255 {
                 game_manager.deal_to_discard_pile(&mut commands, delayed_card.card_value.unwrap());
