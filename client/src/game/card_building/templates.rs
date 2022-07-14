@@ -1,12 +1,13 @@
 use dos_shared::cards::Card;
 
 // TODO: these are awful imports
-use super::super::graphics::card_building::blueprints::*; 
+use super::components::*; 
+
+// TODO: Should this exist?
 
 use bevy::prelude::*;
 
 // Functions for constructing or modifying card entities
-
 
 // Deal to you
 // Spawn new card with PrimaryTarget, MouseOverOffset, Pickable, SpriteSheet, LinearAnimator

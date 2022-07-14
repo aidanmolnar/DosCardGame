@@ -14,7 +14,7 @@ pub struct LocalPlayerState {
 impl LocalPlayerState {
 
     // Adds a card to your hand.  Returns the hand position of the card
-    pub fn receive_card(
+    pub fn receive_card (
         &mut self, 
         card: Card
     ) -> usize {
@@ -27,7 +27,7 @@ impl LocalPlayerState {
     // Removes a card from your hand.  Returns the hand position the card had
     // Adds the card to the top of the discard pile
     // Panics if the card was not actually in your hand
-    pub fn play_card(
+    pub fn play_card (
         &mut self, 
         card: Card
     ) -> usize {

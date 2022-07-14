@@ -1,9 +1,9 @@
 use super::GameState;
 use super::assets;
 
-
 pub mod card_indexing;
-pub mod blueprints;
+pub mod components;
+pub mod templates;
 mod systems;
 
 use bevy::prelude::*;

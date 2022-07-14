@@ -1,7 +1,7 @@
 pub mod cards;
 pub mod messages;
 
-pub const NUM_STARTING_CARDS: u8 = 47;
+pub const NUM_STARTING_CARDS: u8 = 20;
 pub const DEFAULT_IP: &str = "localhost:3333";
 
 const CARDS_TO_RETAIN: usize = 9; 

@@ -1,7 +1,7 @@
 use dos_shared::messages::game::*;
 use super::MultiplayerState;
 
-use super::dealing::deal_out_cards;
+use super::server_actions::deal_out_cards;
 
 use bevy::prelude::*;
 
@@ -9,7 +9,7 @@ use std::net::TcpStream;
 use std::io;
 
 #[derive(Default)]
-struct YourTurn;
+pub struct YourTurn;
 
 // Recieves and handles messages from the server
 pub fn game_network_system(

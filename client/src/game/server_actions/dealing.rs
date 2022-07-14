@@ -1,10 +1,11 @@
 use dos_shared::cards::Card;
 
 use super::MultiplayerState;
-use super::GameManager;
+use super::InterfaceManager;
 
 use bevy::prelude::*;
 
+// TODO: move to interface manager?
 pub fn deal_out_cards(
     your_cards: Vec<Card>, 
     deck_size: usize,
@@ -64,7 +65,7 @@ pub struct DelayedDealtCard {
 pub fn delayed_dealing_system (
     mut query: Query<(Entity, &mut DelayedDealtCard)>,
     mut commands: Commands,
-    mut game_manager: ResMut<GameManager>,
+    mut game_manager: ResMut<InterfaceManager>,
     time: Res<Time>,
 ) {
     for (entity, mut delayed_card) in query.iter_mut() {
@@ -73,7 +74,7 @@ pub fn delayed_dealing_system (
         if delayed_card.timer.finished() {
 
             // TODO: simplify this
-            if delayed_card.owner_id as usize == game_manager.tracker.player_id {
+            if delayed_card.owner_id as usize == game_manager.player_id {
                 game_manager.deal_to_you(&mut commands, delayed_card.card_value.unwrap());
             } else if delayed_card.owner_id == 255 {
                 game_manager.deal_to_discard_pile(&mut commands, delayed_card.card_value.unwrap());

@@ -2,6 +2,8 @@ use dos_shared::cards::*;
 
 pub const CARD_BACK_SPRITE_INDEX: usize = 4*13+2;
 
+// TODO: this could be moved to graphic_interface/assets?
+
 // Get the index of the card from the sprite sheet
 
 pub trait SpriteIndex {

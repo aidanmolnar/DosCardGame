@@ -1,7 +1,9 @@
 // TODO: very cursed import paths
-use super::blueprints::*;
-use super::card_indexing::*;
 use super::super::layout::constants::*;
+use super::super::client_actions::play_card::CardValue;
+
+use super::components::*;
+use super::card_indexing::*;
 use super::assets::CardHandles;
 
 use bevy::prelude::*;
@@ -17,6 +19,7 @@ pub fn card_blueprint_system(
 ) {
     for (entity, option_texture_atlas, blueprint) in query.iter_mut() {
         // Reuse existing tetxure atlas if possible
+        // TODO: this might not be necessary...
         if let Some(mut texture_atlas) = option_texture_atlas {
             texture_atlas.index = blueprint.card.get_sprite_index();
         } else {
@@ -32,6 +35,12 @@ pub fn card_blueprint_system(
                     ..default()
             });
         }
+
+        if let Some(value) = blueprint.card{
+            commands.entity(entity).insert(CardValue(value));
+        }
+
+        commands.entity(entity).remove::<CardBlueprint>();
     }
 }
 

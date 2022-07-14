@@ -2,18 +2,12 @@
 use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
 
-use super::super::super::game_manager::GameManager;
-
-#[derive(Component)]
-pub struct MouseOffset {
-    pub offset: Vec3,
-    pub scale: f32,
-}
+use super::InterfaceManager;
 
 // Only run on picking event
 pub fn focus_system (
     mut commands: Commands,
-    mut game_manager: ResMut<GameManager>,
+    mut interface_manager: ResMut<InterfaceManager>,
     mut events: EventReader<PickingEvent>,
 ) {
     let mut option = None;
@@ -31,7 +25,6 @@ pub fn focus_system (
     }
     
     if update_event {
-        game_manager.tracker.focused_card = option;
-        game_manager.tracker.update_your_focus(&mut commands);
+        interface_manager.set_focused_card(&mut commands, option);
     }
 }
