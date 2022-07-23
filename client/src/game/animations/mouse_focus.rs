@@ -1,8 +1,5 @@
-
 use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
-
-use super::InterfaceManager;
 
 // Only run on picking event
 pub fn focus_system (

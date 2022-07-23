@@ -1,4 +1,3 @@
-
 use bevy::prelude::*;
 
 #[derive(Component)]

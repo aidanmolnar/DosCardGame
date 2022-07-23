@@ -1,10 +1,9 @@
 
 use super::MultiplayerState;
-use super::InterfaceManager;
 
-mod dealing;
+pub mod dealing;
 
-pub use dealing::{delayed_dealing_system,deal_out_cards};
+pub use dealing::{deal_out_cards};
 
 
 /* .add_system(

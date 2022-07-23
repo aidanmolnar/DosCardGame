@@ -5,9 +5,9 @@ pub fn your_max_hand_width(hand_size: usize) -> f32 {
     f32::min(MAX_HAND_WIDTH, hand_size as f32 * MAX_HAND_SPACING)
 }
 
-pub fn opponent_max_hand_width(hand_size: usize) -> f32 {
-    f32::min(MAX_OPPONENT_HAND_WIDTH, hand_size as f32 * MAX_HAND_SPACING)
-}
+// pub fn opponent_max_hand_width(hand_size: usize) -> f32 {
+//     f32::min(MAX_OPPONENT_HAND_WIDTH, hand_size as f32 * MAX_HAND_SPACING)
+// }
 
 // Returns a value between -0.5 and 0.5 based on position in array
 pub fn arange_1d(len: usize, i: usize) -> f32 {

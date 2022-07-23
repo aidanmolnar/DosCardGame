@@ -3,6 +3,7 @@ use super::multiplayer;
 
 mod networking;
 use networking::enter_game_system;
+mod table;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;

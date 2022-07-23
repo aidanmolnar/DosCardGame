@@ -6,21 +6,17 @@ use bevy::prelude::*;
 
 
 #[derive(Debug)]
-pub struct GameState {
+pub struct Manager {
     deck: Vec<Card>,
+    hands: Vec<Vec<Card>>,
     discard_pile: Vec<Card>,
     current_turn: u8,
-}
-
-#[derive(Component, Clone)]
-pub struct Hand {
-    cards: Vec<Card>
 }
 
 // TODO: break up into smaller pieces
 pub fn enter_game_system(
     mut commands: Commands,
-    query: Query<(Entity, &NetPlayer, &Agent)>,
+    query: Query<(&NetPlayer, &Agent)>,
 ) {
     let mut deck = new_deck(); // Get a standard shuffled deck of cards
     let deck_size = deck.len();
@@ -28,14 +24,15 @@ pub fn enter_game_system(
     // Create a vector of "hands" of cards
     let mut hands = Vec::new();
     for _ in 0..query.iter().len() {
-        hands.push(Hand {cards: Vec::new()});
+        hands.push(Vec::new());
     }
 
     dos_shared::deal_cards(
         hands.len(),
         deck.len(),
         |player_id: usize| {
-            hands.get_mut(player_id).unwrap().cards.push(deck.pop().unwrap());
+            hands[player_id]
+                .push(deck.pop().unwrap());
         },
     );
 
@@ -53,14 +50,13 @@ pub fn enter_game_system(
     }
     
     // TODO: there is probably a better/more functional way to do this that doesn't require cloning the hands
-    for (i,(entity, player, agent)) in query.iter().enumerate() {
-        let hand = hands.get(i).unwrap();
-        commands.entity(entity).insert(hand.clone());
+    for (i, (player, agent)) in query.iter().enumerate() {
+        let hand = &hands[i];
 
         if let Err(e) = bincode::serialize_into(
             &player.stream, 
             &FromServer::DealIn{
-                your_cards: hand.cards.clone(),
+                your_cards: hand.clone(),
                 deck_size,
                 to_discard_pile: discard_pile.clone(),
             }
@@ -81,7 +77,8 @@ pub fn enter_game_system(
     }
 
     commands.insert_resource(
-        GameState {
+        Manager {
+            hands,
             deck,
             discard_pile,
             current_turn: 0,

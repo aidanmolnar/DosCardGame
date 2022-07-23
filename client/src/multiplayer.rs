@@ -5,7 +5,7 @@ use std::net::TcpStream;
 pub struct MultiplayerState {
     pub stream: Option<TcpStream>,
     pub player_names: Vec<String>,
-    pub turn_id: u8,
+    pub turn_id: usize,
 }
 
 impl MultiplayerState {

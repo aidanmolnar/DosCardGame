@@ -40,3 +40,20 @@ pub fn animation_update_system (
         }
     }
 }
+
+pub fn update_animation(
+    animation: &mut LinearAnimation, 
+    transform: &Transform, 
+    board_position: &BoardPosition, 
+    mouse_option: Option<&MouseOffset>
+) {
+    if let Some(mouse) = mouse_option {
+        animation.start = *transform;
+        animation.end = Transform::from_translation(board_position.position + mouse.offset).with_scale(Vec3::splat(mouse.scale));
+        animation.timer = Timer::from_seconds(0.1, false);
+    } else {
+        animation.start = *transform;
+        animation.end = Transform::from_translation(board_position.position);
+        animation.timer =  Timer::from_seconds(0.1, false);
+    }
+}

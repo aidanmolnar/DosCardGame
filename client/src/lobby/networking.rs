@@ -45,7 +45,7 @@ fn handle_lobby_update(
         FromServer::CurrentPlayers{player_names, turn_id} => {
             println!("GOT UPDATE: {:?}",player_names);
             mp_state.player_names = player_names;
-            mp_state.turn_id = turn_id;
+            mp_state.turn_id = turn_id as usize;
         }
         FromServer::Disconnect => {
             mp_state.set_disconnected();

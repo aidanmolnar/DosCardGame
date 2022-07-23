@@ -1,7 +1,7 @@
 use dos_shared::cards::Card;
+use dos_shared::table::*;
 
 use super::MultiplayerState;
-use super::InterfaceManager;
 
 use bevy::prelude::*;
 
@@ -31,9 +31,8 @@ pub fn deal_out_cards(
 
             commands.spawn().insert(DelayedDealtCard {
                 timer: Timer::from_seconds(delay_total, false),
-                owner_id: player_id as u8,
+                location: Location::Hand{player_id},
                 card_value,
-                discarded: false,
             });
 
             delay_total += delay_delta;
@@ -44,9 +43,8 @@ pub fn deal_out_cards(
     for card in to_discard_pile.iter() {
         commands.spawn().insert(DelayedDealtCard {
             timer: Timer::from_seconds(delay_total, false),
-            owner_id: 255,
+            location: Location::DiscardPile,
             card_value: Some(*card),
-            discarded: true,
         });
 
         delay_total += delay_delta;
@@ -57,15 +55,17 @@ pub fn deal_out_cards(
 #[derive(Component)]
 pub struct DelayedDealtCard {
     pub timer: Timer,
-    pub owner_id: u8,
+    location: Location,
     pub card_value: Option<Card>,
-    pub discarded: bool,
+
 }
+
+use crate::game::transfer_card::CardTransferer;
 
 pub fn delayed_dealing_system (
     mut query: Query<(Entity, &mut DelayedDealtCard)>,
     mut commands: Commands,
-    mut game_manager: ResMut<InterfaceManager>,
+    mut card_transferer: CardTransferer,
     time: Res<Time>,
 ) {
     for (entity, mut delayed_card) in query.iter_mut() {
@@ -74,13 +74,11 @@ pub fn delayed_dealing_system (
         if delayed_card.timer.finished() {
 
             // TODO: simplify this
-            if delayed_card.owner_id as usize == game_manager.player_id {
-                game_manager.deal_to_you(&mut commands, delayed_card.card_value.unwrap());
-            } else if delayed_card.owner_id == 255 {
-                game_manager.deal_to_discard_pile(&mut commands, delayed_card.card_value.unwrap());
-            } else {
-                game_manager.deal_to_opponent(&mut commands, delayed_card.owner_id as usize);
-            }
+            card_transferer.transfer_card(
+                CardReference{location: Location::Deck, index: None},
+                CardReference{location: delayed_card.location.clone(), index: None},
+                delayed_card.card_value,
+            );
             
             commands.entity(entity).remove::<DelayedDealtCard>();
         }
