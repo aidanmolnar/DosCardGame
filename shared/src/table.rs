@@ -7,7 +7,7 @@ use bevy::utils::HashMap;
 pub struct TableMap (pub HashMap<Location, Entity>);
 
 
-#[derive(Hash, Eq, PartialEq, Debug, Clone)]
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub enum Location {
     Deck,
     DiscardPile,

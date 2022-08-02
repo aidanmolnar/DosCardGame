@@ -31,12 +31,12 @@ impl Plugin for ConnectionListeningPlugin {
         ).add_system_to_stage(
             CoreStage::Update,
             handle_connection_task
-            .run_in_state(GameState::MainMenu)
+            //.run_in_state(GameState::MainMenu)
         ).add_system_to_stage(
             CoreStage::PostUpdate,
             handle_playercount_change_system
-            .run_in_state(GameState::MainMenu)
-            .run_on_event::<PlayerCountChange>()
+            //.run_in_state(GameState::MainMenu)
+            //.run_on_event::<PlayerCountChange>()
         );
     }
 }
@@ -46,9 +46,9 @@ pub struct PlayerCountChange;
 fn listen_for_connections(
     listener: Res<TcpListener>, 
     mut commands: Commands, 
-    thread_pool: Res<AsyncComputeTaskPool>,
     game_state: Res<CurrentState<GameState>>,
 ) {
+    let thread_pool = AsyncComputeTaskPool::get();
     // accept connections and process them
     match listener.accept() {
         Ok(connection) => {
@@ -59,14 +59,14 @@ fn listen_for_connections(
                     let task = thread_pool.spawn(async move {
                         create_connection_task(stream)
                     });
-                    commands.spawn().insert(task);
+                    commands.spawn().insert(ConnectionTask(task));
                 }
                 GameState::InGame => {
                     // TODO: clean up these task entities or just don't make them to begin with (i.e. keep single threaded)
                     let task = thread_pool.spawn(async move {
                         create_rejection_task(stream);
                     });
-                    commands.spawn().insert(task);
+                    commands.spawn().insert(RejectionTask(task));
                 }
             }
         }
@@ -109,8 +109,13 @@ fn create_rejection_task(stream: TcpStream) {
     stream.shutdown(std::net::Shutdown::Both).expect("Couldn't close rejected stream!");
 }
 
-type ConnectionTask = Task<Option<(String, TcpStream)>>;
+#[derive(Component)]
+struct RejectionTask(Task<()>);
 
+
+#[derive(Component)]
+struct ConnectionTask(Task<Option<(String, TcpStream)>>);
+ 
 fn handle_connection_task(
     mut transform_tasks: Query<(Entity, &mut ConnectionTask)>,
     mut commands: Commands,
@@ -121,10 +126,10 @@ fn handle_connection_task(
 
         println!("completed the task");
 
-        if let Some(player_option) = future::block_on(future::poll_once(&mut *task)) {
+        if let Some(player_option) = future::block_on(future::poll_once(&mut task.0)) {
             if let Some((name,stream)) = player_option {
                 commands.entity(entity)
-                    .remove::<Task<Option<(String, TcpStream)>>>()
+                    .remove::<ConnectionTask>()
                     .insert(NetPlayer { stream})
                     .insert(Agent {name, turn_id: 255});
                 

@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct AnimationBlueprint;
-
-#[derive(Component)]
 pub struct MouseOffset {
     pub offset: Vec3,
     pub scale: f32,

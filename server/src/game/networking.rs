@@ -5,14 +5,6 @@ use super::multiplayer::{NetPlayer, Agent};
 use bevy::prelude::*;
 
 
-#[derive(Debug)]
-pub struct Manager {
-    deck: Vec<Card>,
-    hands: Vec<Vec<Card>>,
-    discard_pile: Vec<Card>,
-    current_turn: u8,
-}
-
 // TODO: break up into smaller pieces
 pub fn enter_game_system(
     mut commands: Commands,
@@ -76,12 +68,4 @@ pub fn enter_game_system(
         }
     }
 
-    commands.insert_resource(
-        Manager {
-            hands,
-            deck,
-            discard_pile,
-            current_turn: 0,
-        }
-    );
 }

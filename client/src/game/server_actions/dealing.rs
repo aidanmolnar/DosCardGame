@@ -60,7 +60,7 @@ pub struct DelayedDealtCard {
 
 }
 
-use crate::game::transfer_card::CardTransferer;
+use crate::game::table::transfer::CardTransferer;
 
 pub fn delayed_dealing_system (
     mut query: Query<(Entity, &mut DelayedDealtCard)>,
@@ -68,15 +68,16 @@ pub fn delayed_dealing_system (
     mut card_transferer: CardTransferer,
     time: Res<Time>,
 ) {
+
     for (entity, mut delayed_card) in query.iter_mut() {
         delayed_card.timer.tick(time.delta());
 
         if delayed_card.timer.finished() {
 
             // TODO: simplify this
-            card_transferer.transfer_card(
+            card_transferer.transfer(
                 CardReference{location: Location::Deck, index: None},
-                CardReference{location: delayed_card.location.clone(), index: None},
+                CardReference{location: delayed_card.location, index: None},
                 delayed_card.card_value,
             );
             

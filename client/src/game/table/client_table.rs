@@ -4,6 +4,58 @@ use dos_shared::cards::Card;
 use bevy::prelude::*;
 
 
+#[derive(Component)]
+pub enum ClientTable {
+    UnsortedTable (UnsortedTable),
+    SortedTable (SortedTable)
+}
+
+impl ClientTable {
+    pub fn insert(&mut self, entity: Entity, card: Option<Card>) {
+        match self {
+            ClientTable::UnsortedTable(table) => {
+                table.insert(entity)
+            }
+            ClientTable::SortedTable(table) => {
+                table.insert(card.expect("Card value must be specified for sorted hand"), entity)
+            }
+        }
+    }
+
+    pub fn remove(&mut self, index: Option<usize>) -> Entity {
+        match self {
+            ClientTable::UnsortedTable(table) => {
+                table.remove(index)
+            }
+            ClientTable::SortedTable(table) => {
+                table.remove(index)
+            }
+        }
+    }
+
+    pub fn iter(&'_ self) -> Box<dyn Iterator<Item = &Entity>+ '_> {
+        match self {
+            ClientTable::UnsortedTable(table) => {
+                Box::new(table.iter())
+            }
+            ClientTable::SortedTable(table) => {
+                Box::new(table.iter())
+            }
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        match self {
+            ClientTable::UnsortedTable(table) => {
+                table.len()
+            }
+            ClientTable::SortedTable(table) => {
+                table.len()
+            }
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct UnsortedTable (Vec<Entity>);
 
@@ -21,10 +73,6 @@ impl UnsortedTable {
         }
     }
 
-    // pub fn reshuffle(&mut self) {
-    //     todo!();
-    // }
-
     pub fn iter(&self) -> impl Iterator<Item = &Entity> {
         self.0.iter()
     }
@@ -37,6 +85,7 @@ impl UnsortedTable {
         UnsortedTable(entities)
     }
 }
+
 
 #[derive(Default)]
 pub struct SortedTable {
@@ -69,10 +118,6 @@ impl SortedTable {
         entity
     }
 
-    // pub fn reshuffle(&mut self) {
-    //     todo!();
-    // }
-
     pub fn iter(&self) -> impl Iterator<Item = &Entity> {
         self.cards.iter().map(|x|&x.1)
     }
@@ -82,60 +127,3 @@ impl SortedTable {
     }
 }
 
-
-
-#[derive(Component)]
-pub enum ClientTable {
-    UnsortedTable (UnsortedTable),
-    SortedTable (SortedTable)
-}
-
-impl ClientTable {
-    pub fn insert(&mut self, entity: Entity, card: Option<Card>) {
-        match self {
-            ClientTable::UnsortedTable(hand) => {
-                hand.insert(entity)
-            }
-            ClientTable::SortedTable(hand) => {
-                hand.insert(card.expect("Card value must be specified for sorted hand"), entity)
-            }
-        }
-    }
-
-    pub fn remove(&mut self, index: Option<usize>) -> Entity {
-        match self {
-            ClientTable::UnsortedTable(hand) => {
-                hand.remove(index)
-            }
-            ClientTable::SortedTable(hand) => {
-                hand.remove(index)
-            }
-        }
-    }
-
-    // pub fn reshuffle(&mut self) {
-    //     todo!();
-    // }
-
-    pub fn iter(&'_ self) -> Box<dyn Iterator<Item = &Entity>+ '_> {
-        match self {
-            ClientTable::UnsortedTable(hand) => {
-                Box::new(hand.iter())
-            }
-            ClientTable::SortedTable(hand) => {
-                Box::new(hand.iter())
-            }
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        match self {
-            ClientTable::UnsortedTable(hand) => {
-                hand.len()
-            }
-            ClientTable::SortedTable(hand) => {
-                hand.len()
-            }
-        }
-    }
-}

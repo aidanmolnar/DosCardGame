@@ -1,20 +1,18 @@
 use dos_shared::table::*;
 
-use super::layout::expressions::*;
-use super::layout::constants::*;
-use super::MultiplayerState;
-use super::table::*;
-use super::populate_deck::DeckBuilder;
+use crate::game::layout::expressions::*;
+use crate::game::layout::constants::*;
+use crate::game::MultiplayerState;
+use super::client_table::*;
+use super::deck::DeckBuilder;
+use super::TableArranger;
 
 use bevy::prelude::*;
 
-#[derive(Component)]
-pub struct TableArranger {
-    pub center: (f32,f32),
-    pub max_width: f32,
-}
 
-pub fn make_tables_system (
+
+// TODO: clean this up
+pub fn spawn_all_tables (
     mut commands: Commands,
     mp_state: Res<MultiplayerState>,
     mut deck_builder: DeckBuilder,
@@ -22,8 +20,8 @@ pub fn make_tables_system (
     let mut map = TableMap::default();
 
     let starting_deck = deck_builder.make_cards(105);
-    //let starting_deck = Vec::new();
 
+    // Make deck table
     let table = ClientTable::UnsortedTable(UnsortedTable::new(starting_deck));
     let deck_entity = commands.spawn()
     .insert(
@@ -34,6 +32,7 @@ pub fn make_tables_system (
     .insert(table).id();
     map.0.insert(Location::Deck, deck_entity);
 
+    // Make discard table
     let discard_pile_entity = spawn_table(
         &mut commands, 
         DISCARD_LOCATION, 
@@ -42,7 +41,7 @@ pub fn make_tables_system (
     );
     map.0.insert(Location::DiscardPile, discard_pile_entity);
 
-    make_player_hand_tables(
+    spawn_player_hand_tables(
         &mut map,
         &mut commands,
         mp_state.player_names.len(),
@@ -52,7 +51,7 @@ pub fn make_tables_system (
     commands.insert_resource(map)
 }
 
-fn make_player_hand_tables(
+fn spawn_player_hand_tables(
     map: &mut TableMap,
     commands: &mut Commands,
     num_players: usize,
@@ -70,6 +69,8 @@ fn make_player_hand_tables(
                 true,
             )
         } else {
+
+            // TODO: this is jenky
             // Adjust other ids so your hand is skipped
             let local_id = if player_id > local_player_id {
                 (player_id-1) % num_other_players

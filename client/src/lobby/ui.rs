@@ -1,6 +1,6 @@
 use dos_shared::DEFAULT_IP;
 use super::networking::*;
-use super::connecting::create_connection_task;
+use super::connecting::{ConnectionTask, create_connection_task};
 use super::MultiplayerState;
 
 use bevy::prelude::*;
@@ -50,8 +50,10 @@ pub fn lobby_ui(
     mut ui_state: ResMut<UiState>, 
     mut mp_state: ResMut<MultiplayerState>,
     mut commands: Commands,
-    thread_pool: Res<AsyncComputeTaskPool>,
 ) {
+
+    let thread_pool = AsyncComputeTaskPool::get();
+
     egui::SidePanel::left("left_panel").show(
         egui_context.ctx_mut(), |ui| {
 
@@ -75,11 +77,13 @@ pub fn lobby_ui(
                     let address = ui_state.ip.clone();
                     let name = ui_state.name.clone();
 
+
+
                     let task = thread_pool.spawn(async move {
                         create_connection_task(&address, &name)
                     });
                     ui_state.status = ConnectionStatus::Connecting;
-                    commands.spawn().insert(task);
+                    commands.spawn().insert(ConnectionTask(task));
                 }
                 
             },

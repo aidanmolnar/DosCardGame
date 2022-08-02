@@ -1,8 +1,9 @@
 
-use super::assets::*;
-use super::card_building::card_indexing::CARD_BACK_SPRITE_INDEX;
-use super::layout::constants::*;
-use super::animations::components::*;
+use crate::game::assets::CardHandles;
+use crate::game::card_indexing::CARD_BACK_SPRITE_INDEX;
+use crate::game::layout::constants::DECK_LOCATION;
+use crate::game::animations::components::{BoardPosition, MouseOffset, LinearAnimation};
+
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -55,7 +56,12 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                 }
             ).insert(
                 BoardPosition {
-                    position: translation,
+                    position: translation
+                }
+            ).insert(
+                MouseOffset {
+                    offset: Vec3::ZERO,
+                    scale: 1.,
                 }
             )
             

@@ -37,16 +37,20 @@ pub fn create_connection_task(address: &str, name: &str) -> Result<TcpStream, io
     }
 }
 
+// TODO: Clean up how this is generated in the ui
+#[derive(Component)]
+pub struct ConnectionTask(pub Task<Result<TcpStream, io::Error>>);
+
 // Updates the state of the game with the result of a connection attempt
 pub fn handle_connection_task(
-    mut transform_tasks: Query<(Entity, &mut Task<Result<TcpStream, io::Error>>)>,
+    mut transform_tasks: Query<(Entity, &mut ConnectionTask)>,
     mut commands: Commands,
     mut mp_state: ResMut<MultiplayerState>,
     mut ui_state: ResMut<UiState>,
 ) {
     for (entity, mut task) in transform_tasks.iter_mut() {
 
-        if let Some(connection_response) = future::block_on(future::poll_once(&mut *task)) {
+        if let Some(connection_response) = future::block_on(future::poll_once(&mut task.0)) {
 
             match connection_response {
                 Ok(stream) => {

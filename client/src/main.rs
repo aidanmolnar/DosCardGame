@@ -18,7 +18,7 @@ fn main() {
             width: 1920.,
             height: 1080.,
             resizable: true,
-            position: Some(Vec2::ZERO),
+            position: WindowPosition::Centered(MonitorSelection::Primary),
             ..default()
         })
         .add_plugins(DefaultPlugins)

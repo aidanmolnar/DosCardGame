@@ -2,58 +2,54 @@ use super::components::*;
 
 use bevy::prelude::*;
 
+use std::ops::{Add,Sub,Mul};
+
 
 // System for animating cards to their target locations
-pub fn animation_run_system (
+pub fn run (
     mut query: Query<(&mut LinearAnimation, &mut Transform)>,
     time: Res<Time>,
 ) {
-    for (mut target, mut transform) in query.iter_mut() {
+    for (mut target, mut transform) in &mut query {
         target.timer.tick(time.delta());
-        // LERP towards target end location
-        transform.translation = target.start.translation + (target.end.translation - target.start.translation) * target.timer.percent();
-        transform.scale = target.start.scale + (target.end.scale - target.start.scale) * target.timer.percent();
+
+        transform.translation = lerp(
+            target.start.translation, 
+            target.end.translation, 
+            target.timer.percent()
+        );
+
+        transform.scale = lerp(
+            target.start.scale, 
+            target.end.scale, 
+            target.timer.percent()
+        );
     }
 }  
 
-pub fn animation_update_system (
-    query: Query<(Entity, &Transform, &BoardPosition, Option<&MouseOffset>), With<AnimationBlueprint>>,
-    mut commands: Commands,
+// System for updating animation target locations
+#[allow(clippy::type_complexity)]
+pub fn retarget(
+    mut query: 
+    Query<
+        (&mut LinearAnimation, &Transform, &BoardPosition, &MouseOffset),
+        Or<(Changed<BoardPosition>, Changed<MouseOffset>)>, 
+    >,
 ) {
-    for (entity,transform, board_position, mouse_option) in query.iter() {
-        if let Some(mouse) = mouse_option {
-            commands.entity(entity).insert(
-                LinearAnimation {
-                    start: *transform,
-                    end: Transform::from_translation(board_position.position + mouse.offset).with_scale(Vec3::splat(mouse.scale)),
-                    timer: Timer::from_seconds(0.1, false),
-                }
-            ).remove::<AnimationBlueprint>();
-        } else {
-            commands.entity(entity).insert(
-                LinearAnimation {
-                    start: *transform,
-                    end: Transform::from_translation(board_position.position),
-                    timer: Timer::from_seconds(0.1, false),
-                }
-            ).remove::<AnimationBlueprint>();
-        }
+    for (mut animation, transform, board_position, mouse_offset) in &mut query {
+        animation.start = *transform;
+        animation.end = Transform::from_translation(board_position.position + mouse_offset.offset).with_scale(Vec3::splat(mouse_offset.scale));
+        animation.timer = Timer::from_seconds(0.1, false);
     }
 }
 
-pub fn update_animation(
-    animation: &mut LinearAnimation, 
-    transform: &Transform, 
-    board_position: &BoardPosition, 
-    mouse_option: Option<&MouseOffset>
-) {
-    if let Some(mouse) = mouse_option {
-        animation.start = *transform;
-        animation.end = Transform::from_translation(board_position.position + mouse.offset).with_scale(Vec3::splat(mouse.scale));
-        animation.timer = Timer::from_seconds(0.1, false);
-    } else {
-        animation.start = *transform;
-        animation.end = Transform::from_translation(board_position.position);
-        animation.timer =  Timer::from_seconds(0.1, false);
-    }
+// Linear interpolation
+fn lerp<T>(start: T, end: T, percent: f32) -> T 
+where 
+    T: Add<Output = T>,
+    T: Sub<Output = T>,
+    T: Mul<f32, Output = T>,
+    T: Copy,
+{
+    start + (end - start) * percent
 }
