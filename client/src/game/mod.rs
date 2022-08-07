@@ -1,5 +1,7 @@
 use dos_shared::table::TableMap;
 
+use self::client_actions::play_card::play_card_system;
+
 use super::GameState;
 use super::MultiplayerState;
 
@@ -43,6 +45,9 @@ impl Plugin for GamePlugin {
         .add_startup_system(load_assets)
 
         .add_system(game_network_system
+            .run_in_state(GameState::InGame))
+
+        .add_system(play_card_system
             .run_in_state(GameState::InGame))
 
         // TODO: move this

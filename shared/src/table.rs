@@ -14,7 +14,7 @@ pub enum Location {
     Hand {player_id: usize}
 }
 
-
+#[derive(Hash, Eq, PartialEq, Debug, Clone, Copy)]
 pub struct CardReference {
     pub location: Location,
     pub index: Option<usize>,

@@ -27,7 +27,6 @@ pub fn update_system (
     }
 }
 
-// Calculate
 fn calculate_positions<'a> (
     cards: &mut Query<&mut BoardPosition>,
     arranger: &TableArranger,

@@ -2,14 +2,16 @@ use dos_shared::table::*;
 
 use crate::game::animations::components::*;
 use crate::game::layout::{expressions::*, constants::*};
-use super::ClientTable;
+use super::{ClientTable,TableIndexData};
 
 
 use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
 
 #[derive(Default)]
-pub struct FocusedCard(Option<CardReference>);
+pub struct FocusedCard (
+    pub Option<(Location, TableIndexData)>,
+);
 
 // Only run on picking event
 pub fn focus_system (
@@ -34,7 +36,8 @@ pub fn focus_system (
     
     if update_event {
         if let Some(focus_entity) = focus_entity_option {
-            focused_card.0 = locate_card (
+           focused_card.0 = 
+            locate_card (
                 &map,
                 &tables,
                 focus_entity
@@ -45,24 +48,23 @@ pub fn focus_system (
     }
 }
 
-// Converts a card entity into a card reference (location and hand position)
+
+// TODO: clean this up, kind of hacky right now
 // Brute force, could be sped up with some sort of hashing scheme but require a lot of transactional logic/time whenever a card is moved
 fn locate_card (
     map: &Res<TableMap>,
     tables: &Query<&ClientTable>,
     entity: Entity
-) -> Option<CardReference> {
+) -> Option<(Location, TableIndexData)> {
     for (location, table_entity) in &map.0 {
         let table 
             = tables.get(*table_entity).unwrap();
         
-        for (hand_position, card_entity) in table.iter().enumerate() {
-            if *card_entity == entity {
-                return Some(CardReference{location: *location, index: Some(hand_position)})
-            }
+        match table.locate(entity) {
+            None => continue,
+            Some(x) => return Some((*location, x))
         }
     }
-
     None
 }
 
@@ -81,23 +83,25 @@ pub fn update_system (
     for table in tables.iter()
     .filter(|x| matches!(x, ClientTable::SortedTable(_))) {
 
-        if let Some(card_reference) = &focused_card.0{
+        if let Some((_, table_index_data)) = &focused_card.0 {
             // Find the index of the focused card in the table or reset
-            if let Some(focused_index) = card_reference.index {
-                // If focused card is in table
-                calculate_offsets(
-                    &mut mouse_offsets, 
-                    table.iter(), 
-                    table.len(), 
-                    focused_index
-                );
-            } else {
-                // If focused card is not in table
-                reset_offsets(
-                    &mut mouse_offsets, 
-                    table.iter()
-                );
-            }
+            match table_index_data {
+                TableIndexData::Sorted {sorted_position, ..} => {
+                    // If focused card is in table
+                    calculate_offsets(
+                        &mut mouse_offsets, 
+                        table.iter(), 
+                        table.len(), 
+                        *sorted_position
+                    );
+                }
+                TableIndexData::Unsorted {..} => {
+                    reset_offsets(
+                        &mut mouse_offsets, 
+                        table.iter()
+                    );
+                }
+            } 
         } else {
             // If there is no focused card
             reset_offsets(

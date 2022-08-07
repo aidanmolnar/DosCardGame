@@ -3,6 +3,8 @@ pub mod messages;
 pub mod table;
 mod test;
 
+use cards::*;
+
 pub const NUM_STARTING_CARDS: u8 = 20;
 pub const DEFAULT_IP: &str = "localhost:3333";
 
@@ -38,4 +40,11 @@ pub fn deal_cards<F: FnMut(usize)>(
             count += 1;
         }
     }
+}
+
+pub fn valid_move(card: Card, discard_pile: Card) -> bool {
+    card.ty == CardType::Wild || 
+    card.ty == CardType::DrawFour ||
+    card.color == discard_pile.color ||
+    card.ty == discard_pile.ty
 }

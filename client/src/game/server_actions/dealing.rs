@@ -60,7 +60,7 @@ pub struct DelayedDealtCard {
 
 }
 
-use crate::game::table::transfer::CardTransferer;
+use crate::game::table::CardTransferer;
 
 pub fn delayed_dealing_system (
     mut query: Query<(Entity, &mut DelayedDealtCard)>,

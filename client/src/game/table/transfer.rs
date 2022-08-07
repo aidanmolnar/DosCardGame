@@ -40,7 +40,7 @@ impl<'w,'s> CardTransferer<'w,'s> {
         entity: Entity, 
         card: Option<Card>
     ) {
-        self.find_table(to).insert(entity, card);
+        self.find_table(to).insert(card, entity);
     }
 
     fn modify (
@@ -56,6 +56,14 @@ impl<'w,'s> CardTransferer<'w,'s> {
     
         // TODO: may be unnecessary to clear mouse offset
         self.commands.entity(entity).insert(MouseOffset{offset: Vec3::ZERO, scale: 1.});
+    }
+
+    pub fn peek_discard(&mut self) -> Option<Card> {
+        if let Some((_, card)) = self.find_table(&CardReference{location: Location::DiscardPile, index: None}).last() {
+            card
+        } else {
+            None
+        }
     }
 
     pub fn transfer (

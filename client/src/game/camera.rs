@@ -1,4 +1,4 @@
-use super::layout::constants::*;
+use super::layout::constants::HEIGHT_SCALE;
 
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
