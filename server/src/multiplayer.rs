@@ -13,7 +13,7 @@ pub struct AgentTracker {
 #[derive(Component)]
 pub struct Agent {
     pub name: String,
-    pub turn_id: u8
+    pub turn_id: usize
 }
 
 // A holder for a stream to a human-controlled client

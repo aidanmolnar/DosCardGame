@@ -43,6 +43,7 @@ impl Plugin for ConnectionListeningPlugin {
 
 pub struct PlayerCountChange;
 
+// TODO: break up / simplify this function
 fn listen_for_connections(
     listener: Res<TcpListener>, 
     mut commands: Commands, 
@@ -182,7 +183,7 @@ pub fn handle_playercount_change_system(
         for (i,entity) in agent_tracker.agents.iter().enumerate() {
             let (mut agent, player_option, ) = query.get_mut(*entity).unwrap();
 
-            agent.turn_id = i as u8;
+            agent.turn_id = i;
 
             if let Some(player) = player_option {
                 if let Err(e) = bincode::serialize_into(&player.stream, 

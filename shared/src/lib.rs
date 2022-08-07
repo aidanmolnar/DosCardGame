@@ -1,7 +1,6 @@
 pub mod cards;
 pub mod messages;
 pub mod table;
-mod test;
 
 use cards::*;
 

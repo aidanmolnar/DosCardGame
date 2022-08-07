@@ -1,5 +1,6 @@
 
 use super::cards::Card;
+use super::table::CardReference;
 
 pub mod lobby {
     use serde::{Serialize, Deserialize};
@@ -15,19 +16,25 @@ pub mod lobby {
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromClient {
         Connect {name: String},
-        //Disconnect,
         StartGame,
     }
 }
 
 pub mod game {
-    use serde::{Serialize, Deserialize};
+    use super::CardReference;
     use super::Card;
+
+    use serde::{Serialize, Deserialize};
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromServer {
         DealIn {your_cards: Vec<Card>, deck_size: usize, to_discard_pile: Vec<Card>},
         YourTurn,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub enum FromClient {
+        PlayCard {card: CardReference}
     }
 }
 

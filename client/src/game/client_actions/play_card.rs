@@ -1,6 +1,7 @@
 use dos_shared::cards::Card;
 use dos_shared::table::{CardReference, Location};
 use dos_shared::valid_move;
+use dos_shared::messages::game::FromClient;
 
 use crate::game::table::FocusedCard;
 use crate::game::table::CardTransferer;
@@ -38,7 +39,11 @@ pub fn play_card_system (
                                 table_index_data.to_card_reference(*location), 
                                 CardReference{location: Location::DiscardPile, index: None}, 
                                 Some(card_value),
-                            )
+                            );
+
+                            if bincode::serialize_into(mp_state.stream.as_ref().unwrap(), &FromClient::PlayCard{card: table_index_data.to_card_reference(*location)}).is_err() {
+                                panic!("Failed to send message")
+                            }
                         }
                     }
                 }

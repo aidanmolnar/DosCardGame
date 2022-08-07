@@ -21,9 +21,9 @@ pub struct CardTransferer<'w,'s> {
 impl<'w,'s> CardTransferer<'w,'s> {
     fn find_table(
         &mut self,
-        card: &CardReference,
+        location: &Location,
     ) -> Mut<ClientTable> {
-        let table_entity = self.map.0[&card.location];
+        let table_entity = self.map.0[location];
         self.tables.get_mut(table_entity).unwrap()
     }
 
@@ -31,7 +31,7 @@ impl<'w,'s> CardTransferer<'w,'s> {
         &mut self, 
         from: &CardReference
     ) -> Entity {
-        self.find_table(from).remove(from.index)
+        self.find_table(&from.location).remove(from.index)
     }
 
     fn insert (
@@ -40,7 +40,7 @@ impl<'w,'s> CardTransferer<'w,'s> {
         entity: Entity, 
         card: Option<Card>
     ) {
-        self.find_table(to).insert(card, entity);
+        self.find_table(&to.location).insert(card, entity);
     }
 
     fn modify (
@@ -59,7 +59,7 @@ impl<'w,'s> CardTransferer<'w,'s> {
     }
 
     pub fn peek_discard(&mut self) -> Option<Card> {
-        if let Some((_, card)) = self.find_table(&CardReference{location: Location::DiscardPile, index: None}).last() {
+        if let Some((_, card)) = self.find_table(&Location::DiscardPile).last() {
             card
         } else {
             None
