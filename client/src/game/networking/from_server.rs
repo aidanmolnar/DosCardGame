@@ -1,4 +1,6 @@
 use dos_shared::messages::game::*;
+use crate::game::table::CardTransferer;
+
 use super::MultiplayerState;
 
 use super::server_actions::deal_out_cards;
@@ -15,6 +17,7 @@ pub struct YourTurn;
 pub fn game_network_system(
     mut mp_state: ResMut<MultiplayerState>, 
     commands: Commands,
+    mut card_transferer: CardTransferer,
 ) {
     let stream =
         match &mp_state.stream {
@@ -25,9 +28,11 @@ pub fn game_network_system(
     match bincode::deserialize_from::<&TcpStream,FromServer>(stream) {
         Ok(game_update) => {
             handle_game_update(
-            game_update,
-            commands,
-            mp_state)
+                game_update,
+                commands,
+                mp_state,
+                &mut card_transferer
+            )
         },
         Err(e) => {
             handle_game_update_error(&mut mp_state, e)
@@ -38,7 +43,9 @@ pub fn game_network_system(
 fn handle_game_update(
     game_update: FromServer, 
     mut commands: Commands,
-    mp_state: ResMut<MultiplayerState>) {
+    mp_state: ResMut<MultiplayerState>,
+    card_transferer: &mut CardTransferer,
+) {
     match game_update {
         FromServer::DealIn { your_cards, deck_size, to_discard_pile} => {
             println!("Got cards: {:?}", your_cards);
@@ -55,6 +62,9 @@ fn handle_game_update(
         FromServer::YourTurn => {
             println!("Your turn!");
             commands.init_resource::<YourTurn>();
+        }
+        FromServer::TransferCard{from, to, value} => {
+            card_transferer.transfer(from, to, value)
         }
     }
 }

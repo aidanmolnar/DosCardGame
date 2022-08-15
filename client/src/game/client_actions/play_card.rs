@@ -41,6 +41,7 @@ pub fn play_card_system (
                                 Some(card_value),
                             );
 
+                            println!("{:?}", FromClient::PlayCard{card: table_index_data.to_card_reference(*location)});
                             if bincode::serialize_into(mp_state.stream.as_ref().unwrap(), &FromClient::PlayCard{card: table_index_data.to_card_reference(*location)}).is_err() {
                                 panic!("Failed to send message")
                             }

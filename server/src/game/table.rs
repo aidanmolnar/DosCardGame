@@ -21,6 +21,14 @@ impl ServerTable {
         }
     }
 
+    pub fn peek(&self, index: Option<usize>) -> Card {
+        if let Some(index) = index {
+            self.0[index]
+        } else {
+            *self.0.last().expect("No cards left")
+        }
+    }
+
     // pub fn iter(&self) -> impl Iterator<Item = &Card> {
     //     self.0.iter()
     // }
@@ -59,6 +67,7 @@ impl<'w,'s> CardTransferer<'w,'s> {
         self.tables.get_mut(table_entity).unwrap()
     }
 
+    // TODO: this should really be called remove
     fn get (
         &mut self, 
         from: &CardReference
@@ -72,6 +81,13 @@ impl<'w,'s> CardTransferer<'w,'s> {
         card: Card, 
     ) {
         self.find_table(&to.location).insert(card);
+    }
+
+    pub fn peek (
+        &mut self,
+        from: &CardReference,
+    ) -> Card {
+        self.find_table(&from.location).peek(from.index)
     }
 
     pub fn peek_discard(&mut self) -> Option<Card> {

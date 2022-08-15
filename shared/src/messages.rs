@@ -29,6 +29,7 @@ pub mod game {
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromServer {
         DealIn {your_cards: Vec<Card>, deck_size: usize, to_discard_pile: Vec<Card>},
+        TransferCard {from: CardReference, to: CardReference, value: Option<Card>},
         YourTurn,
     }
 
