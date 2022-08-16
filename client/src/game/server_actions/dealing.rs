@@ -57,7 +57,6 @@ pub struct DelayedDealtCard {
     pub timer: Timer,
     location: Location,
     pub card_value: Option<Card>,
-
 }
 
 use crate::game::table::CardTransferer;

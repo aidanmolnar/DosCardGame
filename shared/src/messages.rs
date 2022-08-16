@@ -35,7 +35,7 @@ pub mod game {
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromClient {
-        PlayCard {card: CardReference}
+        PlayCard {card: CardReference},
     }
 }
 

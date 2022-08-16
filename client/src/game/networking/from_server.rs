@@ -64,7 +64,7 @@ fn handle_game_update(
             commands.init_resource::<YourTurn>();
         }
         FromServer::TransferCard{from, to, value} => {
-            card_transferer.transfer(from, to, value)
+            card_transferer.transfer(from, to, value);
         }
     }
 }

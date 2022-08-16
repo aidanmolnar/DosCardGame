@@ -1,6 +1,7 @@
 use dos_shared::table::*;
 use dos_shared::valid_move;
 use dos_shared::messages::game::*;
+use super::game_info::GameInfo;
 use super::multiplayer::{NetPlayer, Agent, AgentTracker};
 use super::super::connection_listening::{PlayerCountChange, disconnect};
 use super::table::CardTransferer;
@@ -18,6 +19,7 @@ pub struct GameNetworkManager<'w,'s> {
     commands: Commands<'w, 's>,
     agent_tracker: ResMut<'w, AgentTracker>,
     card_transferer: CardTransferer<'w,'s>,
+    game_info: ResMut<'w, GameInfo>,
 }
 
 pub fn game_network_system (
@@ -52,6 +54,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         agent: &Agent, 
     ) {
         match lobby_update {
+            
             FromClient::PlayCard{card: card_reference} => {
                 println!("Client played a card {:?}", card_reference);
 
@@ -59,7 +62,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 let card = self.card_transferer.peek(&card_reference);
                 let discard_pile = self.card_transferer.peek_discard().unwrap();
 
-                if valid_move(card, discard_pile) {
+                if valid_move(card, discard_pile) && self.game_info.current_turn() == agent.turn_id {
                     self.card_transferer.transfer(
                         card_reference, 
                         CardReference{
@@ -81,6 +84,10 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     agent.turn_id
                     );
 
+                    // TODO: Shouldn't have to iterate over all agents/players again...
+                    let next_turn = self.game_info.next();
+                    self.send_to_one(query, FromServer::YourTurn, next_turn)
+
                 } else {
                     //TODO: Disconnect client/ treat as desync?
                     // Call handle error?
@@ -100,11 +107,27 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
     ) {
         for (_, player, agent) in query.iter() {
             if agent.turn_id != skip_player_id {
-                
                 if let Err(e) = bincode::serialize_into(&player.stream, &message) {
                     panic!("Leave lobby message failed to send {e}");
                     // TODO: might need to disconnect client here, or return to lobby?
                 }
+            }
+        }
+    }
+
+    fn send_to_one(
+        &mut self,
+        query: &Query<(Entity, &NetPlayer, &Agent)>, 
+        message: FromServer,
+        receiver_id: usize,
+    ) {
+        for (_, player, agent) in query.iter() {
+            if agent.turn_id == receiver_id {
+                if let Err(e) = bincode::serialize_into(&player.stream, &message) {
+                    panic!("Leave lobby message failed to send {e}");
+                    // TODO: might need to disconnect client here, or return to lobby?
+                }
+                return;
             }
         }
     }

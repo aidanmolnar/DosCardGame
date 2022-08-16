@@ -2,6 +2,7 @@ use dos_shared::table::*;
 use dos_shared::cards::*;
 use dos_shared::messages::game::FromServer;
 
+use super::game_info::GameInfo;
 use super::multiplayer::{NetPlayer, Agent, AgentTracker};
 use super::table::*;
 
@@ -107,6 +108,7 @@ pub fn spawn_tables (
         agent_tracker.agents.len()
     );
 
+    commands.insert_resource(GameInfo::new(agent_tracker.agents.len()));
     commands.insert_resource(map);
 }
 

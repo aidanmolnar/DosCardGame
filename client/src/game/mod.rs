@@ -24,7 +24,7 @@ use table::TablePlugin;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-use bevy_mod_picking::{PickingPlugin,InteractablePickingPlugin, /* PickingEvent */};
+use bevy_mod_picking::{PickingPlugin,InteractablePickingPlugin, PickingEvent };
 
 
 pub struct GamePlugin;
@@ -48,7 +48,8 @@ impl Plugin for GamePlugin {
             .run_in_state(GameState::InGame))
 
         .add_system(play_card_system
-            .run_in_state(GameState::InGame))
+            .run_in_state(GameState::InGame)
+            .run_on_event::<PickingEvent>())
 
         // TODO: move this
         .add_system(delayed_dealing_system
