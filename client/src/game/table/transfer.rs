@@ -66,6 +66,14 @@ impl<'w,'s> CardTransferer<'w,'s> {
         }
     }
 
+    pub fn peek_staging(&mut self) -> Option<Card> {
+        if let Some((_, card)) = self.find_table(&Location::Staging).last() {
+            card
+        } else {
+            None
+        }
+    }
+
     pub fn transfer (
         &mut self, 
         from: CardReference, 

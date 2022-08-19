@@ -1,21 +1,24 @@
 use dos_shared::cards::Card;
 use dos_shared::table::*;
 
+use crate::game::table::CardTransferer;
 use super::MultiplayerState;
 
 use bevy::prelude::*;
 
-// TODO: move to interface manager?
+// TODO: move somewhere
+// TODO: A bit memory inefficient creating this vec to store all the values, there's probably a way to do this functionally or with an iterator
 pub fn deal_out_cards(
     your_cards: Vec<Card>, 
     deck_size: usize,
     to_discard_pile: Vec<Card>,
-    mut commands: Commands,
-    mp_state: ResMut<MultiplayerState>,
+    commands: &mut Commands,
+    mp_state: &mut ResMut<MultiplayerState>,
 ) {
-    let delay_delta = 0.25;
-    let mut delay_total = 0.0;
+    
     let mut card_index = 0;
+
+    let mut transfers = Vec::new();
 
     // Deals cards to players one at a time
     dos_shared::deal_cards(
@@ -29,58 +32,71 @@ pub fn deal_out_cards(
                 None
             };
 
-            commands.spawn().insert(DelayedDealtCard {
-                timer: Timer::from_seconds(delay_total, false),
-                location: Location::Hand{player_id},
-                card_value,
+            transfers.push(CardTransfer {
+                from: CardReference{location: Location::Deck, index: None},
+                to: CardReference{location: Location::Hand{player_id}, index: None},
+                value: card_value,
             });
-
-            delay_total += delay_delta;
         }
     );
 
     // Flip card(s) to discard pile
     for card in to_discard_pile.iter() {
-        commands.spawn().insert(DelayedDealtCard {
-            timer: Timer::from_seconds(delay_total, false),
-            location: Location::DiscardPile,
-            card_value: Some(*card),
+        transfers.push(CardTransfer {
+            from: CardReference{location: Location::Deck, index: None},
+            to: CardReference{location: Location::DiscardPile, index: None},
+            value: Some(*card),
         });
-
-        delay_total += delay_delta;
     }
+
+    create_delayed_transfers(commands, transfers, 0.1)
 }
 
 // TODO: simplify this
 #[derive(Component)]
-pub struct DelayedDealtCard {
+pub struct DelayedTransfer {
     pub timer: Timer,
-    location: Location,
-    pub card_value: Option<Card>,
+    pub transfer: CardTransfer,
 }
 
-use crate::game::table::CardTransferer;
 
 pub fn delayed_dealing_system (
-    mut query: Query<(Entity, &mut DelayedDealtCard)>,
+    mut query: Query<(Entity, &mut DelayedTransfer)>,
     mut commands: Commands,
     mut card_transferer: CardTransferer,
     time: Res<Time>,
 ) {
 
-    for (entity, mut delayed_card) in query.iter_mut() {
-        delayed_card.timer.tick(time.delta());
+    for (entity, mut delayed_transfer) in query.iter_mut() {
+        delayed_transfer.timer.tick(time.delta());
 
-        if delayed_card.timer.finished() {
+        if delayed_transfer.timer.finished() {
 
             // TODO: simplify this
             card_transferer.transfer(
-                CardReference{location: Location::Deck, index: None},
-                CardReference{location: delayed_card.location, index: None},
-                delayed_card.card_value,
+                delayed_transfer.transfer.from,
+                delayed_transfer.transfer.to,
+                delayed_transfer.transfer.value,
             );
             
-            commands.entity(entity).remove::<DelayedDealtCard>();
+            commands.entity(entity).remove::<DelayedTransfer>();
         }
+    }
+}
+
+pub fn create_delayed_transfers(
+    commands: &mut Commands,
+    transfers: Vec<CardTransfer>,
+    delay_delta: f32,
+) {
+    let mut delay_total: f32 = 0.0;
+
+    for transfer in transfers {
+        commands.spawn().insert(DelayedTransfer {
+            timer: Timer::from_seconds(delay_total, false),
+            transfer,
+        });
+
+        delay_total += delay_delta;
     }
 }

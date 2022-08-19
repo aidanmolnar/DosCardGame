@@ -5,7 +5,6 @@ use super::multiplayer;
 mod networking;
 mod setup;
 mod table;
-mod game_info;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;

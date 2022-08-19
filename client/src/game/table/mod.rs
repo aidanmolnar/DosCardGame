@@ -5,7 +5,7 @@ mod client_table;
 mod targeting;
 mod setup;
 
-pub use client_table::ClientTable;
+pub use client_table::{ClientTable, TableIndexData};
 pub use targeting::mouse::FocusedCard;
 pub use transfer::CardTransferer;
 

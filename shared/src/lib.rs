@@ -1,6 +1,9 @@
 pub mod cards;
 pub mod messages;
 pub mod table;
+mod game_info;
+
+pub use game_info::GameInfo;
 
 use cards::*;
 

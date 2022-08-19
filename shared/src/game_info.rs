@@ -1,7 +1,4 @@
 
-
-
-
 pub struct GameInfo {
     num_players: usize,
     current_turn: usize,
@@ -29,7 +26,7 @@ impl GameInfo {
         }
     }
 
-    pub fn next (&mut self) -> usize {
+    pub fn next_turn (&mut self) -> usize {
         let offset = match &self.direction {
             Direction::Clockwise => 1,
             Direction::CounterClockwise => -1,

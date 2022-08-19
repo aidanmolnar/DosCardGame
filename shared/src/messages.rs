@@ -1,6 +1,6 @@
 
 use super::cards::Card;
-use super::table::CardReference;
+use super::table::{CardTransfer, CardReference};
 
 pub mod lobby {
     use serde::{Serialize, Deserialize};
@@ -21,21 +21,22 @@ pub mod lobby {
 }
 
 pub mod game {
-    use super::CardReference;
-    use super::Card;
+    use super::{Card, CardTransfer, CardReference};
 
     use serde::{Serialize, Deserialize};
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromServer {
         DealIn {your_cards: Vec<Card>, deck_size: usize, to_discard_pile: Vec<Card>},
-        TransferCard {from: CardReference, to: CardReference, value: Option<Card>},
-        YourTurn,
+        TransferCards(Vec<CardTransfer>),
+        NextTurn,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromClient {
         PlayCard {card: CardReference},
+        DrawCards,
+        KeepStaging,
     }
 }
 

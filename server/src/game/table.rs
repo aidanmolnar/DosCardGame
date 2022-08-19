@@ -21,11 +21,11 @@ impl ServerTable {
         }
     }
 
-    pub fn peek(&self, index: Option<usize>) -> Card {
+    pub fn peek(&self, index: Option<usize>) -> Option<Card> {
         if let Some(index) = index {
-            self.0[index]
+            self.0.get(index).cloned()
         } else {
-            *self.0.last().expect("No cards left")
+            self.0.last().cloned()
         }
     }
 
@@ -86,13 +86,19 @@ impl<'w,'s> CardTransferer<'w,'s> {
     pub fn peek (
         &mut self,
         from: &CardReference,
-    ) -> Card {
+    ) -> Option<Card> {
         self.find_table(&from.location).peek(from.index)
     }
 
     pub fn peek_discard(&mut self) -> Option<Card> {
         self.find_table(
             &Location::DiscardPile,
+        ).last()
+    }
+
+    pub fn peek_staging(&mut self) -> Option<Card> {
+        self.find_table(
+            &Location::Staging,
         ).last()
     }
 

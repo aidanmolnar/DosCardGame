@@ -1,8 +1,8 @@
 use dos_shared::table::*;
 use dos_shared::cards::*;
 use dos_shared::messages::game::FromServer;
+use dos_shared::GameInfo;
 
-use super::game_info::GameInfo;
 use super::multiplayer::{NetPlayer, Agent, AgentTracker};
 use super::table::*;
 
@@ -70,16 +70,6 @@ pub fn deal_cards(
             println!("Deal in message failed to send {e}");
             // TODO: might need to disconnect client here, or return to lobby?
         }
-
-        if agent.turn_id == 0 {
-            if let Err(e) = bincode::serialize_into(
-                &player.stream, 
-                &FromServer::YourTurn
-            ) {
-                println!("Leave lobby message failed to send {e}");
-                // TODO: might need to disconnect client here, or return to lobby?
-            }
-        }
     }
 }
 
@@ -101,6 +91,11 @@ pub fn spawn_tables (
     let table = commands.spawn()
         .insert(ServerTable::default()).id();
     map.0.insert(Location::DiscardPile, table);
+
+    // Make staging table
+    let table = commands.spawn()
+        .insert(ServerTable::default()).id();
+    map.0.insert(Location::Staging, table);
 
     spawn_player_hand_tables(
         &mut map,

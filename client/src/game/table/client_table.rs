@@ -115,8 +115,8 @@ impl TableIndexData {
         }
     }
 
-    pub fn to_card_reference(&self, location: Location) -> CardReference {
-        CardReference { location, index: Some(self.get_hand_position())}
+    pub fn to_card_reference(&self, location: &Location) -> CardReference {
+        CardReference { location: *location, index: Some(self.get_hand_position())}
     }
 
     pub fn get_card_value(&self) -> Option<Card> {

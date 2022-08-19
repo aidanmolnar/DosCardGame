@@ -1,4 +1,5 @@
 use dos_shared::table::*;
+use dos_shared::GameInfo;
 
 use crate::game::layout::expressions::*;
 use crate::game::layout::constants::*;
@@ -41,6 +42,14 @@ pub fn spawn_all_tables (
     );
     map.0.insert(Location::DiscardPile, discard_pile_entity);
 
+    let staging_entity = spawn_table(
+        &mut commands, 
+        STAGING_LOCAITON,
+        0., 
+        false,
+    );
+    map.0.insert(Location::Staging, staging_entity);
+
     spawn_player_hand_tables(
         &mut map,
         &mut commands,
@@ -48,6 +57,7 @@ pub fn spawn_all_tables (
         mp_state.turn_id,
     );
 
+    commands.insert_resource(GameInfo::new(mp_state.player_names.len()));
     commands.insert_resource(map)
 }
 

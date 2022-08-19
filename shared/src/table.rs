@@ -1,3 +1,5 @@
+use super::cards::Card;
+
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -14,7 +16,8 @@ pub struct TableMap (pub HashMap<Location, Entity>);
 pub enum Location {
     Deck,
     DiscardPile,
-    Hand {player_id: usize}
+    Hand {player_id: usize},
+    Staging,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -23,3 +26,10 @@ pub struct CardReference {
     pub location: Location,
     pub index: Option<usize>,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+    pub struct CardTransfer {
+        pub from: CardReference,
+        pub to: CardReference,
+        pub value: Option<Card>,
+    }

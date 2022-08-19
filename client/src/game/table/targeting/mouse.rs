@@ -51,6 +51,7 @@ pub fn focus_system (
 
 // TODO: clean this up, kind of hacky right now
 // Brute force, could be sped up with some sort of hashing scheme but require a lot of transactional logic/time whenever a card is moved
+// TODO: Add a Location component to each card so we don't have to check all the cards in every table
 fn locate_card (
     map: &Res<TableMap>,
     tables: &Query<&ClientTable>,
@@ -109,7 +110,6 @@ pub fn update_system (
                 table.iter()
             );
         }
-
     }
 }
 
