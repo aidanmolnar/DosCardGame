@@ -1,3 +1,4 @@
+use dos_shared::cards::CardColor;
 use dos_shared::table::*;
 use dos_shared::valid_move;
 use dos_shared::messages::game::*;
@@ -13,6 +14,7 @@ use bevy::ecs::system::SystemParam;
 use::bincode;
 use std::net::TcpStream;
 use std::io;
+use std::io::Write;
 
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w,'s> {
@@ -21,6 +23,7 @@ pub struct GameNetworkManager<'w,'s> {
     agent_tracker: ResMut<'w, AgentTracker>,
     card_transferer: CardTransferer<'w,'s>,
     game_info: ResMut<'w, GameInfo>,
+    can_play_wild: Local<'s, bool>,
 }
 
 // TODO: Incorporate query so it doesn't need to be passed around
@@ -139,6 +142,35 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     panic!("Client desynced")
                 }
             }
+            FromClient::DiscardWildColor(color) => {
+                if *self.can_play_wild {
+                    *self.can_play_wild = false;
+
+                    let mut card = self.card_transferer.peek_discard().unwrap();
+                    card.color = color;
+
+                    // Update the card color in the table
+                    self.card_transferer.set_discard_value(card);
+
+                    // Send a message to the clients
+                    self.broadcast(
+                        query, 
+                        FromServer::DiscardWildColor(color),
+                    agent.turn_id
+                    );
+
+                    self.broadcast(
+                        query, 
+                        FromServer::NextTurn,
+                    agent.turn_id
+                    );
+                    self.game_info.next_turn();
+
+                } else {
+                    // TODO: Should not panic
+                    panic!("Client desynced, shouldn't be playing wild card")
+                }
+            }
             
         }
     }
@@ -192,13 +224,18 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 agent.turn_id
                 );
     
-                // TODO: Shouldn't have to iterate over all agents/players again...
-                self.broadcast(
-                    query, 
-                    FromServer::NextTurn,
-                agent.turn_id
-                );
-                self.game_info.next_turn();
+                
+                if card.color == CardColor::Wild {
+                    *self.can_play_wild = true;
+                } else {
+                    // TODO: Shouldn't have to iterate over all agents/players again...
+                    self.broadcast(
+                        query, 
+                        FromServer::NextTurn,
+                    agent.turn_id
+                    );
+                    self.game_info.next_turn();
+                }
     
             } else {
                 //TODO: Disconnect client/ treat as desync?
@@ -222,9 +259,12 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         message: FromServer,
         skip_player_id: usize,
     ) {
+        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
+
         for (_, player, agent) in query.iter() {
             if agent.turn_id != skip_player_id {
-                if let Err(e) = bincode::serialize_into(&player.stream, &message) {
+                // TODO: Cloning the stream is not the best way to handle having an immutable reference here
+                if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
                     panic!("Leave lobby message failed to send {e}");
                     // TODO: might need to disconnect client here, or return to lobby?
                 }
@@ -238,9 +278,12 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         message: FromServer,
         receiver_id: usize,
     ) {
+        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
+        
         for (_, player, agent) in query.iter() {
             if agent.turn_id == receiver_id {
-                if let Err(e) = bincode::serialize_into(&player.stream, &message) {
+                // TODO: Cloning the stream is not the best way to handle having an immutable reference here
+                if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
                     panic!("Leave lobby message failed to send {e}");
                     // TODO: might need to disconnect client here, or return to lobby?
                 }

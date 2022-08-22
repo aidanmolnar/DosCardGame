@@ -1,4 +1,4 @@
-use dos_shared::cards::Card;
+use dos_shared::cards::{Card, CardColor};
 use dos_shared::table::{CardReference, Location};
 use dos_shared::valid_move;
 use dos_shared::messages::game::FromClient;
@@ -9,6 +9,8 @@ use crate::game::server_actions::dealing::DelayedTransfer;
 
 use bevy::prelude::*;
 use bevy_mod_picking::*;
+
+use super::select_wild_color::WildCardManager;
 
 #[derive(Component)]
 pub struct CardValue (pub Card);
@@ -21,13 +23,12 @@ pub fn play_card_system (
     mut events: EventReader<PickingEvent>,
     focused_card: Res<FocusedCard>,
     delayed_cards: Query<&DelayedTransfer>,
+    mut wild_card_manager: ResMut<WildCardManager>,
 ) {
     if !network_manager.is_your_turn() || !delayed_cards.is_empty() {
         return;
     }
 
-
-    // TODO: Clean this up.  Remove TableIndexData
     for event in events.iter() {
         if let PickingEvent::Clicked(_) = event {
 
@@ -54,6 +55,7 @@ pub fn play_card_system (
                         } else {
                             play_card(
                                 &mut network_manager, 
+                                &mut wild_card_manager,
                                 location, 
                                 table_index_data
                             );
@@ -72,6 +74,7 @@ pub fn play_card_system (
                             // TODO: this is really hacky, we know the card is playable.  Play card should be split up
                             play_card(
                                 &mut network_manager, 
+                                &mut wild_card_manager,
                                 &Location::Staging, 
                                 &TableIndexData::Sorted{ hand_position: 0, sorted_position: 0, card_value: card}
                             )
@@ -87,12 +90,15 @@ pub fn play_card_system (
 
 fn play_card(
     network_manager: &mut GameNetworkManager,
+    wild_card_manager: &mut ResMut<WildCardManager>,
     location: &Location,
     table_index_data: &TableIndexData,
 ) {
-
     // Get the selected card and the top of the discard pile
     if let Some(card_value) = table_index_data.get_card_value() {
+
+        
+
         if let Some(discard_value) = network_manager.card_transferer.peek_discard() {
         
             // Make sure the move is legal
@@ -104,7 +110,13 @@ fn play_card(
                     CardReference{location: Location::DiscardPile, index: None}, 
                     Some(card_value),
                 );
-                network_manager.game_info.next_turn();
+
+                if card_value.color == CardColor::Wild {
+                    wild_card_manager.toggle();
+                } else {
+                    network_manager.game_info.next_turn();
+                }
+                
 
                 // Tell the server the intended move
                 network_manager.send_message(FromClient::PlayCard{card: table_index_data.to_card_reference(location)});

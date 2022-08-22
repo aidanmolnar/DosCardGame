@@ -18,7 +18,7 @@ pub fn load_assets (
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let texture_handle = asset_server.load(CARDS_PATH);
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(CARD_WIDTH, CARD_HEIGHT), 13, 5);
+    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(CARD_WIDTH, CARD_HEIGHT), 15, 5);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
     let mesh_handle = meshes.add(Mesh::from(shape::Quad::default()));

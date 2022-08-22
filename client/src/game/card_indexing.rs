@@ -1,6 +1,6 @@
 use dos_shared::cards::*;
 
-pub const CARD_BACK_SPRITE_INDEX: usize = 4*13+2;
+pub const CARD_BACK_SPRITE_INDEX: usize = 4*15;
 
 // TODO: this could be moved to graphic_interface/assets?
 
@@ -14,10 +14,10 @@ impl SpriteIndex for Card {
     fn get_sprite_index(&self) -> usize {
         let offset = match self.color {
             CardColor::Red    => {   0}
-            CardColor::Yellow => {  13}
-            CardColor::Green  => {2*13}
-            CardColor::Blue   => {3*13}
-            CardColor::Wild   => {4*13} 
+            CardColor::Yellow => {  15}
+            CardColor::Green  => {2*15}
+            CardColor::Blue   => {3*15}
+            CardColor::Wild   => {4*15} 
         };
     
         offset + match self.ty {
@@ -25,8 +25,8 @@ impl SpriteIndex for Card {
             CardType::Skip =>     {10}
             CardType::Reverse =>  {11}
             CardType::DrawTwo =>  {12}
-            CardType::Wild =>     {0}
-            CardType::DrawFour => {1}
+            CardType::Wild =>     {13}
+            CardType::DrawFour => {14}
         }
     }
 }

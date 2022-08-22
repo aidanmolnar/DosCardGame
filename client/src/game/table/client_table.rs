@@ -86,6 +86,17 @@ impl ClientTable {
             }
         }
     }
+
+    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
+        match self {
+            ClientTable::UnsortedTable(table) => {
+                table.set_last_value(card)
+            }
+            ClientTable::SortedTable(table) => {
+                table.set_last_value(card)
+            }
+        }
+    }
 }
 
 // TODO: rename or rework this
@@ -164,6 +175,15 @@ impl UnsortedTable {
     pub fn last(&self) -> Option<(Entity, Option<Card>)> {
         self.0.last().cloned()
     }
+
+    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
+        if let Some(value) = self.0.last_mut() {
+            value.1 = card;
+            true
+        } else {
+            false
+        }
+    }
 }
 
 
@@ -227,5 +247,19 @@ impl SortedTable {
         }
         
         None
+    }
+
+    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
+        if let Some(entity) = self.entities.last() {
+            let sorted_index = self.get_sorted_index(*entity).unwrap();
+            self.cards[sorted_index].0 = card.expect("Cards in sorted hands must have known values!");
+
+            // Resort by card value
+            self.cards.sort_by(|a,b| a.0.cmp(&b.0));
+
+            true
+        } else {
+            false
+        }
     }
 }

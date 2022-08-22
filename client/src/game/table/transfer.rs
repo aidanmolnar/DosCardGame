@@ -74,6 +74,20 @@ impl<'w,'s> CardTransferer<'w,'s> {
         }
     }
 
+    pub fn set_discard_value(&mut self, card: Option<Card>) {
+        let mut table = self.find_table(&Location::DiscardPile);
+        let (entity, _) = table.last().unwrap();
+
+        // Update the tracked value
+        table.set_last_value(card);
+
+        // Update the displayed value
+        if let Some(card) = card {
+            let mut sprite = self.sprites.get_mut(entity).unwrap();
+            sprite.index = card.get_sprite_index();
+        }
+    }
+
     pub fn transfer (
         &mut self, 
         from: CardReference, 

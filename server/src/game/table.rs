@@ -49,6 +49,15 @@ impl ServerTable {
     pub fn last(&self) -> Option<Card> {
         self.0.last().cloned()
     }
+
+    pub fn set_last_value(&mut self, card: Card) -> bool {
+        if let Some(value) = self.0.last_mut() {
+            *value = card;
+            true
+        } else {
+            false
+        }
+    }
 }
 
 
@@ -111,5 +120,11 @@ impl<'w,'s> CardTransferer<'w,'s> {
         self.insert(&to, card);
 
         card
+    }
+
+    pub fn set_discard_value(&mut self, card: Card) {
+        let mut table = self.find_table(&Location::DiscardPile);
+        // Update the tracked value
+        table.set_last_value(card);
     }
 }

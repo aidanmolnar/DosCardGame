@@ -67,6 +67,11 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
             FromServer::TransferCards(transfers) => {
                 create_delayed_transfers(&mut self.commands, transfers, 0.5);
             }
+            FromServer::DiscardWildColor(color) => {
+                let mut card = self.card_transferer.peek_discard().unwrap();
+                card.color = color;
+                self.card_transferer.set_discard_value(Some(card));
+            }
         }
     }
 

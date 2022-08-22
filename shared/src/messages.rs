@@ -1,5 +1,5 @@
 
-use super::cards::Card;
+use super::cards::{Card, CardColor};
 use super::table::{CardTransfer, CardReference};
 
 pub mod lobby {
@@ -21,7 +21,7 @@ pub mod lobby {
 }
 
 pub mod game {
-    use super::{Card, CardTransfer, CardReference};
+    use super::{Card, CardColor, CardTransfer, CardReference};
 
     use serde::{Serialize, Deserialize};
 
@@ -30,6 +30,7 @@ pub mod game {
         DealIn {your_cards: Vec<Card>, deck_size: usize, to_discard_pile: Vec<Card>},
         TransferCards(Vec<CardTransfer>),
         NextTurn,
+        DiscardWildColor(CardColor),
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -37,6 +38,7 @@ pub mod game {
         PlayCard {card: CardReference},
         DrawCards,
         KeepStaging,
+        DiscardWildColor(CardColor),
     }
 }
 

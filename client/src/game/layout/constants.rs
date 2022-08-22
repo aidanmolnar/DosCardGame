@@ -12,7 +12,7 @@ pub const MAX_HAND_SPACING: f32 = 80.;
 pub const YOUR_HAND_CENTER: (f32, f32) = (0., -1000. + 360. / 2.);
 
 pub const OPPONENT_ARC_WIDTH: f32 = 1500.;
-pub const OPPONENT_ARC_HEIGHT: f32 = 600.;
+pub const OPPONENT_ARC_HEIGHT: f32 = 800.;
 pub const MAX_OPPONENT_HAND_WIDTH: f32 = (MAX_HAND_WIDTH - OPPONENT_ARC_WIDTH) / 2. - 250.;
 pub const OPPONENT_ARC_ANGLE: f32 = std::f32::consts::PI * 0.8;
 

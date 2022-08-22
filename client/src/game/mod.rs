@@ -1,5 +1,6 @@
 use dos_shared::table::TableMap;
 
+use self::client_actions::WildCardPlugin;
 use self::client_actions::play_card::play_card_system;
 
 use super::GameState;
@@ -37,9 +38,11 @@ impl Plugin for GamePlugin {
         .add_plugin(InteractablePickingPlugin)
         .add_plugin(AnimationPlugin)
         .add_plugin(TablePlugin)
+        .add_plugin(WildCardPlugin)
 
         // On state startup
         .add_enter_system(GameState::InGame, add_camera)
+        
         
         // On app startup
         .add_startup_system(load_assets)

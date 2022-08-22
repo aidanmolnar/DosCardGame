@@ -8,6 +8,7 @@ mod setup;
 pub use client_table::{ClientTable, TableIndexData};
 pub use targeting::mouse::FocusedCard;
 pub use transfer::CardTransferer;
+pub use setup::DeckBuilder;
 
 use targeting::{mouse, position};
 use targeting::position::TableArranger;

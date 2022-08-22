@@ -30,31 +30,17 @@ impl<'w, 's> DeckBuilder<'w, 's> {
             let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, 0.1 * i as f32);
             let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
 
-            let e = self.commands.spawn()
-            .insert_bundle(
-                SpriteSheetBundle {
-                    sprite: TextureAtlasSprite { 
-                        index: CARD_BACK_SPRITE_INDEX, 
-                        ..default() 
-                    },
-                    texture_atlas: self.texture_atlases.get_handle(&self.card_handles.atlas),
-                    transform,
-                    ..default()
-            }).insert_bundle(
-                MaterialMesh2dBundle {
-                    mesh: self.meshes.add(Mesh::from(shape::Quad::new(Vec2::new(240.,360.)))).into(),
-                    material: self.materials.add(ColorMaterial::from(Color::Rgba { red: 0., green: 0., blue: 0., alpha: 0. })),
-                    transform,
-                    ..default()
-                })
-            .insert_bundle(PickableBundle::default())
+            let e = self.make_pickable_sprite(transform, CARD_BACK_SPRITE_INDEX);
+            
+            self.commands.entity(e)
             .insert(
                 LinearAnimation {
                     start: transform,
                     end: transform,
                     timer: Timer::from_seconds(0.01, false),
                 }
-            ).insert(
+            )
+            .insert(
                 BoardPosition {
                     position: translation
                 }
@@ -63,13 +49,34 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                     offset: Vec3::ZERO,
                     scale: 1.,
                 }
-            )
-            
-            .id();
+            );
 
             entities.push((e, None))
         }
 
         entities
+    }
+
+
+    pub fn make_pickable_sprite(&mut self, transform: Transform, index: usize) -> Entity {
+        self.commands.spawn()
+        .insert_bundle(
+            SpriteSheetBundle {
+                sprite: TextureAtlasSprite { 
+                    index, 
+                    ..default() 
+                },
+                texture_atlas: self.texture_atlases.get_handle(&self.card_handles.atlas),
+                transform,
+                ..default()
+        }).insert_bundle(
+            MaterialMesh2dBundle {
+                mesh: self.meshes.add(Mesh::from(shape::Quad::new(Vec2::new(240.,360.)))).into(),
+                material: self.materials.add(ColorMaterial::from(Color::Rgba { red: 0., green: 0., blue: 0., alpha: 0. })),
+                transform,
+                ..default()
+            })
+        .insert_bundle(PickableBundle::default())
+        .id()
     }
 }
