@@ -1388,6 +1388,7 @@ version = "0.1.0"
 dependencies = [
  "bevy",
  "bincode",
+ "iyes_loopless",
  "rand",
  "serde",
 ]

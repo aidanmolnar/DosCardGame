@@ -1,4 +1,5 @@
-use self::card_tracker::MemorizedCards;
+use card_tracker::MemorizedCards;
+use setup::ClientTableSetupPlugin;
 
 use super::GameState;
 
@@ -26,7 +27,7 @@ impl Plugin for TablePlugin {
         .init_resource::<MemorizedCards>()
 
         // Setup tables
-        .add_enter_system(GameState::InGame, setup::spawn_all_tables)
+        .add_plugin(ClientTableSetupPlugin)
 
         // Setup card tracker
         .add_enter_system(GameState::InGame, card_tracker::setup_delayed_transfer_queue)

@@ -4,6 +4,7 @@ pub mod table;
 mod game_info;
 pub mod transfer;
 pub mod dos_game;
+pub mod table_map_setup;
 
 pub use game_info::GameInfo;
 
