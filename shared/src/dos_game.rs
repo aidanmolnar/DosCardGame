@@ -85,7 +85,7 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
                 self.transfer(&DECK_REFERENCE, &to);
 
                 // Exit before dealing last card so that it can be used for discard pile
-                // TODO: this panics is num starting cards is very large
+                // TODO: this panics if num starting cards is very large
                 if count >= deck_size - CARDS_TO_RETAIN {
                     return
                 }
@@ -112,14 +112,12 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
         let card = self.transfer(
             card_reference, 
             &DISCARD_REFERENCE
-        ).expect("Discarded card should be known for all");
+        ).expect("Discarded card must be visible for all");
 
         // TODO: Handle card effects: ex. draw cards, skip, reverse, etc.
 
         if card.color != CardColor::Wild {
-            dbg!("Next Turn", self.game_info().current_turn());
             self.game_info_mut().next_turn();
-            dbg!(self.game_info().current_turn());
         } 
     }
 

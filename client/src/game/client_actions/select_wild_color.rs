@@ -117,7 +117,7 @@ fn wildcard_button_display_system(
                 visibility.is_visible = true;
                 animation.start = *transform;
                 animation.end = Transform::from_translation(button.target_position);
-                animation.timer = Timer::from_seconds(0.1, false);
+                animation.timer = Timer::from_seconds(0.4, false);
             }
         } else {
             // Toggled Off
@@ -125,7 +125,7 @@ fn wildcard_button_display_system(
                 visibility.is_visible = false;
                 animation.start = *transform;
                 animation.end = Transform::from_translation(Vec3{x:BUTTON_START.0,y:BUTTON_START.1,z:BUTTON_START.2});
-                animation.timer = Timer::from_seconds(0.1, false);
+                animation.timer = Timer::from_seconds(0.01, false);
             }
         }
 
