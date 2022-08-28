@@ -1,6 +1,6 @@
 use dos_shared::cards::Card;
 use dos_shared::dos_game::DosGame;
-use dos_shared::table::{Location, CardReference, TableMap};
+use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
 use dos_shared::transfer::{CardTracker, CardWrapper};
 use dos_shared::GameInfo;
 
@@ -113,7 +113,13 @@ impl CardTracker<ClientItem, ClientTable> for ClientCardTracker<'_, '_> {
     }
 
     fn set_discard_last(&mut self, card: Option<Card>) {
-        let discard = self.discard_last_mut().expect("No discarded card");
+        let discard = self.get_mut(
+            &CardReference{
+                location: Location::DiscardPile, 
+                hand_position: HandPosition::Last
+            }
+        ).expect("No discarded card");
+        
         discard.0 = card;
         let item = *discard;
 

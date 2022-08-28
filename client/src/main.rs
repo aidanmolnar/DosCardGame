@@ -18,8 +18,8 @@ fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Dos!".to_string(),
-            width: 1920.,
-            height: 1080.,
+            width: 1280.,
+            height: 720.,
             resizable: true,
             position: WindowPosition::Centered(MonitorSelection::Primary),
             ..default()

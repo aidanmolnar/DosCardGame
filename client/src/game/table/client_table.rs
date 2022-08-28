@@ -196,6 +196,21 @@ impl Table<ClientItem> for SortedTable {
         }
     }
 
+    fn get_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<&mut ClientItem> {
+        if let Some(entity) = self.entities.get(index) {
+            // We know the entity has been inserted into the table if it was in entities
+            let index =  self.sorted_index(*entity).unwrap();
+            Some(&mut self.cards[
+               index
+            ])
+        } else {
+            None
+        }
+    }
+
 }
 
 #[derive(Component, Debug, Clone)]
@@ -268,6 +283,16 @@ impl Table<ClientItem> for ClientTable {
         match self {
             ClientTable::Sorted(table) => {table.get(index)}
             ClientTable::Unsorted(table) => {table.get(index)}
+        }
+    }
+
+    fn get_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<&mut ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.get_mut(index)}
+            ClientTable::Unsorted(table) => {table.get_mut(index)}
         }
     }
 }

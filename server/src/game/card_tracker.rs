@@ -70,6 +70,13 @@ impl Table<Card> for ServerTable {
     ) -> Option<&Card> {
         self.0.get(index)
     }
+    
+    fn get_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<&mut Card> {
+        self.0.get_mut(index)
+    }
 }
 
 #[derive(SystemParam)]
@@ -156,7 +163,12 @@ impl CardTracker<Card, ServerTable> for ServerCardTracker<'_, '_> {
     }
 
     fn set_discard_last(&mut self, card: Option<Card>) {
-        let discard = self.discard_last_mut().expect("No discarded card");
+        let discard = self.get_mut(
+            &CardReference{
+                location: Location::DiscardPile, 
+                hand_position: HandPosition::Last
+            }
+        ).expect("No discarded card");
         *discard = card.expect("Cards on server must have known value");
     }
 

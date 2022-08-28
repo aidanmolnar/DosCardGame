@@ -12,6 +12,11 @@ pub trait Table<T> {
         index: usize,
     ) -> Option<&T>;
 
+    fn get_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<&mut T>;
+
     fn push(
         &mut self,
         item: T
@@ -78,13 +83,24 @@ pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
     }
 
     fn get(
-        & self, 
+        &self, 
         from: &CardReference
     ) -> Option<& T> {
         let table = self.get_table(&from.location);
         match from.hand_position {
             HandPosition::Last => {table.last()}
             HandPosition::Index(i) => {table.get(i)}
+        }
+    }
+
+    fn get_mut(
+        &mut self, 
+        from: &CardReference
+    ) -> Option<&mut T> {
+        let table = self.get_table_mut(&from.location);
+        match from.hand_position {
+            HandPosition::Last => {table.last_mut()}
+            HandPosition::Index(i) => {table.get_mut(i)}
         }
     }
 
@@ -96,31 +112,10 @@ pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
         self.get_table_mut(&to.location).push(item)
     }
 
-    fn deck_last(
-        &self,
-    ) -> Option<&T> {
-        self.get_table(&Location::Deck).last()
-    }
-
-    fn discard_last(
-        & self
-    ) -> Option<&T> {
-        self.get_table(&Location::DiscardPile).last()
-    }
-
-    fn staging_last(
-        & self
-    ) -> Option<& T> {
-        self.get_table(&Location::Staging).last()
-    }
-
-    fn discard_last_mut (
-        & mut self
-    ) -> Option<& mut T>{
-        self.get_table_mut(&Location::DiscardPile).last_mut()
-    }
-
-    fn set_discard_last(&mut self, card: Option<Card>);
+    fn set_discard_last(
+        &mut self, 
+        card: Option<Card>
+    );
 
     fn transfer(
         &mut self,
@@ -149,6 +144,13 @@ impl<T: std::fmt::Debug> Table<T> for BasicTable<T> {
         index: usize,
     ) -> Option<&T> {
         self.0.get(index)
+    }
+
+    fn get_mut(
+        &mut self,
+        index: usize,
+    ) -> Option<&mut T> {
+        self.0.get_mut(index)
     }
 
     fn push(

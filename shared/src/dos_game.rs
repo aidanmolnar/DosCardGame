@@ -50,14 +50,14 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
     CardTracker<T, U> 
 {
     fn get_turn_state(&self) -> TurnState {
-        if let Some(discard_wrapper) = self.discard_last() {
+        if let Some(discard_wrapper) = self.get(&DISCARD_REFERENCE) {
             let discard = discard_wrapper.card();
 
             if discard.color == CardColor::Wild {
                 return TurnState::WildcardColorSelect;
             }
 
-            if self.staging_last().is_some() {
+            if self.get(&STAGING_REFERENCE).is_some() {
                 return TurnState::StagedCard;
             }
 
@@ -69,7 +69,7 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
 
     fn deal_starting_cards(&mut self, deck_size: usize) {
         let condition = |game: &Self| {
-            match game.discard_last().unwrap().card().ty {
+            match game.get(&DISCARD_REFERENCE).unwrap().card().ty {
                 CardType::Wild => {false},
                 CardType::DrawFour => {false}
                 _=> {true}
@@ -143,7 +143,7 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
 
             // Check that the card actually exists
             if let Some(card_wrapper) = self.get(card_reference) {
-                let discard = self.discard_last().unwrap().card(); // Can unwrap because we already checked that a discarded card exists in get_turn_state
+                let discard = self.get(&DISCARD_REFERENCE).unwrap().card(); // Can unwrap because we already checked that a discarded card exists in get_turn_state
 
                 // Check that the card is playable
                 is_valid_move(card_wrapper.card(), discard)
@@ -159,7 +159,7 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
         &mut self,
     ) {
         let condition = |game: &Self| {
-            let discard = game.discard_last().unwrap().card();
+            let discard = game.get(&DISCARD_REFERENCE).unwrap().card();
             let card = game.get(&DECK_REFERENCE).expect("Deck out of cards").card();
             is_valid_move(card, discard)
         };
@@ -210,7 +210,7 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
         &mut self,
         color: &CardColor,
     ) {
-        let mut discard = *self.discard_last().unwrap().card();
+        let mut discard = *self.get(&DISCARD_REFERENCE).unwrap().card();
         discard.color = *color;
         self.set_discard_last(Some(discard));
 

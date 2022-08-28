@@ -1,8 +1,7 @@
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 use dos_shared::DECK_SIZE;
-
-use crate::game;
+    
 use crate::game::table::ClientCardTracker;
 
 use bevy::prelude::*;
@@ -43,7 +42,6 @@ pub fn game_network_system(
 
 impl<'w,'s> GameNetworkManager<'w,'s> {
     fn handle_update(&mut self, game_update: FromServer) {
-        dbg!(game_update.clone());
 
         self.card_tracker.memorized_cards.1 = game_update.condition_counter;
 

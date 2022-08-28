@@ -15,6 +15,8 @@ use bevy::prelude::*;
 use bevy_mod_picking::PickingEvent;
 use iyes_loopless::prelude::*;
 
+const BUTTON_START: (f32,f32,f32) = (0.,0.,200.);
+
 pub struct WildCardPlugin;
 
 impl Plugin for WildCardPlugin {
@@ -85,7 +87,7 @@ fn make_wildcard_button(
     commands: &mut Commands,
     wildcard_button: WildCardButton
 ) {
-    let transform = Transform::from_translation(Vec3::Z*200.);
+    let transform = Transform::from_translation(Vec3{x:BUTTON_START.0,y:BUTTON_START.1,z:BUTTON_START.2});
 
     let index = Card{color: wildcard_button.color, ty: CardType::Wild}.get_sprite_index();
 
@@ -103,7 +105,7 @@ fn make_wildcard_button(
 fn wildcard_button_display_system(
     card_tracker: ClientCardTracker,
     mut previous_turn_state: Local<TurnState>,
-    mut query: Query<(&WildCardButton, &mut Visibility, &mut LinearAnimation)>,
+    mut query: Query<(&WildCardButton, &mut Visibility, &mut LinearAnimation, &Transform)>,
 ) {
     let turn_state = card_tracker.get_turn_state();
 
@@ -111,15 +113,19 @@ fn wildcard_button_display_system(
         // Clean up turn check
         if turn_state == TurnState::WildcardColorSelect && card_tracker.is_players_turn(card_tracker.mp_state.turn_id) {
             // Toggle On
-            for (button, mut visibility, mut animation) in query.iter_mut() {
+            for (button, mut visibility, mut animation, transform) in query.iter_mut() {
                 visibility.is_visible = true;
+                animation.start = *transform;
                 animation.end = Transform::from_translation(button.target_position);
+                animation.timer = Timer::from_seconds(0.1, false);
             }
         } else {
             // Toggled Off
-            for (_, mut visibility, mut animation) in query.iter_mut() {
+            for (_, mut visibility, mut animation, transform) in query.iter_mut() {
                 visibility.is_visible = false;
-                animation.end = Transform::from_translation(Vec3::ZERO);
+                animation.start = *transform;
+                animation.end = Transform::from_translation(Vec3{x:BUTTON_START.0,y:BUTTON_START.1,z:BUTTON_START.2});
+                animation.timer = Timer::from_seconds(0.1, false);
             }
         }
 

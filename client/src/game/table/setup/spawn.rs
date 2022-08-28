@@ -78,18 +78,14 @@ fn spawn_player_hand_tables(
             )
         } else {
 
-            // TODO: this is jenky
             // Adjust other ids so your hand is skipped
-            let local_id = if player_id > local_player_id {
-                (player_id-1) % num_other_players
-            } else {
-                player_id % num_other_players
-            };
+            let local_id = ((player_id as isize - local_player_id as isize).rem_euclid(num_players as isize) - 1) as usize;
+            dbg!(local_id);
         
             // Arrange centers of opponents hands in an arc
             let (x,y) = arange_arc(
                 num_other_players, 
-                local_id,
+                local_id ,
                 OPPONENT_ARC_ANGLE);
             let center = (OPPONENT_ARC_WIDTH*x, OPPONENT_ARC_HEIGHT*y);
 
