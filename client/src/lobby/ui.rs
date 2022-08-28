@@ -78,7 +78,6 @@ pub fn lobby_ui(
                     let name = ui_state.name.clone();
 
 
-
                     let task = thread_pool.spawn(async move {
                         create_connection_task(&address, &name)
                     });

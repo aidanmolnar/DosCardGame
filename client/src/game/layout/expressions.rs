@@ -26,10 +26,10 @@ pub fn arange_arc(len: usize, i: usize, angle: f32) -> (f32, f32) {
 
 // TODO: what is this?
 pub fn horizontal_offset(hand_size: usize) -> f32 {
-    if hand_size == 0 {
-        0.
-    } else {
+    if hand_size > 1 {
         let hand_spacing = your_max_hand_width(hand_size) / (hand_size - 1) as f32; 
         WIDTH_OFFSET - hand_spacing
+    } else {
+        0.
     }
 }

@@ -1,14 +1,15 @@
+use self::card_tracker::MemorizedCards;
+
 use super::GameState;
 
-mod transfer;
 mod client_table;
+mod card_tracker;
 mod targeting;
 mod setup;
 
-pub use client_table::{ClientTable, TableIndexData};
-pub use targeting::mouse::FocusedCard;
-pub use transfer::CardTransferer;
+pub use targeting::mouse::{FocusedCard,FocusedCardData};
 pub use setup::DeckBuilder;
+pub use card_tracker::ClientCardTracker;
 
 use targeting::{mouse, position};
 use targeting::position::TableArranger;
@@ -22,9 +23,13 @@ pub struct TablePlugin;
 impl Plugin for TablePlugin {
     fn build(&self, app: &mut App) {
         app
+        .init_resource::<MemorizedCards>()
 
         // Setup tables
         .add_enter_system(GameState::InGame, setup::spawn_all_tables)
+
+        // Setup card tracker
+        .add_enter_system(GameState::InGame, card_tracker::setup_delayed_transfer_queue)
 
         // Mouse targeting
         .init_resource::<mouse::FocusedCard>()
@@ -36,7 +41,10 @@ impl Plugin for TablePlugin {
 
         // Position targeting
         .add_system(position::update_system
-            .run_in_state(GameState::InGame));
+            .run_in_state(GameState::InGame))
         
+        // Update delayed transfers in card tracker
+        .add_system(card_tracker::update_card_tracker_system
+            .run_in_state(GameState::InGame));
     }
 }

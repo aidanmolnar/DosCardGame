@@ -17,7 +17,10 @@
             "command": "dos-client.exe",
             "group": "test",
             "options": {
-                "cwd": "${workspaceFolder}/target/debug/"
+                "cwd": "${workspaceFolder}/target/debug/",
+                "env": {
+                    "RUST_BACKTRACE": "1",
+                }
             },
             "presentation": {
                 "reveal": "always",
@@ -30,7 +33,10 @@
             "command": "dos-server.exe",
             "group": "test",
             "options": {
-                "cwd": "${workspaceFolder}/target/debug"
+                "cwd": "${workspaceFolder}/target/debug",
+                "env": {
+                    "RUST_BACKTRACE": "1",
+                }
             },
             "presentation": {
                 "reveal": "always",

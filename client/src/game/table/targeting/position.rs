@@ -1,4 +1,4 @@
-
+use dos_shared::transfer::Table;
 
 use crate::game::animations::components::*;
 use crate::game::layout::{expressions::*,constants::*};
@@ -16,12 +16,13 @@ pub struct TableArranger {
 pub fn update_system (
     tables: Query<(&ClientTable, &TableArranger), Changed<ClientTable>>,
     mut cards: Query<&mut BoardPosition>,
+    
 ) {
     for (table, arranger) in tables.iter() {
         calculate_positions(
             &mut cards,
             arranger,
-            table.iter(), 
+            table.iter_entities(), 
             table.len() 
         );
     }
@@ -39,6 +40,7 @@ fn calculate_positions<'a> (
         let mut board_position = cards.get_mut(*entity).unwrap();
 
         let pos = width * arange_1d(num_cards, hand_position); 
-        board_position.position = Vec3::new(arranger.center.0 + pos, arranger.center.1, 2. + (hand_position as f32) / 10.);
+        
+        board_position.position = Vec3::new(arranger.center.0 + pos, arranger.center.1, 2. + (hand_position as f32) / 100.);
     }
 }

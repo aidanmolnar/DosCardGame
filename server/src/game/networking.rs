@@ -1,12 +1,9 @@
-use dos_shared::cards::CardColor;
-use dos_shared::table::*;
-use dos_shared::valid_move;
+use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
-use dos_shared::GameInfo;
 
+use super::ServerCardTracker;
 use super::multiplayer::{NetPlayer, Agent, AgentTracker};
 use super::super::connection_listening::{PlayerCountChange, disconnect};
-use super::table::CardTransferer;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -21,9 +18,7 @@ pub struct GameNetworkManager<'w,'s> {
     events: EventWriter<'w, 's, PlayerCountChange>, 
     commands: Commands<'w, 's>,
     agent_tracker: ResMut<'w, AgentTracker>,
-    card_transferer: CardTransferer<'w,'s>,
-    game_info: ResMut<'w, GameInfo>,
-    can_play_wild: Local<'s, bool>,
+    pub card_tracker: ServerCardTracker<'w,'s>,
 }
 
 // TODO: Incorporate query so it doesn't need to be passed around
@@ -33,10 +28,10 @@ pub fn game_network_system (
 ) {
     for (entity, player, agent) in query.iter() {
         match bincode::deserialize_from::<&TcpStream, FromClient>(&player.stream) {
-            Ok(lobby_update) => {
+            Ok(update) => {
                 manager.handle_update(
                     &query,
-                    lobby_update,   
+                    update,   
                     agent, 
                 );
             },
@@ -52,227 +47,94 @@ pub fn game_network_system (
 }
 
 impl<'w,'s> GameNetworkManager<'w,'s> {
+
+    // TODO: Replace panics
     fn handle_update(
         &mut self,
         query: &Query<(Entity, &NetPlayer, &Agent)>, 
-        lobby_update: FromClient, 
+        update: FromClient, 
         agent: &Agent, 
     ) {
-        if agent.turn_id != self.game_info.current_turn() {
-            // TODO: Disconnect the player or something
-            panic!("Someone played out of turn");
-        }
+        let action;
 
-        match lobby_update {
-            FromClient::PlayCard{card: card_reference} => {
-                self.handle_play_card(
-                    query,
-                    agent,
-                    card_reference
-                )
-            }
-            FromClient::DrawCards => {
-                // Store references for card transfers
-                let from = CardReference{
-                    location: Location::Deck,
-                    index: None
-                };
-                let to = CardReference{
-                    location: Location::Hand{player_id: agent.turn_id},
-                    index: None
-                };
-                let to_last = CardReference{
-                    location: Location::Staging,
-                    index: None
-                };
+        match update.0 {
+            GameAction::PlayCard (card)=> {
+                if self.card_tracker.validate_play_card(agent.turn_id, &card) {
+                    self.card_tracker.play_card(&card);
 
-                let discard_pile = self.card_transferer.peek_discard().unwrap();
-                let mut agent_transfers = Vec::new();
-                let mut other_transfers = Vec::new();
+                    action = Some(GameAction::PlayCard(card));
+                } else {
+                    panic!("Invalid play card");
+                }
+            },
+            GameAction::DrawCards => {
+                if self.card_tracker.validate_draw_cards(agent.turn_id) {
+                    self.card_tracker.draw_cards();
 
-                loop {
-                    // We can be sure the deck will have cards because card transferer will automatically reshuffle pile
-                    let card = self.card_transferer.peek(&from).unwrap();
-
-                    if valid_move(card, discard_pile) {
-                        // Others think card was transfered to players hand
-                        other_transfers.push(CardTransfer {from, to, value: None});
-                        agent_transfers.push(CardTransfer {from, to: to_last, value: Some(card)});
-                        self.card_transferer.transfer(from, to_last);
-                        break
-                    } else {
-                        other_transfers.push(CardTransfer {from, to, value: None});
-                        agent_transfers.push(CardTransfer {from, to, value: Some(card)});
-                        self.card_transferer.transfer(from, to);
+                    // TODO: Clean this up.  Issue is that all clients need to receive this message.  Including sender.
+                    let condition_counter = self.card_tracker.memorized_cards.take_condition_counter();
+                    for (_, _, agent) in query.iter() {
+                        let cards = self.card_tracker.memorized_cards.take_player(agent.turn_id);
+                        self.send_to_one(query, FromServer{action: GameAction::DrawCards, condition_counter, cards}, agent.turn_id)
                     }
-                }
-
-                // Update the player who drew with the transfers and card values
-                self.send_to_one(
-                    query, 
-                    FromServer::TransferCards(agent_transfers), 
-                    agent.turn_id
-                );
-
-                // Update the other players with just the transfers
-                self.broadcast(
-                    query, 
-                    FromServer::TransferCards(other_transfers), 
-                    agent.turn_id
-                );
-
-                // Do not update turn, player has to decide whether to play staged card or not...
-            }
-            FromClient::KeepStaging => {
-                if self.card_transferer.peek_staging().is_some() {
-                    self.card_transferer.transfer(
-                        CardReference { location: Location::Staging, index: None },
-                        CardReference{ location: Location::Hand{player_id: agent.turn_id}, index: None}
-                    );
-
-                    self.broadcast(
-                        query, 
-                        FromServer::NextTurn,
-                    agent.turn_id
-                    );
-                    self.game_info.next_turn();
+                    return;
                 } else {
-                    //TODO: Disconnect client/ treat as desync?
-                    // Call handle error?
-                    panic!("Client desynced")
+                    panic!("Invalid draw cards");
                 }
-            }
-            FromClient::DiscardWildColor(color) => {
-                if *self.can_play_wild {
-                    *self.can_play_wild = false;
+            },
+            GameAction::KeepStaging => {
+                if self.card_tracker.validate_keep_last_drawn_card(agent.turn_id) {
+                    self.card_tracker.keep_last_drawn_card();
 
-                    let mut card = self.card_transferer.peek_discard().unwrap();
-                    card.color = color;
-
-                    // Update the card color in the table
-                    self.card_transferer.set_discard_value(card);
-
-                    // Send a message to the clients
-                    self.broadcast(
-                        query, 
-                        FromServer::DiscardWildColor(color),
-                    agent.turn_id
-                    );
-
-                    self.broadcast(
-                        query, 
-                        FromServer::NextTurn,
-                    agent.turn_id
-                    );
-                    self.game_info.next_turn();
-
+                    action = Some(GameAction::KeepStaging);
                 } else {
-                    // TODO: Should not panic
-                    panic!("Client desynced, shouldn't be playing wild card")
+                    panic!("Invalid keep last drawn card");
                 }
-            }
-            
-        }
-    }
+            },
+            GameAction::DiscardWildColor(color) => {
+                if self.card_tracker.validate_declare_wildcard_color(agent.turn_id, &color) {
+                    self.card_tracker.declare_wildcard_color(&color);
 
-    fn handle_play_card(
-        &mut self,
-        query: &Query<(Entity, &NetPlayer, &Agent)>,
-        agent: &Agent,
-        card_reference: CardReference,
-    ) {
-        println!("Client played a card {:?}", card_reference);
-
-        if card_reference.location != (Location::Hand{player_id: agent.turn_id}) && 
-        card_reference.location != (Location::Staging){
-            // TODO: Hand disconnect / desync
-            panic!("Player attempted to play card they could not have control over")
-        }
-        
-        let discard_pile = self.card_transferer.peek_discard().unwrap();
-
-        // TODO: Clean this up
-        if let Some(card) = self.card_transferer.peek(&card_reference) {
-            if valid_move(card, discard_pile) && self.game_info.current_turn() == agent.turn_id {
-                self.card_transferer.transfer(
-                    card_reference, 
-                    CardReference{
-                        location: Location::DiscardPile,
-                        index: None
-                    }
-                );
-
-                let mut from = card_reference;
-
-                if from.location == Location::Staging {
-                    from.location = Location::Hand{player_id: agent.turn_id};
-                    from.index = None;
-                }
-    
-                let transfer = CardTransfer {
-                    from,
-                    to: CardReference{
-                        location: Location::DiscardPile,
-                        index: None
-                    },
-                    value: Some(card),
-                };
-                
-                self.broadcast(
-                    query, 
-                    FromServer::TransferCards (vec![transfer]),
-                agent.turn_id
-                );
-    
-                
-                if card.color == CardColor::Wild {
-                    *self.can_play_wild = true;
+                    action = Some(GameAction::DiscardWildColor(color));
                 } else {
-                    // TODO: Shouldn't have to iterate over all agents/players again...
-                    self.broadcast(
-                        query, 
-                        FromServer::NextTurn,
-                    agent.turn_id
-                    );
-                    self.game_info.next_turn();
+                    panic!("Invalid wildcard select color");
                 }
-    
-            } else {
-                //TODO: Disconnect client/ treat as desync?
-                // Call handle error?
-                panic!("Client desynced")
+            },
+            _ => {
+                panic!("Invalid client action")
             }
-        } else {
-            //TODO: Disconnect client/ treat as desync?
-                // Call handle error?
-                panic!("Client desynced")
         }
 
-        
+        if let Some(action) = action {
+            let condition_counter = self.card_tracker.memorized_cards.take_condition_counter();
 
-    }
-
-
-    fn broadcast(
-        &mut self,
-        query: &Query<(Entity, &NetPlayer, &Agent)>, 
-        message: FromServer,
-        skip_player_id: usize,
-    ) {
-        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
-
-        for (_, player, agent) in query.iter() {
-            if agent.turn_id != skip_player_id {
-                // TODO: Cloning the stream is not the best way to handle having an immutable reference here
-                if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
-                    panic!("Leave lobby message failed to send {e}");
-                    // TODO: might need to disconnect client here, or return to lobby?
-                }
+            for (_, _, a) in query.iter().filter(|x|x.2.turn_id != agent.turn_id) {
+                let cards = self.card_tracker.memorized_cards.take_player(a.turn_id);
+                self.send_to_one(query, FromServer{action, condition_counter, cards}, a.turn_id)
             }
         }
     }
 
-    fn send_to_one(
+    // fn broadcast(
+    //     &mut self,
+    //     query: &Query<(Entity, &NetPlayer, &Agent)>, 
+    //     message: FromServer,
+    //     skip_player_id: usize,
+    // ) {
+    //     let bytes = bincode::serialize(&message).expect("Failed to serialize message");
+
+    //     for (_, player, agent) in query.iter() {
+    //         if agent.turn_id != skip_player_id {
+    //             // TODO: Cloning the stream is not the best way to handle having an immutable reference here
+    //             if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
+    //                 panic!("Leave lobby message failed to send {e}");
+    //                 // TODO: might need to disconnect client here, or return to lobby?
+    //             }
+    //         }
+    //     }
+    // }
+
+    pub fn send_to_one(
         &mut self,
         query: &Query<(Entity, &NetPlayer, &Agent)>, 
         message: FromServer,
@@ -282,6 +144,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         
         for (_, player, agent) in query.iter() {
             if agent.turn_id == receiver_id {
+                println!("Sent to: {}", agent.turn_id);
                 // TODO: Cloning the stream is not the best way to handle having an immutable reference here
                 if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
                     panic!("Leave lobby message failed to send {e}");

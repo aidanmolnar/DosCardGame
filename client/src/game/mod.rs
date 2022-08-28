@@ -1,7 +1,6 @@
-use dos_shared::table::TableMap;
-
 use self::client_actions::WildCardPlugin;
 use self::client_actions::play_card::play_card_system;
+use self::table::TablePlugin;
 
 use super::GameState;
 use super::MultiplayerState;
@@ -11,7 +10,6 @@ pub mod layout;
 pub mod card_indexing;
 pub mod client_actions;
 mod camera;
-mod server_actions;
 mod networking;
 pub mod table;
 pub mod animations;
@@ -20,8 +18,6 @@ use assets::load_assets;
 use camera::add_camera;
 use animations::AnimationPlugin;
 use networking::game_network_system;
-use server_actions::delayed_dealing_system;
-use table::TablePlugin;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -52,13 +48,7 @@ impl Plugin for GamePlugin {
 
         .add_system(play_card_system
             .run_in_state(GameState::InGame)
-            .run_on_event::<PickingEvent>())
-
-        // TODO: move this
-        .add_system(delayed_dealing_system
-            .run_in_state(GameState::InGame)
-            .run_if_resource_exists::<TableMap>()
-        );
+            .run_on_event::<PickingEvent>());
 
     }
 

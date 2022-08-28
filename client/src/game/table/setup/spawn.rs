@@ -4,13 +4,11 @@ use dos_shared::GameInfo;
 use crate::game::layout::expressions::*;
 use crate::game::layout::constants::*;
 use crate::game::MultiplayerState;
-use super::client_table::*;
+use crate::game::table::client_table::ClientTable;
 use super::deck::DeckBuilder;
 use super::TableArranger;
 
 use bevy::prelude::*;
-
-
 
 // TODO: clean this up
 pub fn spawn_all_tables (
@@ -23,7 +21,7 @@ pub fn spawn_all_tables (
     let starting_deck = deck_builder.make_cards(105);
 
     // Make deck table
-    let table = ClientTable::UnsortedTable(UnsortedTable::new(starting_deck));
+    let table = ClientTable::new_unsorted_with_items(starting_deck);
     let deck_entity = commands.spawn()
     .insert(
     TableArranger{
@@ -114,9 +112,9 @@ fn spawn_table (
     sorted: bool
 ) -> Entity {
     let table = if sorted {
-        ClientTable::SortedTable(SortedTable::default())
+        ClientTable::new_sorted()
     } else {
-        ClientTable::UnsortedTable(UnsortedTable::default())
+        ClientTable::new_unsorted()
     };
 
     commands.spawn()

@@ -1,0 +1,203 @@
+use super::table::{Location, CardReference, HandPosition};
+use super::cards::Card;
+
+pub trait Table<T> {
+    fn remove(
+        &mut self,
+        index: usize
+    ) -> Option<T>;
+
+    fn get(
+        &self,
+        index: usize,
+    ) -> Option<&T>;
+
+    fn push(
+        &mut self,
+        item: T
+    );
+
+    fn last(
+        &self,
+    ) -> Option<&T>;
+
+    fn last_mut(
+        &mut self,
+    ) -> Option<&mut T>;
+
+    fn len(
+        &self
+    ) -> usize;
+
+    fn is_empty(
+        &self
+    ) -> bool {
+        self.len() == 0
+    }
+
+    fn pop(
+        &mut self
+    ) -> Option<T>;
+}
+
+pub trait CardWrapper {
+    fn card(&self) ->&Card;
+    fn card_mut(&mut self) -> &mut Card;
+}
+
+impl CardWrapper for Card {
+    fn card(&self) ->&Card {
+        self
+    }
+
+    fn card_mut(&mut self) -> &mut Card {
+        self
+    }
+}
+
+pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
+    fn get_table(
+        &self, 
+        location: &Location
+    ) -> & U;
+
+    fn get_table_mut(
+        &mut self, 
+        location: &Location
+    ) -> &mut U;
+    
+    fn remove(
+        &mut self, 
+        from: &CardReference
+    ) -> Option<T> {
+        let table = self.get_table_mut(&from.location);
+        match from.hand_position {
+            HandPosition::Last => {table.pop()}
+            HandPosition::Index(i) => {table.remove(i)}
+        }
+    }
+
+    fn get(
+        & self, 
+        from: &CardReference
+    ) -> Option<& T> {
+        let table = self.get_table(&from.location);
+        match from.hand_position {
+            HandPosition::Last => {table.last()}
+            HandPosition::Index(i) => {table.get(i)}
+        }
+    }
+
+    fn push(
+        & mut self,
+        to: &CardReference,
+        item: T,
+    ) {
+        self.get_table_mut(&to.location).push(item)
+    }
+
+    fn deck_last(
+        &self,
+    ) -> Option<&T> {
+        self.get_table(&Location::Deck).last()
+    }
+
+    fn discard_last(
+        & self
+    ) -> Option<&T> {
+        self.get_table(&Location::DiscardPile).last()
+    }
+
+    fn staging_last(
+        & self
+    ) -> Option<& T> {
+        self.get_table(&Location::Staging).last()
+    }
+
+    fn discard_last_mut (
+        & mut self
+    ) -> Option<& mut T>{
+        self.get_table_mut(&Location::DiscardPile).last_mut()
+    }
+
+    fn set_discard_last(&mut self, card: Option<Card>);
+
+    fn transfer(
+        &mut self,
+        from: &CardReference,
+        to: &CardReference,
+    ) -> Option<Card>;
+}
+
+#[derive(Debug, Clone)]
+pub struct BasicTable<T> (pub Vec<T>);
+
+impl<T: std::fmt::Debug> Table<T> for BasicTable<T> {
+    fn remove(
+        &mut self,
+        index: usize
+    ) -> Option<T> {
+        if index < self.0.len() {
+            Some(self.0.remove(index))
+        } else {
+            None
+        }
+    }
+
+    fn get(
+        &self,
+        index: usize,
+    ) -> Option<&T> {
+        self.0.get(index)
+    }
+
+    fn push(
+        &mut self,
+        item: T
+    ) {
+        self.0.push(item)
+    }
+
+    fn last(
+        &self,
+    ) -> Option<&T> {
+        self.0.last()
+    }
+
+    fn last_mut(
+        &mut self,
+    ) -> Option<&mut T> {
+        self.0.last_mut()
+    }
+
+    fn len(
+        &self
+    ) -> usize {
+        self.0.len()
+    }
+
+    fn pop(
+        &mut self
+    ) -> Option<T> {
+        self.0.pop()
+    }
+}
+
+// TODO: Really this seems like it should be a method of GameInfo
+// Or some other struct that contains all information about the game state
+pub fn is_visible(
+    location: &Location,
+    player: usize,
+    current: usize,
+) -> bool {
+    match location {
+        Location::Deck => false,
+        Location::DiscardPile => true,
+        Location::Hand { player_id: hand_id } => {
+            *hand_id == player 
+        },
+        Location::Staging => {
+            player == current
+        },
+    }
+}

@@ -1,265 +1,273 @@
-
 use dos_shared::cards::Card;
-use dos_shared::table::{Location, CardReference};
 
-use bevy::prelude::*;
+use dos_shared::transfer::{Table, BasicTable, CardWrapper};
 
+use bevy::prelude::{Entity, Component};
 
-#[derive(Component)]
-pub enum ClientTable {
-    UnsortedTable (UnsortedTable),
-    SortedTable (SortedTable)
-}
+// Client representation of a card for tables and trackers
+#[derive(Copy, Clone, Debug)]
+pub struct ClientItem(pub Option<Card>, pub Entity);
 
-impl ClientTable {
-    pub fn insert(&mut self, card: Option<Card>, entity: Entity) {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.insert(card, entity)
-            }
-            ClientTable::SortedTable(table) => {
-                table.insert(card.expect("Card value must be specified for sorted hand"), entity)
-            }
-        }
+impl CardWrapper for ClientItem {
+    fn card(&self) ->&Card {
+        self.0.as_ref().expect("Card value unknown")
     }
 
-    pub fn remove(&mut self, index: Option<usize>) -> Entity {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.remove(index)
-            }
-            ClientTable::SortedTable(table) => {
-                table.remove(index)
-            }
-        }
-    }
-
-    pub fn iter(&'_ self) -> Box<dyn Iterator<Item = &Entity>+ '_> {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                Box::new(table.iter())
-            }
-            ClientTable::SortedTable(table) => {
-                Box::new(table.iter())
-            }
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.len()
-            }
-            ClientTable::SortedTable(table) => {
-                table.len()
-            }
-        }
-    }
-
-    pub fn locate(&self, entity: Entity) -> Option<TableIndexData> {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.get_index(entity)
-                .map(|index| TableIndexData::Unsorted { hand_position: index })
-            }
-            ClientTable::SortedTable(table) => {
-                table.get_actual_index(entity)
-                .map(|index| {
-                    let sorted_position = table.get_sorted_index(entity).unwrap();
-                    TableIndexData::Sorted { 
-                        hand_position: index,
-                        sorted_position,
-                        card_value: table.get_card_value(sorted_position)
-                    }
-                })
-            }
-        }
-    }
-
-    pub fn last(&self) -> Option<(Entity, Option<Card>)> {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.last()
-            }
-            ClientTable::SortedTable(table) => {
-                table.last()
-            }
-        }
-    }
-
-    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
-        match self {
-            ClientTable::UnsortedTable(table) => {
-                table.set_last_value(card)
-            }
-            ClientTable::SortedTable(table) => {
-                table.set_last_value(card)
-            }
-        }
+    fn card_mut(&mut self) -> &mut Card {
+        self.0.as_mut().expect("Card value unknown")
     }
 }
 
-// TODO: rename or rework this
-// Goals: 
-// + Be able to get back additional info from sorted table that has more information about the card
-// + Have response be easily readible
-// Alternative: a struct with hand_position field and optional "sorted_data" that is usize, and card value 
-//   (how would it be clear what exactly the usize is in this case)
-// It's already a little unclear what the difference between sorted_position and hand_position is (TODO)
-// TODO: UnsortedTable now has card value as well
-pub enum TableIndexData {
-    Sorted {
-        hand_position: usize,
-        sorted_position: usize,
-        card_value: Card,
-    },
-    Unsorted {
-        hand_position: usize
-    },
-}
-
-impl TableIndexData {
-    fn get_hand_position (&self) -> usize {
-        match self {
-            Self::Sorted{hand_position, ..} => *hand_position,
-            Self::Unsorted{hand_position} => *hand_position,
-        }
-    }
-
-    pub fn to_card_reference(&self, location: &Location) -> CardReference {
-        CardReference { location: *location, index: Some(self.get_hand_position())}
-    }
-
-    pub fn get_card_value(&self) -> Option<Card> {
-        match self {
-            Self::Sorted{card_value, ..} => Some(*card_value),
-            Self::Unsorted{..} => None,
-        }
-    }
-}
-
-#[derive(Default)]
-pub struct UnsortedTable (Vec<(Entity, Option<Card>)>);
-
-
-impl UnsortedTable {
-    pub fn insert(&mut self, card: Option<Card>, entity: Entity) {
-        self.0.push((entity, card));
-    }
-
-    pub fn remove(&mut self, index: Option<usize>) -> Entity {
-        if let Some(index) = index {
-            self.0.remove(index).0
-        } else {
-            self.0.pop().expect("No cards left").0
-        }
-    }
-
-    pub fn iter(&self) -> impl Iterator<Item = &Entity> {
-        self.0.iter().map(|x| &x.0)
-    }
-
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    // Returns the hand position of the specified entity
-    pub fn get_index(&self, entity: Entity) -> Option<usize> {
-        self.0.iter().position(|e| e.0 == entity)
-    }
-
-    pub fn new(entities: Vec<(Entity, Option<Card>)>) -> UnsortedTable {
-        UnsortedTable(entities)
-    }
-
-    pub fn last(&self) -> Option<(Entity, Option<Card>)> {
-        self.0.last().cloned()
-    }
-
-    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
-        if let Some(value) = self.0.last_mut() {
-            value.1 = card;
-            true
-        } else {
-            false
-        }
-    }
-}
-
-
-#[derive(Default)]
+#[derive(Debug, Clone)]
 pub struct SortedTable {
-    cards: Vec<(Card, Entity)>,
-    entities: Vec<Entity>
+    entities: BasicTable<Entity>, // Ordered by actual hand position
+    cards: Vec<ClientItem>, // A vec where an internal ordering by card value is maintaned
 }
 
 impl SortedTable {
-    pub fn insert(&mut self, card: Card, entity: Entity) {
-        let hand_position = self.cards.binary_search_by(|x| x.0.cmp(&card)).unwrap_or_else(|x| x);
-        self.cards.insert(hand_position, (card, entity));
+    fn sorted_index(&self, entity: Entity) -> Option<usize> {
+        self.cards.iter()
+        .map(|x|x.1)
+        .position(|e| e == entity)
+    }
+}
 
-        self.entities.push(entity);
+// TODO: Goals: implement all required methods in a coherent way.  Reasonable efficiency
+impl ClientTable {
+    pub fn new_sorted() -> Self {
+        ClientTable::Sorted(SortedTable {
+            entities: BasicTable(Vec::new()),
+            cards: Vec::new(),
+        })
     }
 
-    pub fn remove(&mut self, index: Option<usize>) -> Entity {
-
-        let entity = if let Some(index) = index {
-            self.entities.remove(index)
-        } else {
-            self.entities.pop().unwrap()
-        };
-
-        let index = self.cards.iter()
-            .map(|x|x.1)
-            .position(|e| e == entity).unwrap();
-
-        self.cards.remove(index);
-
-        entity
+    pub fn new_unsorted() -> Self {
+        ClientTable::Unsorted(
+            BasicTable(Vec::new())
+        )
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = &Entity> {
-        self.cards.iter().map(|x|&x.1)
+    pub fn new_unsorted_with_items(items: Vec<ClientItem>) -> Self {
+        ClientTable::Unsorted(
+            BasicTable(items)
+        )
     }
 
-    pub fn len(&self) -> usize {
-        self.cards.len()
-    }
-
-    pub fn get_sorted_index(&self, entity: Entity) -> Option<usize> {
-        self.cards.iter().position(|e| e.1 == entity)
-    }
-
-    pub fn get_actual_index(&self, entity: Entity) -> Option<usize> {
-        self.entities.iter().position(|e| *e == entity)
-    }
-
-    pub fn get_card_value(&self, sorted_index: usize) -> Card {
-        self.cards[sorted_index].0
-    }
-
-    pub fn last(&self) -> Option<(Entity, Option<Card>)> {
-        if let Some(entity) = self.entities.last() {
-            let card_value = self.get_card_value(
-                self.get_sorted_index(*entity).unwrap()
-            );
-            return Some((*entity, Some(card_value)))
+    // TODO: Doesn't distinguish between table not having sorted index (i.e. unsorted) and entity not being in table
+    pub fn sorted_index(&self, entity: Entity) -> Option<usize> {
+        match self {
+            ClientTable::Sorted(table) => {
+                table.sorted_index(entity)
+            }
+            ClientTable::Unsorted(_) => {
+                None
+            }
         }
-        
-        None
     }
 
-    pub fn set_last_value(&mut self, card: Option<Card>) -> bool {
-        if let Some(entity) = self.entities.last() {
-            let sorted_index = self.get_sorted_index(*entity).unwrap();
-            self.cards[sorted_index].0 = card.expect("Cards in sorted hands must have known values!");
+    pub fn actual_index(&self, entity: Entity) -> Option<usize> {
+        match self {
+            ClientTable::Sorted(table) => {
+                table.entities.0.iter().position(|e| *e == entity)
+            }
+            ClientTable::Unsorted(table) => {
+                table.0.iter().position(|e| e.1 == entity)
+            }
+        }
+    }
 
-            // Resort by card value
-            self.cards.sort_by(|a,b| a.0.cmp(&b.0));
+    // TODO: Doesn't distinguish between card being unknown/face-down and card not being in table
+    // NOTE: Commented out because it is dead code.  TODO: Decide on removal
+    // pub fn last_card(&self) -> Option<Card> {
+    //     match self {
+    //         ClientTable::Sorted(table) => {
+    //             if let Some(item) = table.last() {
+    //                 item.0
+    //             } else {
+    //                 None
+    //             }
+    //         }
+    //         ClientTable::Unsorted(table) => {
+    //             if let Some(item) = table.0.last() {
+    //                 item.0
+    //             } else {
+    //                 None
+    //             }
+    //         }
+    //     }
+    // }
 
-            true
+    // TODO: Doesn't distinguish between card value being unknown/face-down and card not being in table
+    pub fn card(&self, entity: Entity) -> Option<Card> {
+        match self {
+            ClientTable::Sorted(table) => {
+                if let Some(index) = self.sorted_index(entity) {
+                    table.cards[index].0
+                } else {
+                    None
+                }
+            }
+            ClientTable::Unsorted(table) => {
+                if let Some(index) = self.actual_index(entity) {
+                    table.0[index].0
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    // TODO: Maybe consider just defining iter on each sub-type instead of requiring dynamic dispatch
+    pub fn iter_entities(&'_ self) -> Box<dyn Iterator<Item = &Entity> + '_> {
+        match self {
+            ClientTable::Sorted(table) => {
+                Box::new(table.cards.iter().map(|x| &x.1))
+            }
+            ClientTable::Unsorted(table) => {
+                Box::new(table.0.iter().map(|x| &x.1))
+            }
+        }
+    }
+}
+
+impl Table<ClientItem> for SortedTable {
+    fn push(&mut self, item: ClientItem) {
+        let hand_position = self.cards.binary_search_by(|x| x.0.cmp(&item.0)).unwrap_or_else(|x| x);
+        self.cards.insert(hand_position, item);
+        self.entities.push(item.1);
+    }
+
+    fn remove(&mut self, index: usize) -> Option<ClientItem> {
+        if let Some(entity) = self.entities.remove(index) {
+            // We know the entity has been inserted into the table if it was in entities
+            Some(self.cards.remove(
+                self.sorted_index(entity).unwrap()
+            ))
         } else {
-            false
+            None
+        }
+    }
+
+    fn last(&self) -> Option<&ClientItem> {
+        if let Some(entity) = self.entities.last() {
+            // We know the entity has been inserted into the table if it was in entities
+            Some(&self.cards[self.sorted_index(*entity).unwrap()])
+        } else {
+            None
+        }
+    }
+
+    fn last_mut(
+        &mut self,
+    ) -> Option<&mut ClientItem> {
+        panic!("Can't mutate sorted table.")
+    }
+
+    fn len(
+        &self
+    ) -> usize {
+        self.entities.len()
+    }
+
+    fn pop(
+        &mut self
+    ) -> Option<ClientItem> {
+        if let Some(entity) = self.entities.pop() {
+            // We know the entity has been inserted into the table if it was in entities
+            Some(self.cards.remove(
+                self.sorted_index(entity).unwrap()
+            ))
+        } else {
+            None
+        }
+    }
+
+    fn get(
+        &self,
+        index: usize,
+    ) -> Option<&ClientItem> {
+        if let Some(entity) = self.entities.get(index) {
+            // We know the entity has been inserted into the table if it was in entities
+            Some(&self.cards[
+                self.sorted_index(*entity).unwrap()
+            ])
+        } else {
+            None
+        }
+    }
+
+}
+
+#[derive(Component, Debug, Clone)]
+pub enum ClientTable {
+    Sorted(SortedTable),
+    Unsorted(BasicTable<ClientItem>),
+}
+
+impl Table<ClientItem> for ClientTable {
+    fn remove(
+        &mut self,
+        index: usize
+    ) -> Option<ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.remove(index)}
+            ClientTable::Unsorted(table) => {table.remove(index)}
+        }
+    }
+
+    fn push(
+        &mut self,
+        item: ClientItem
+    ) {
+        match self {
+            ClientTable::Sorted(table) => {table.push(item)}
+            ClientTable::Unsorted(table) => {table.push(item)}
+        }
+    }
+
+    fn last(
+        &self,
+    ) -> Option<&ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.last()}
+            ClientTable::Unsorted(table) => {table.last()}
+        }
+    }
+
+    fn last_mut(
+        &mut self,
+    ) -> Option<&mut ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.last_mut()}
+            ClientTable::Unsorted(table) => {table.last_mut()}
+        }
+    }
+
+    fn len(
+        &self
+    ) -> usize {
+        match self {
+            ClientTable::Sorted(table) => {table.len()}
+            ClientTable::Unsorted(table) => {table.len()}
+        }
+    }
+
+    fn pop(
+        &mut self
+    ) -> Option<ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.pop()}
+            ClientTable::Unsorted(table) => {table.pop()}
+        }
+    }
+
+    fn get(
+        &self,
+        index: usize,
+    ) -> Option<&ClientItem> {
+        match self {
+            ClientTable::Sorted(table) => {table.get(index)}
+            ClientTable::Unsorted(table) => {table.get(index)}
         }
     }
 }

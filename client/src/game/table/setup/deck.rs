@@ -1,9 +1,8 @@
-use dos_shared::cards::Card;
-
 use crate::game::assets::CardHandles;
 use crate::game::card_indexing::CARD_BACK_SPRITE_INDEX;
 use crate::game::layout::constants::DECK_LOCATION;
 use crate::game::animations::components::{BoardPosition, MouseOffset, LinearAnimation};
+use crate::game::table::client_table::ClientItem;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -21,7 +20,7 @@ pub struct DeckBuilder<'w, 's> {
 }
 
 impl<'w, 's> DeckBuilder<'w, 's> {
-    pub fn make_cards(&mut self, num_cards: usize) -> Vec<(Entity, Option<Card>)> {
+    pub fn make_cards(&mut self, num_cards: usize) -> Vec<ClientItem> {
 
         let mut entities = Vec::new();
 
@@ -51,7 +50,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                 }
             );
 
-            entities.push((e, None))
+            entities.push(ClientItem(None, e))
         }
 
         entities

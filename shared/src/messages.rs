@@ -1,6 +1,6 @@
 
 use super::cards::{Card, CardColor};
-use super::table::{CardTransfer, CardReference};
+use super::table::CardReference;
 
 pub mod lobby {
     use serde::{Serialize, Deserialize};
@@ -21,25 +21,27 @@ pub mod lobby {
 }
 
 pub mod game {
-    use super::{Card, CardColor, CardTransfer, CardReference};
+    use super::{Card, CardColor, CardReference};
 
     use serde::{Serialize, Deserialize};
 
-    #[derive(Serialize, Deserialize, Debug)]
-    pub enum FromServer {
-        DealIn {your_cards: Vec<Card>, deck_size: usize, to_discard_pile: Vec<Card>},
-        TransferCards(Vec<CardTransfer>),
-        NextTurn,
-        DiscardWildColor(CardColor),
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    pub enum FromClient {
-        PlayCard {card: CardReference},
+    #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+    pub enum GameAction {
+        DealIn ,
+        PlayCard(CardReference),
         DrawCards,
         KeepStaging,
         DiscardWildColor(CardColor),
     }
+
+    #[derive(Serialize, Deserialize, Debug, Clone)]
+    pub struct FromServer {
+        pub action: GameAction,
+        pub condition_counter: usize,
+        pub cards: Vec<Card>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug)]
+    pub struct FromClient(pub GameAction);
+
 }
-
-

@@ -1,3 +1,6 @@
+#![feature(type_alias_impl_trait)]
+#![feature(generic_associated_types)]
+
 use dos_shared::GameState;
 
 mod lobby;

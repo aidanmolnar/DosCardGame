@@ -19,14 +19,14 @@ impl GameInfo {
         }
     }
 
-    pub fn switch_direction (&mut self) {
+    pub fn switch_direction(&mut self) {
         self.direction = match &self.direction {
             Direction::Clockwise => Direction::CounterClockwise,
             Direction::CounterClockwise => Direction::Clockwise,
         }
     }
 
-    pub fn next_turn (&mut self) -> usize {
+    pub fn next_turn(&mut self) -> usize {
         let offset = match &self.direction {
             Direction::Clockwise => 1,
             Direction::CounterClockwise => -1,
@@ -37,7 +37,11 @@ impl GameInfo {
         self.current_turn
     }
 
-    pub fn current_turn (&self) -> usize {
+    pub fn current_turn(&self) -> usize {
         self.current_turn
+    }
+
+    pub fn num_players(&self) -> usize {
+        self.num_players
     }
 }
