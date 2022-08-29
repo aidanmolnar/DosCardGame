@@ -2,8 +2,8 @@ use dos_shared::table::*;
 use dos_shared::cards::Card;
 use dos_shared::transfer::Table;
 
-use crate::game::animations::components::*;
-use crate::game::layout::{expressions::*, constants::*};
+use super::core::components::*;
+use super::layout::{expressions::*, constants::*};
 use super::AnimationTable;
 
 
@@ -11,9 +11,6 @@ use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
 
 #[derive(Default)]
-// pub struct FocusedCard (
-//     pub Option<(Location, TableIndexData)>,
-// );
 pub struct FocusedCard (pub Option<FocusedCardData>);
 
 pub struct FocusedCardData {

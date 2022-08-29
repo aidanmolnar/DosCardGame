@@ -1,4 +1,4 @@
-use crate::transfer::{Table, CardTracker, CardWrapper};
+use crate::transfer::{Table, CardTransfer, CardWrapper};
 use crate::table::{Location, CardReference, HandPosition};
 use crate::cards::{Card, CardType, CardColor};
 use crate::{GameInfo, NUM_STARTING_CARDS, CARDS_TO_RETAIN};
@@ -46,8 +46,8 @@ pub enum TurnState {
     Victory, // *TODO* No cards left and there is a card in the discard pile
 }
 
-pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debug + 'static>: 
-    CardTracker<T, U> 
+pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>: 
+    CardTransfer<T, U> 
 {
     fn get_turn_state(&self) -> TurnState {
         if let Some(discard_wrapper) = self.get(&DISCARD_REFERENCE) {

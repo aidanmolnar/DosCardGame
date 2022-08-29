@@ -2,18 +2,15 @@ use dos_shared::GameInfo;
 use dos_shared::table_map_setup::*;
 
 use crate::multiplayer::AgentTracker;
-
 use super::GameState;
 use super::multiplayer;
 
-mod memorized_cards;
+mod sync;
 mod networking;
 mod setup;
 mod deal;
-
-mod card_tracker;
-
-use card_tracker::{ServerCardTracker, ServerTable};
+mod server_game;
+mod table;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -32,7 +29,7 @@ impl Plugin for GamePlugin {
         )
 
         // Create resource for caching card values
-        .add_exit_system(GameState::MainMenu, memorized_cards::setup_memorized_cards)
+        .add_exit_system(GameState::MainMenu, sync::setup_syncer)
 
         // Setup table map and tables, then deal out starting cards.  Plugin advances state automatically
         .add_plugin(TableConstructionPlugin)

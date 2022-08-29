@@ -1,9 +1,9 @@
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 
-use super::ServerCardTracker;
+use crate::connection_listening::{PlayerCountChange, disconnect};
+use super::server_game::ServerGame;
 use super::multiplayer::{NetPlayer, Agent, AgentTracker};
-use super::super::connection_listening::{PlayerCountChange, disconnect};
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -18,7 +18,7 @@ pub struct GameNetworkManager<'w,'s> {
     events: EventWriter<'w, 's, PlayerCountChange>, 
     commands: Commands<'w, 's>,
     agent_tracker: ResMut<'w, AgentTracker>,
-    pub card_tracker: ServerCardTracker<'w,'s>,
+    pub card_tracker: ServerGame<'w,'s>,
 }
 
 // TODO: Incorporate query so it doesn't need to be passed around
@@ -72,9 +72,9 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.card_tracker.draw_cards();
 
                     // TODO: Clean this up.  Issue is that all clients need to receive this message.  Including sender.
-                    let condition_counter = self.card_tracker.memorized_cards.take_condition_counter();
+                    let condition_counter = self.card_tracker.syncer.take_condition_counter();
                     for (_, _, agent) in query.iter() {
-                        let cards = self.card_tracker.memorized_cards.take_player(agent.turn_id);
+                        let cards = self.card_tracker.syncer.take_player(agent.turn_id);
                         self.send_to_one(query, FromServer{action: GameAction::DrawCards, condition_counter, cards}, agent.turn_id)
                     }
                     return;
@@ -106,10 +106,10 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         }
 
         if let Some(action) = action {
-            let condition_counter = self.card_tracker.memorized_cards.take_condition_counter();
+            let condition_counter = self.card_tracker.syncer.take_condition_counter();
 
             for (_, _, a) in query.iter().filter(|x|x.2.turn_id != agent.turn_id) {
-                let cards = self.card_tracker.memorized_cards.take_player(a.turn_id);
+                let cards = self.card_tracker.syncer.take_player(a.turn_id);
                 self.send_to_one(query, FromServer{action, condition_counter, cards}, a.turn_id)
             }
         }

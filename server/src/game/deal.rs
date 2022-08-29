@@ -12,10 +12,10 @@ pub fn deal_out_starting_hands(
 ) {
     network_manager.card_tracker.deal_starting_cards(DECK_SIZE);
 
-    let condition_counter = network_manager.card_tracker.memorized_cards.take_condition_counter();
+    let condition_counter = network_manager.card_tracker.syncer.take_condition_counter();
 
     for (_, _, agent) in query.iter() {
-        let cards = network_manager.card_tracker.memorized_cards.take_player(agent.turn_id);
+        let cards = network_manager.card_tracker.syncer.take_player(agent.turn_id);
         println!("{:?}", cards);
         
         network_manager.send_to_one(&query, FromServer{action: GameAction::DealIn, condition_counter, cards}, agent.turn_id)

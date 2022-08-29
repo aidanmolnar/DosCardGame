@@ -1,15 +1,12 @@
 use dos_shared::cards::{Card,CardColor, CardType};
 use dos_shared::dos_game::{DosGame, TurnState};
 use dos_shared::messages::game::{FromClient, GameAction};
-use dos_shared::table::Location;
-use dos_shared::transfer::CardTracker;
 
 use crate::game::GameState;
-
-use crate::game::card_indexing::SpriteIndex;
+use crate::game::graphics::components::LinearAnimation;
+use crate::game::graphics::{DeckBuilder, SpriteIndex};
 use crate::game::networking::GameNetworkManager;
-use crate::game::table::ClientCardTracker;
-use crate::game::{table::DeckBuilder, animations::components::LinearAnimation};
+use crate::game::client_game::ClientGame;
 
 use bevy::prelude::*;
 use bevy_mod_picking::PickingEvent;
@@ -103,7 +100,7 @@ fn make_wildcard_button(
 }
 
 fn wildcard_button_display_system(
-    card_tracker: ClientCardTracker,
+    card_tracker: ClientGame,
     mut previous_turn_state: Local<TurnState>,
     mut query: Query<(&WildCardButton, &mut Visibility, &mut LinearAnimation, &Transform)>,
 ) {
@@ -138,14 +135,6 @@ fn wildcard_button_clicked_system (
     buttons: Query<(Entity, &WildCardButton)>,
     mut network_manager: GameNetworkManager,
 ) {
-
-    if !events.is_empty() {
-        let t = network_manager.card_tracker.get_table(&Location::Hand{player_id: network_manager.card_tracker.mp_state.turn_id});
-        let d = network_manager.card_tracker.get_table(&Location::DiscardPile);
-        println!("Hand: {:?}", t);
-        println!("Discard: {:?}", d);
-    }
-
     for event in events.iter() {
         if let PickingEvent::Clicked(e) = event {
             for (button_entity, button) in &buttons {

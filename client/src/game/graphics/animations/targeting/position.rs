@@ -1,7 +1,7 @@
 use dos_shared::transfer::Table;
 
-use crate::game::animations::components::*;
-use crate::game::layout::{expressions::*,constants::*};
+use super::core::components::*;
+use super::layout::{expressions::*,constants::*};
 use super::AnimationTable;
 
 

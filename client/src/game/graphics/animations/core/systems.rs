@@ -28,7 +28,7 @@ pub fn run (
 }  
 
 // System for updating animation target locations
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity)] // This is more readable than defining a new type
 pub fn retarget(
     mut query: 
     Query<

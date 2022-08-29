@@ -2,7 +2,7 @@ use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 use dos_shared::DECK_SIZE;
     
-use crate::game::table::ClientCardTracker;
+use super::client_game::ClientGame;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -15,7 +15,7 @@ use std::io::Write;
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w, 's> {
     pub commands: Commands<'w,'s>,
-    pub card_tracker: ClientCardTracker<'w,'s>,
+    pub card_tracker: ClientGame<'w,'s>,
 }
 
 // Recieves and handles messages from the server
@@ -43,15 +43,15 @@ pub fn game_network_system(
 impl<'w,'s> GameNetworkManager<'w,'s> {
     fn handle_update(&mut self, game_update: FromServer) {
 
-        self.card_tracker.memorized_cards.1 = game_update.condition_counter;
+        self.card_tracker.syncer.condition_counter = game_update.condition_counter;
 
         for card in game_update.cards {
-            self.card_tracker.memorized_cards.enque(card);
+            self.card_tracker.syncer.enque(card);
         }
 
         match game_update.action {
             GameAction::DealIn => {
-                println!("{:?}", self.card_tracker.memorized_cards);
+                println!("{:?}", self.card_tracker.syncer);
 
                 self.card_tracker.deal_starting_cards(DECK_SIZE)
             },

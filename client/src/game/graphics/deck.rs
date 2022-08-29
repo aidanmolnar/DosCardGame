@@ -1,14 +1,12 @@
-use crate::game::assets::CardHandles;
-use crate::game::card_indexing::CARD_BACK_SPRITE_INDEX;
-use crate::game::layout::constants::DECK_LOCATION;
-use crate::game::animations::components::{BoardPosition, MouseOffset, LinearAnimation};
-use crate::game::table::animation_table::AnimationItem;
+use super::assets::CardHandles;
+use super::card_indexing::CARD_BACK_SPRITE_INDEX;
+use super::layout::constants::DECK_LOCATION;
+use super::animations::components::{BoardPosition, MouseOffset, LinearAnimation};
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::PickableBundle;
-
 
 #[derive(SystemParam)]
 pub struct DeckBuilder<'w, 's> {
@@ -20,7 +18,7 @@ pub struct DeckBuilder<'w, 's> {
 }
 
 impl<'w, 's> DeckBuilder<'w, 's> {
-    pub fn make_cards(&mut self, num_cards: usize) -> Vec<AnimationItem> {
+    pub fn make_cards(&mut self, num_cards: usize) -> Vec<Entity> {
 
         let mut entities = Vec::new();
 
@@ -29,9 +27,9 @@ impl<'w, 's> DeckBuilder<'w, 's> {
             let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, 0.1 * i as f32);
             let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
 
-            let e = self.make_pickable_sprite(transform, CARD_BACK_SPRITE_INDEX);
+            let entity = self.make_pickable_sprite(transform, CARD_BACK_SPRITE_INDEX);
             
-            self.commands.entity(e)
+            self.commands.entity(entity)
             .insert(
                 LinearAnimation {
                     start: transform,
@@ -50,7 +48,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                 }
             );
 
-            entities.push(AnimationItem(None, e))
+            entities.push(entity)
         }
 
         entities

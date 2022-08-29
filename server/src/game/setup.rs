@@ -1,7 +1,7 @@
 use dos_shared::table::*;
 use dos_shared::cards::*;
 
-use super::ServerTable;
+use super::table::ServerTable;
 
 use bevy::prelude::*;
 

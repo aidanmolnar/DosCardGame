@@ -60,7 +60,7 @@ impl CardWrapper for Card {
     }
 }
 
-pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
+pub trait CardTransfer<T, U: Table<T> + 'static> {
     fn get_table(
         &self, 
         location: &Location

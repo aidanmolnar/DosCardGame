@@ -1,4 +1,4 @@
-use super::GameState;
+use dos_shared::GameState;
 
 pub mod components;
 mod systems;
@@ -6,9 +6,9 @@ mod systems;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
-pub struct AnimationPlugin;
+pub struct CoreAnimationPlugin;
 
-impl Plugin for AnimationPlugin {
+impl Plugin for CoreAnimationPlugin {
     fn build(&self, app: &mut App) {
         app
         .add_system(

@@ -3,8 +3,8 @@ use dos_shared::dos_game::DosGame;
 use dos_shared::table::{CardReference, Location, HandPosition};
 use dos_shared::messages::game::{FromClient, GameAction};
 
+use crate::game::graphics::FocusedCard;
 use crate::game::networking::GameNetworkManager;
-use crate::game::table::FocusedCard;
 
 use bevy::prelude::*;
 use bevy_mod_picking::*;
@@ -58,9 +58,6 @@ fn handle_play_card(
                     }
                 },
                 Location::Hand { player_id } if player_id == player =>  {
-                    dbg!(player, card_reference);
-                    dbg!(network_manager.card_tracker.game_info().current_turn());
-                    
                     if network_manager.card_tracker.validate_play_card(player,card_reference) {
                         network_manager.card_tracker.play_card(card_reference);
 

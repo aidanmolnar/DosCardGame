@@ -1,17 +1,15 @@
-use std::collections::VecDeque;
-
 use dos_shared::cards::Card;
 use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
-use dos_shared::transfer::CardTracker;
+use dos_shared::transfer::CardTransfer;
 
-use super::animation_table::{AnimationItem, AnimationTable};
-
+use super::table::{AnimationItem, AnimationTable};
+use super::core::components::MouseOffset;
+use super::card_indexing::SpriteIndex;
 
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 
-use crate::game::animations::components::MouseOffset;
-use crate::game::card_indexing::SpriteIndex;
+use std::collections::VecDeque;
 
 
 #[derive(SystemParam)]
@@ -82,7 +80,7 @@ impl AnimationTracker<'_,'_> {
     }
 }
 
-impl CardTracker<AnimationItem, AnimationTable> for AnimationTracker<'_, '_> {
+impl CardTransfer<AnimationItem, AnimationTable> for AnimationTracker<'_, '_> {
     fn get_table(
         &self, 
         location: &Location
