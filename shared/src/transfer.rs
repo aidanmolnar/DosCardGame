@@ -85,7 +85,7 @@ pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
     fn get(
         &self, 
         from: &CardReference
-    ) -> Option<& T> {
+    ) -> Option<&T> {
         let table = self.get_table(&from.location);
         match from.hand_position {
             HandPosition::Last => {table.last()}
@@ -111,17 +111,6 @@ pub trait CardTracker<T: CardWrapper, U: Table<T> + std::fmt::Debug + 'static> {
     ) {
         self.get_table_mut(&to.location).push(item)
     }
-
-    fn set_discard_last(
-        &mut self, 
-        card: Option<Card>
-    );
-
-    fn transfer(
-        &mut self,
-        from: &CardReference,
-        to: &CardReference,
-    ) -> Option<Card>;
 }
 
 #[derive(Debug, Clone)]
@@ -182,24 +171,5 @@ impl<T: std::fmt::Debug> Table<T> for BasicTable<T> {
         &mut self
     ) -> Option<T> {
         self.0.pop()
-    }
-}
-
-// TODO: Really this seems like it should be a method of GameInfo
-// Or some other struct that contains all information about the game state
-pub fn is_visible(
-    location: &Location,
-    player: usize,
-    current: usize,
-) -> bool {
-    match location {
-        Location::Deck => false,
-        Location::DiscardPile => true,
-        Location::Hand { player_id: hand_id } => {
-            *hand_id == player 
-        },
-        Location::Staging => {
-            player == current
-        },
     }
 }

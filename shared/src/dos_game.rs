@@ -109,10 +109,12 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
         & mut self,
         card_reference: &CardReference, 
     ) {
-        let card = self.transfer(
+        self.transfer(
             card_reference, 
             &DISCARD_REFERENCE
-        ).expect("Discarded card must be visible for all");
+        );
+
+        let card = self.get(&DISCARD_REFERENCE).expect("Discarded card must be visible for all").card();
 
         // TODO: Handle card effects: ex. draw cards, skip, reverse, etc.
 
@@ -253,6 +255,17 @@ pub trait DosGame<T: CardWrapper + std::fmt::Debug, U: Table<T> + std::fmt::Debu
     ) -> bool {
        player == self.game_info().current_turn()
     }
+
+    fn set_discard_last(
+        &mut self, 
+        card: Option<Card>
+    );
+
+    fn transfer(
+        &mut self,
+        from: &CardReference,
+        to: &CardReference,
+    );
 }
 
 

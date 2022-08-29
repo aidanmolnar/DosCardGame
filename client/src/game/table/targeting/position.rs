@@ -2,7 +2,7 @@ use dos_shared::transfer::Table;
 
 use crate::game::animations::components::*;
 use crate::game::layout::{expressions::*,constants::*};
-use super::ClientTable;
+use super::AnimationTable;
 
 
 use bevy::prelude::*;
@@ -14,7 +14,7 @@ pub struct TableArranger {
 }
 
 pub fn update_system (
-    tables: Query<(&ClientTable, &TableArranger), Changed<ClientTable>>,
+    tables: Query<(&AnimationTable, &TableArranger), Changed<AnimationTable>>,
     mut cards: Query<&mut BoardPosition>,
     
 ) {

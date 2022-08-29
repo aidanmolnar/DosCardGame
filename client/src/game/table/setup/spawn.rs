@@ -3,13 +3,14 @@ use dos_shared::table::*;
 use crate::game::layout::expressions::*;
 use crate::game::layout::constants::*;
 use crate::game::MultiplayerState;
-use crate::game::table::client_table::ClientTable;
+use crate::game::table::animation_table::AnimationTable;
+use crate::game::table::card_tracker::ClientTable;
 use super::deck::DeckBuilder;
 use super::TableArranger;
 
 use bevy::prelude::*;
 
-pub fn add_tables(
+pub fn add_animation_tables(
     mut commands: Commands,
     table_map: Res<TableMap>,
     mp_state: Res<MultiplayerState>,
@@ -18,17 +19,35 @@ pub fn add_tables(
     for (location, entity) in &table_map.0 {
         let table = match location {
             Location::Deck => {
-                ClientTable::new_unsorted_with_items(deck_builder.make_cards(108))
+                AnimationTable::new_unsorted_with_items(deck_builder.make_cards(108))
             },
-            Location::DiscardPile => ClientTable::new_unsorted(),
-            Location::Staging => ClientTable::new_unsorted(),
+            Location::DiscardPile => AnimationTable::new_unsorted(),
+            Location::Staging => AnimationTable::new_unsorted(),
             Location::Hand { player_id } => {
                 if *player_id == mp_state.turn_id {
-                    ClientTable::new_sorted()
+                    AnimationTable::new_sorted()
                 } else {
-                    ClientTable::new_unsorted()
+                    AnimationTable::new_unsorted()
                 }
             }
+        };
+
+        commands.entity(*entity).insert(table);
+    }
+}
+
+pub fn add_client_tables(
+    mut commands: Commands,
+    table_map: Res<TableMap>,
+) {
+    for (location, entity) in &table_map.0 {
+        let table = match location {
+            Location::Deck => {
+                ClientTable::new_deck(108)
+            },
+            Location::DiscardPile => ClientTable::new(),
+            Location::Staging => ClientTable::new(),
+            Location::Hand { ..} => ClientTable::new(),
         };
 
         commands.entity(*entity).insert(table);

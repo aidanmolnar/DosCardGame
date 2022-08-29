@@ -35,7 +35,10 @@ impl Plugin for ClientTableSetupPlugin {
         )
         .add_enter_system(
             TableConstructionState::TableCreation, 
-            spawn::add_tables
+            spawn::add_animation_tables
+        ).add_enter_system(
+            TableConstructionState::TableCreation, 
+            spawn::add_client_tables
         ).add_enter_system(
             TableConstructionState::TableCreation, 
             spawn::add_arrangers

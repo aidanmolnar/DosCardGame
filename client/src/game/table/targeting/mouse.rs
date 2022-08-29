@@ -4,7 +4,7 @@ use dos_shared::transfer::Table;
 
 use crate::game::animations::components::*;
 use crate::game::layout::{expressions::*, constants::*};
-use super::ClientTable;
+use super::AnimationTable;
 
 
 use bevy::prelude::*;
@@ -29,7 +29,7 @@ pub fn focus_system (
     mut focused_card: ResMut<FocusedCard>,
     mut events: EventReader<PickingEvent>,
     map: Res<TableMap>,
-    tables: Query<&ClientTable>, 
+    tables: Query<&AnimationTable>, 
 ) {
     let mut focus_entity_option = None;
     let mut update_event = false;
@@ -65,7 +65,7 @@ pub fn focus_system (
 // TODO: Add a Location component to each card so we don't have to check all the cards in every table
 fn locate_card (
     map: &Res<TableMap>,
-    tables: &Query<&ClientTable>,
+    tables: &Query<&AnimationTable>,
     entity: Entity
 ) -> Option<FocusedCardData> {
     for (location, table_entity) in &map.0 {
@@ -89,8 +89,8 @@ fn locate_card (
 }
 
 pub fn update_system (
-    tables: Query<&ClientTable>,
-    changed_tables: Query<&ClientTable, Changed<ClientTable>>,
+    tables: Query<&AnimationTable>,
+    changed_tables: Query<&AnimationTable, Changed<AnimationTable>>,
     mut mouse_offsets: Query<&mut MouseOffset>,
     focused_card: Res<FocusedCard>,
 ) {
@@ -101,7 +101,7 @@ pub fn update_system (
 
     // Skip tables that aren't sorted
     for table in tables.iter()
-    .filter(|x| matches!(x, ClientTable::Sorted(_))) {
+    .filter(|x| matches!(x, AnimationTable::Sorted(_))) {
 
         if let Some(focused_card_data) = &focused_card.0 {
             // Find the index of the focused card in the table or reset

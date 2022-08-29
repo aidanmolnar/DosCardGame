@@ -6,6 +6,7 @@ use crate::multiplayer::AgentTracker;
 use super::GameState;
 use super::multiplayer;
 
+mod memorized_cards;
 mod networking;
 mod setup;
 mod deal;
@@ -31,7 +32,7 @@ impl Plugin for GamePlugin {
         )
 
         // Create resource for caching card values
-        .add_exit_system(GameState::MainMenu, card_tracker::setup_memorized_cards)
+        .add_exit_system(GameState::MainMenu, memorized_cards::setup_memorized_cards)
 
         // Setup table map and tables, then deal out starting cards.  Plugin advances state automatically
         .add_plugin(TableConstructionPlugin)

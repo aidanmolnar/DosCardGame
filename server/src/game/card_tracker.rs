@@ -2,6 +2,7 @@ use dos_shared::cards::Card;
 use dos_shared::dos_game::DosGame;
 use dos_shared::{table::*, GameInfo};
 use dos_shared::transfer::{BasicTable, Table, CardTracker};
+use super::memorized_cards::MemorizedCards;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -88,47 +89,6 @@ pub struct ServerCardTracker<'w,'s> {
     game_info: ResMut<'w, GameInfo>,
 }
 
-use dos_shared::transfer::is_visible;
-
-use std::mem;
-
-use crate::multiplayer::AgentTracker;
-
-pub struct MemorizedCards (Vec<Vec<Card>>, usize);
-
-impl MemorizedCards {
-    fn new(num_players: usize) -> Self {
-        let mut players = Vec::with_capacity(num_players);
-        for _ in 0..num_players {
-            players.push(Vec::new())
-        }
-        MemorizedCards(players, 0)
-    }
-
-    fn add(&mut self, player: usize, card: Card) {
-        self.0[player].push(card);
-    }
-
-    pub fn take_player(&mut self, player: usize) -> Vec<Card>{
-        mem::take(&mut self.0[player])
-    }
-
-    fn increment_condition_counter(&mut self) {
-        self.1 += 1;
-    }
-
-    pub fn take_condition_counter(&mut self) -> usize {
-        std::mem::take(&mut self.1)
-    }
-}
-
-pub fn setup_memorized_cards(
-    agent_tracker: Res<AgentTracker>,
-    mut commands: Commands,
-) {
-    commands.insert_resource(MemorizedCards::new(agent_tracker.agents.len()))
-}
-
 impl ServerCardTracker<'_,'_> {
     fn record_card_value(
         &mut self, 
@@ -137,8 +97,8 @@ impl ServerCardTracker<'_,'_> {
         card: Card
     ) {
         for player in 0..self.game_info.num_players() {
-            if !is_visible(from, player, self.game_info.current_turn()) &&
-            is_visible(to, player, self.game_info.current_turn()) {
+            if !self.is_visible(from, player) &&
+            self.is_visible(to, player) {
                 self.memorized_cards.add(player, card)
             }
         }
@@ -162,29 +122,6 @@ impl CardTracker<Card, ServerTable> for ServerCardTracker<'_, '_> {
         self.tables.get_mut(entity).expect("Table does not exist for table entity").into_inner()
     }
 
-    fn set_discard_last(&mut self, card: Option<Card>) {
-        let discard = self.get_mut(
-            &CardReference{
-                location: Location::DiscardPile, 
-                hand_position: HandPosition::Last
-            }
-        ).expect("No discarded card");
-        *discard = card.expect("Cards on server must have known value");
-    }
-
-    fn transfer(
-        & mut self,
-        from: &CardReference,
-        to: &CardReference,
-    ) -> Option<Card> {
-        let card = self.remove(from).expect("Card did not exist");
-        
-        self.record_card_value(&from.location, &to.location, card);
-
-        self.push(to, card);
-
-        Some(card)
-    }
 }
 
 impl DosGame<Card, ServerTable> for ServerCardTracker<'_,'_> {
@@ -200,5 +137,27 @@ impl DosGame<Card, ServerTable> for ServerCardTracker<'_,'_> {
     where F: Fn(&Self) -> bool {
         self.memorized_cards.increment_condition_counter();
         condition(self)
+    }
+
+    fn set_discard_last(&mut self, card: Option<Card>) {
+        let discard = self.get_mut(
+            &CardReference{
+                location: Location::DiscardPile, 
+                hand_position: HandPosition::Last
+            }
+        ).expect("No discarded card");
+        *discard = card.expect("Cards on server must have known value");
+    }
+
+    fn transfer(
+        & mut self,
+        from: &CardReference,
+        to: &CardReference,
+    ) {
+        let card = self.remove(from).expect("Card did not exist");
+        
+        self.record_card_value(&from.location, &to.location, card);
+
+        self.push(to, card);
     }
 }
