@@ -1,6 +1,8 @@
 use memorized_cards::MemorizedCards;
 use setup::ClientTableSetupPlugin;
 
+use self::animation_tracker::AnimationActionQueue;
+
 use super::GameState;
 
 mod animation_table;
@@ -32,7 +34,7 @@ impl Plugin for TablePlugin {
         .add_plugin(ClientTableSetupPlugin)
 
         // Setup card tracker
-        // .add_enter_system(GameState::InGame, delayed_transfers::setup_delayed_transfer_queue)
+        //.add_enter_system(GameState::InGame, delayed_transfers::setup_delayed_transfer_queue)
 
         // Mouse targeting
         .init_resource::<mouse::FocusedCard>()
@@ -44,10 +46,11 @@ impl Plugin for TablePlugin {
 
         // Position targeting
         .add_system(position::update_system
-            .run_in_state(GameState::InGame));
+            .run_in_state(GameState::InGame))
         
         // Update delayed transfers in card tracker
-        // .add_system(delayed_transfers::update_card_tracker_system
-        //     .run_in_state(GameState::InGame));
+        .init_resource::<AnimationActionQueue>()
+        .add_system(animation_tracker::update_animation_actions
+            .run_in_state(GameState::InGame));
     }
 }

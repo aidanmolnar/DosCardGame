@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use dos_shared::cards::Card;
 use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
 use dos_shared::transfer::CardTracker;
@@ -17,8 +19,54 @@ pub struct AnimationTracker<'w,'s> {
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut AnimationTable>,
 
+    pub animation_queue: ResMut<'w, AnimationActionQueue>,
+    
     commands: Commands<'w, 's>,
     sprites: Query<'w, 's, &'static mut TextureAtlasSprite>,
+}
+
+#[derive(Default)]
+pub struct AnimationActionQueue {
+    queue: VecDeque<DelayedAnimationAction>,
+    timer: Timer,
+}
+
+pub struct DelayedAnimationAction {
+    pub action: AnimationAction,
+    pub delay: f32,
+}
+
+pub enum AnimationAction {
+    Transfer {
+        from: CardReference,
+        to: CardReference,
+        card: Option<Card>,
+    },
+    SetDiscardLast {
+        card: Option<Card>,
+    }
+}
+
+pub fn update_animation_actions(
+    mut animation_tracker: AnimationTracker,
+    time: Res<Time>,
+) {
+    animation_tracker.animation_queue.timer.tick(time.delta());
+
+    if animation_tracker.animation_queue.timer.finished() {
+        if let Some(delayed_action) = animation_tracker.animation_queue.queue.pop_front() {
+            match delayed_action.action {
+                AnimationAction::Transfer { from, to, card } => {
+                    animation_tracker.transfer(&from, &to, card)
+                },
+                AnimationAction::SetDiscardLast { card } => {
+                    animation_tracker.set_discard_last(card)
+                },
+            }
+
+            animation_tracker.animation_queue.timer = Timer::from_seconds(delayed_action.delay, false);
+        }
+    }
 }
 
 impl AnimationTracker<'_,'_> {
@@ -53,7 +101,11 @@ impl CardTracker<AnimationItem, AnimationTable> for AnimationTracker<'_, '_> {
 }
 
 impl AnimationTracker<'_,'_> {
-    pub fn transfer(
+    pub fn enque_action(&mut self, action: DelayedAnimationAction) {
+        self.animation_queue.queue.push_back(action)
+    }
+
+    fn transfer(
         &mut self,
         from: &CardReference,
         to: &CardReference,
@@ -71,7 +123,7 @@ impl AnimationTracker<'_,'_> {
         self.push(to, item);
     }
 
-    pub fn set_discard_last(&mut self, card: Option<Card>) {
+    fn set_discard_last(&mut self, card: Option<Card>) {
         let discard = self.get_mut(
             &CardReference{
                 location: Location::DiscardPile, 

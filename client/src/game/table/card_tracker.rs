@@ -9,7 +9,7 @@ use bevy::ecs::system::SystemParam;
 
 use crate::multiplayer::MultiplayerState;
 
-use super::animation_tracker::AnimationTracker;
+use super::animation_tracker::{AnimationTracker, DelayedAnimationAction, AnimationAction};
 use super::memorized_cards::MemorizedCards;
 
 #[derive(Component, Debug, Clone)]
@@ -168,7 +168,10 @@ impl DosGame<ClientItem, ClientTable> for ClientCardTracker<'_,'_> {
         ).expect("No discarded card");
         discard.0 = card;
 
-        self.animation_tracker.set_discard_last(card);
+        self.animation_tracker.enque_action(DelayedAnimationAction{
+            action: AnimationAction::SetDiscardLast{card},
+            delay: 0.1,
+        });
     }
 
     fn transfer(
@@ -186,7 +189,10 @@ impl DosGame<ClientItem, ClientTable> for ClientCardTracker<'_,'_> {
 
         self.push(to, item);
 
-        self.animation_tracker.transfer(from, to, card);
+        self.animation_tracker.enque_action(DelayedAnimationAction{
+            action: AnimationAction::Transfer{from: *from, to: *to, card},
+            delay: 0.1,
+        });
     }
 }
 
