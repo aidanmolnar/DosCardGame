@@ -1,3 +1,6 @@
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+
 use super::table::{Location, CardReference, HandPosition};
 use super::cards::Card;
 
@@ -43,6 +46,8 @@ pub trait Table<T> {
     fn pop(
         &mut self
     ) -> Option<T>;
+
+    fn shuffle(&mut self);
 }
 
 pub trait CardWrapper {
@@ -172,4 +177,9 @@ impl<T: std::fmt::Debug> Table<T> for BasicTable<T> {
     ) -> Option<T> {
         self.0.pop()
     }
+
+    fn shuffle(&mut self) {
+        self.0.shuffle(&mut thread_rng());
+    }
+    
 }

@@ -190,6 +190,10 @@ impl Table<AnimationItem> for SortedTable {
         }
     }
 
+    fn shuffle(&mut self) {
+        panic!("Don't shuffle sorted tables")
+    }
+
 }
 
 #[derive(Component, Debug, Clone)]
@@ -273,5 +277,9 @@ impl Table<AnimationItem> for AnimationTable {
             AnimationTable::Sorted(table) => {table.get_mut(index)}
             AnimationTable::Unsorted(table) => {table.get_mut(index)}
         }
+    }
+
+    fn shuffle(&mut self) {
+        // Doesn't actually need to be shuffled.  Just wiped
     }
 }

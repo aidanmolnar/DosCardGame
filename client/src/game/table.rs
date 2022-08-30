@@ -84,5 +84,9 @@ impl Table<ClientItem> for ClientTable {
     ) -> Option<&mut ClientItem> {
         self.0.get_mut(index)
     }
+
+    fn shuffle(&mut self) {
+        // Doesn't actually need to be shuffled.  Just wiped
+    }
 }
 

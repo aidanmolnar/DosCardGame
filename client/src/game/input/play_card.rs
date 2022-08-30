@@ -20,7 +20,7 @@ pub fn play_card_system (
     mut events: EventReader<PickingEvent>,
     focused_card: Res<FocusedCard>,
 ) {
-    if network_manager.card_tracker.has_delayed_transfers() {
+    if network_manager.game.has_delayed_transfers() {
         return;
     }
 
@@ -43,23 +43,23 @@ fn handle_play_card(
     network_manager: &mut GameNetworkManager,
     card_reference: &CardReference,
 ) {
-    let player = network_manager.card_tracker.mp_state.turn_id;
+    let player = network_manager.game.mp_state.turn_id;
 
     let mut action = None;
 
-    match network_manager.card_tracker.get_turn_state() {
+    match network_manager.game.get_turn_state() {
         dos_shared::dos_game::TurnState::Default => {
             match card_reference.location {
                 Location::Deck => {
-                    if network_manager.card_tracker.validate_draw_cards(player) {
+                    if network_manager.game.validate_draw_cards(player) {
                         //network_manager.card_tracker.draw_cards();
 
                         action = Some(GameAction::DrawCards);
                     }
                 },
                 Location::Hand { player_id } if player_id == player =>  {
-                    if network_manager.card_tracker.validate_play_card(player,card_reference) {
-                        network_manager.card_tracker.play_card(card_reference);
+                    if network_manager.game.validate_play_card(player,card_reference) {
+                        network_manager.game.play_card(card_reference);
 
                         action = Some(GameAction::PlayCard(*card_reference));
                     }
@@ -75,22 +75,22 @@ fn handle_play_card(
                         hand_position: HandPosition::Last,
                     };
 
-                    if network_manager.card_tracker.validate_play_card(player,&staging_reference) {
-                        network_manager.card_tracker.play_card(&staging_reference);
+                    if network_manager.game.validate_play_card(player,&staging_reference) {
+                        network_manager.game.play_card(&staging_reference);
 
                         action = Some(GameAction::PlayCard(staging_reference));
                     }
                 },
                 Location::Hand { player_id } if player_id == player => {
-                    if network_manager.card_tracker.validate_keep_last_drawn_card(player) {
-                        network_manager.card_tracker.keep_last_drawn_card();
+                    if network_manager.game.validate_keep_last_drawn_card(player) {
+                        network_manager.game.keep_last_drawn_card();
 
                         action = Some(GameAction::KeepStaging);
                     }
                 },
                 Location::Staging => {
-                    if network_manager.card_tracker.validate_play_card(player, card_reference) {
-                        network_manager.card_tracker.play_card(card_reference);
+                    if network_manager.game.validate_play_card(player, card_reference) {
+                        network_manager.game.play_card(card_reference);
 
                         action = Some(GameAction::PlayCard(*card_reference));
                     }

@@ -73,4 +73,8 @@ impl Table<Card> for ServerTable {
     ) -> Option<&mut Card> {
         self.0.get_mut(index)
     }
+
+    fn shuffle(&mut self) {
+        self.0.shuffle()
+    }
 }

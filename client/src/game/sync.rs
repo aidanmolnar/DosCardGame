@@ -1,4 +1,4 @@
-use dos_shared::cards::Card;
+use dos_shared::{cards::Card, messages::game::FromServer};
 
 use std::collections::VecDeque;
 
@@ -6,15 +6,20 @@ use std::collections::VecDeque;
 #[derive(Default, Debug)]
 pub struct ClientSyncer{
     cards: VecDeque<Card>, 
-    pub condition_counter: usize,
+    conditions: VecDeque<bool>,
 }
 
 impl ClientSyncer {
-    pub fn enque(&mut self, card: Card) {
-        self.cards.push_back(card);
+    pub fn enque_all(&mut self, message: FromServer) {
+        self.cards = VecDeque::from(message.cards);
+        self.conditions = VecDeque::from(message.conditions)
     }
 
-    pub (crate) fn deque(&mut self) -> Card {
+    pub fn deque_card(&mut self) -> Card {
         self.cards.pop_front().expect("No more card values stored")
+    }
+
+    pub fn deque_condition(&mut self) -> bool {
+        self.conditions.pop_front().expect("No more condition values stored")
     }
 }

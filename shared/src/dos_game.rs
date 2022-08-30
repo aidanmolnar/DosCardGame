@@ -3,40 +3,27 @@ use crate::table::{Location, CardReference, HandPosition};
 use crate::cards::{Card, CardType, CardColor};
 use crate::{GameInfo, NUM_STARTING_CARDS, CARDS_TO_RETAIN};
 
-// TODO: Trait that describes all server/client actions that advance the game
-// TODO: Figure out how to handle special card effects
-// TODO: How do we validate client actions?
-//       Can they play that card?  Did they delcare a valid wildcard color?
-//       These functions could just return a bool if it was valid or not?
-// TODO: How do we handle card effects?
-
-// TODO: Weird states:
-// * Client has selected play_cards but has not received cards from server
-// * Client has played a draw_two but cards have not been dealt yet
-// * Client has asked to draw cards and is deciding whether to play staged card or not
-// * Client has played a wild card and has not selected color yet
-
-const DECK_REFERENCE: CardReference = 
+pub const DECK_REFERENCE: CardReference = 
 CardReference {
     location: Location::Deck, 
     hand_position: HandPosition::Last
 };
 
-const STAGING_REFERENCE: CardReference = 
+pub const STAGING_REFERENCE: CardReference = 
 CardReference{
     location: Location::Staging, 
     hand_position: 
     HandPosition::Last
 };
 
-const DISCARD_REFERENCE: CardReference = 
+pub const DISCARD_REFERENCE: CardReference = 
 CardReference {
     location: Location::DiscardPile, 
     hand_position: HandPosition::Last
 };
 
 // TODO: Rename default state to "Normal" or something similar to avoid confusion about it not being actual default state lol
-#[derive(PartialEq, Eq, Default)]
+#[derive(PartialEq, Eq, Default, Debug)]
 pub enum TurnState {
     Default, 
     StagedCard, // Could be determined by checking staging table
@@ -68,13 +55,6 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
     }
 
     fn deal_starting_cards(&mut self, deck_size: usize) {
-        let condition = |game: &Self| {
-            match game.get(&DISCARD_REFERENCE).unwrap().card().ty {
-                CardType::Wild => {false},
-                CardType::DrawFour => {false}
-                _=> {true}
-            }
-        };
         
         let mut count = 0;
 
@@ -99,8 +79,10 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                 &DISCARD_REFERENCE,
             );
     
-            if self.server_condition(condition) {
-                break;
+            match self.get(&DISCARD_REFERENCE).unwrap().card().ty {
+                CardType::Wild => {continue},
+                CardType::DrawFour => {continue}
+                _=> {break}
             }
         }
     }
@@ -160,15 +142,28 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
     ) {
         let condition = |game: &Self| {
             let discard = game.get(&DISCARD_REFERENCE).unwrap().card();
-            let card = game.get(&DECK_REFERENCE).expect("Deck out of cards").card();
+            let card = game.get(&DECK_REFERENCE).unwrap().card();
             is_valid_move(card, discard)
         };
 
-        let to = CardReference{location: Location::Hand{player_id: self.game_info().current_turn()}, hand_position: HandPosition::Last};
+        let to = CardReference{
+            location: Location::Hand{
+                player_id: self.game_info().current_turn()
+            }, 
+            hand_position: HandPosition::Last
+        };
 
         loop {
-            // TODO: We can be sure the deck will have cards because card transferer will automatically reshuffle pile
-        
+            if self.get_table(&Location::Deck).is_empty() {
+                if self.get_table(&Location::DiscardPile).len() == 1 {
+                    // Failed to supply a needed card.
+                    self.game_info_mut().next_turn();
+                    break
+                } else {
+                    self.reshuffle();
+                }
+            }
+
             if self.server_condition(condition) {
                 self.transfer(&DECK_REFERENCE, &STAGING_REFERENCE);
                 break
@@ -178,16 +173,28 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
-    fn server_condition<F>(&mut self, condition: F) -> bool
-    where F: Fn(&Self) -> bool;
-
     fn validate_draw_cards(
         &self,
         player: usize,
     ) -> bool {
         self.is_players_turn(player) && self.get_turn_state() == TurnState::Default
     }
+    
+    // Tries to deal a card. Will reshuffle the deck if it needs to. Returns false if there are no cards in the discard pile and deck 
+    // fn deal_card(&mut self, to: &CardReference) -> bool {
+    //     // Reshuffle if needed
+    //     if self.get_table(&Location::Deck).is_empty() {
+    //         self.reshuffle();
+    //     } 
 
+    //     if self.get_table(&Location::Deck).is_empty() {
+    //         false
+    //     } else {
+    //         self.transfer(&DECK_REFERENCE, to);
+    //         true
+    //     }
+    // }
+    
     fn keep_last_drawn_card(
         &mut self,
     ) {
@@ -229,8 +236,12 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
-    fn game_info(&self) -> &GameInfo;
-    fn game_info_mut(&mut self) -> &mut GameInfo;
+    fn is_players_turn(
+        &self, 
+        player: usize
+    ) -> bool {
+       player == self.game_info().current_turn()
+    }
 
     fn is_visible(
         &self,
@@ -249,12 +260,24 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
-    fn is_players_turn(
-        &self, 
-        player: usize
-    ) -> bool {
-       player == self.game_info().current_turn()
-    }
+    // In some cases the visible state of the board is not enough for the client to reproduce an action
+    // For example: when a different player asks to draw cards, a client wihtout visibility can't know how many the other is passed before they are able to play
+    // This function checks if the condition is true on the server and increments a counter each check
+    // On the client it decrements the counter until it is zero, which results in the same number of checks before the value is true
+    // TODO: Allow more than one / nested conditions. Currently there can only be one for each message
+    fn server_condition<F>(
+        &mut self, 
+        condition: F
+    ) -> bool
+    where F: Fn(&Self) -> bool;
+
+    fn game_info(
+        &self
+    ) -> &GameInfo;
+
+    fn game_info_mut(
+        &mut self
+    ) -> &mut GameInfo;
 
     fn set_discard_last(
         &mut self, 
@@ -266,6 +289,8 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         from: &CardReference,
         to: &CardReference,
     );
+
+    fn reshuffle(&mut self);
 }
 
 

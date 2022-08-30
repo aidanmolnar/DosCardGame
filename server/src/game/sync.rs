@@ -1,13 +1,12 @@
 use dos_shared::cards::Card;
 
-use bevy::prelude::*;
-
 use crate::multiplayer::AgentTracker;
 
+use bevy::prelude::*;
 
 pub struct ServerSyncer {
     cards: Vec<Vec<Card>>, 
-    condition_counter: usize
+    conditions: Vec<bool>,
 }
 
 impl ServerSyncer {
@@ -16,26 +15,26 @@ impl ServerSyncer {
         for _ in 0..num_players {
             players.push(Vec::new())
         }
-        ServerSyncer{
+        ServerSyncer {
             cards: players, 
-            condition_counter: 0,
+            conditions: Vec::new(),
         }
     }
 
-    pub (crate) fn add(&mut self, player: usize, card: Card) {
+    pub fn add_card(&mut self, player: usize, card: Card) {
         self.cards[player].push(card);
     }
 
-    pub fn take_player(&mut self, player: usize) -> Vec<Card>{
+    pub fn take_player_cards(&mut self, player: usize) -> Vec<Card>{
         std::mem::take(&mut self.cards[player])
     }
 
-    pub (crate) fn increment_condition_counter(&mut self) {
-        self.condition_counter += 1;
+    pub fn add_condition(&mut self, condition: bool) {
+        self.conditions.push(condition)
     }
 
-    pub fn take_condition_counter(&mut self) -> usize {
-        std::mem::take(&mut self.condition_counter)
+    pub fn take_conditions(&mut self) -> Vec<bool> {
+        std::mem::take(&mut self.conditions)
     }
 }
 

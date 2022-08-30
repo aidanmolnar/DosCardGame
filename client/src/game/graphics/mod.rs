@@ -9,7 +9,8 @@ mod deck;
 
 pub use deck::DeckBuilder;
 pub use animations::{components, FocusedCard, AnimationTracker, DelayedAnimationAction, AnimationAction};
-pub use card_indexing::SpriteIndex;
+pub use card_indexing::{SpriteIndex,CARD_BACK_SPRITE_INDEX};
+pub use layout::constants;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;

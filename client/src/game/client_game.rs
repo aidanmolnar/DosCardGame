@@ -1,6 +1,7 @@
 use dos_shared::GameInfo;
-use dos_shared::dos_game::DosGame;
+use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
 use dos_shared::table::{TableMap, Location, CardReference, HandPosition};
+use dos_shared::transfer::Table;
 use dos_shared::{transfer::CardTransfer, cards::Card};
 
 use crate::multiplayer::MultiplayerState;
@@ -41,21 +42,6 @@ impl CardTransfer<ClientItem, ClientTable> for ClientGame<'_, '_> {
     }
 }
 
-impl ClientGame<'_,'_> {
-    fn get_card_value(
-        &mut self, 
-        from: &Location,
-        to: &Location
-    ) -> Option<Card> {
-        if !self.is_visible(from, self.mp_state.turn_id) &&
-        self.is_visible(to, self.mp_state.turn_id) {
-            Some(self.syncer.deque())
-        } else {
-            None
-        }
-    }
-}
-
 impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
     fn game_info(&self) -> &GameInfo {
         &self.game_info
@@ -67,8 +53,7 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
 
     fn server_condition<F>(&mut self, _condition: F) -> bool
     where F: Fn(&Self) -> bool {
-        self.syncer.condition_counter -= 1;
-        self.syncer.condition_counter == 0
+        self.syncer.deque_condition()
     }
 
     fn set_discard_last(
@@ -96,12 +81,27 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
     ) {
         let mut item = self.remove(from).expect("Item did not exist");
 
-        let card = self.get_card_value(&from.location, &to.location);
+        // Get card value based on visibility rules
+        let card = if self.is_visible(&from.location, self.mp_state.turn_id) {
+            if self.is_visible(&to.location, self.mp_state.turn_id) {
+                // Do nothing
+                item.0
+            } else {
+                // Set to None
+                None
+            }
+        } else {
+            #[allow(clippy::collapsible_else_if)] // Makes it more readable
+            if self.is_visible(&to.location, self.mp_state.turn_id) {
+                // Get the value
+                Some(self.syncer.deque_card())
+            } else {
+                // Set to None
+                None
+            }
+        };
 
-        if item.0.is_none() {
-            item.0 = card;
-        }
-
+        item.0 = card;
         self.push(to, item);
 
         self.animation_tracker.enque_action(DelayedAnimationAction{
@@ -109,10 +109,19 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
             delay: 0.1,
         });
     }
+
+    fn reshuffle(&mut self) {
+        while self.get_table(&Location::DiscardPile).len() > 1 {
+            self.transfer(
+                &CardReference { location: Location::DiscardPile, hand_position:HandPosition::Index(0)}, 
+                &DECK_REFERENCE
+            );
+        }
+    }
 }
 
 impl ClientGame<'_,'_> {
     pub fn has_delayed_transfers(&self) -> bool {
-        false
+        !self.animation_tracker.is_empty()
     }
 }

@@ -139,10 +139,10 @@ fn wildcard_button_clicked_system (
         if let PickingEvent::Clicked(e) = event {
             for (button_entity, button) in &buttons {
                 if *e == button_entity && 
-                !network_manager.card_tracker.has_delayed_transfers() &&
-                network_manager.card_tracker.validate_declare_wildcard_color(network_manager.card_tracker.mp_state.turn_id, &button.color) {
+                !network_manager.game.has_delayed_transfers() &&
+                network_manager.game.validate_declare_wildcard_color(network_manager.game.mp_state.turn_id, &button.color) {
                     // Update the local card color
-                    network_manager.card_tracker.declare_wildcard_color(&button.color);
+                    network_manager.game.declare_wildcard_color(&button.color);
 
                     // Send a message with the card color to the server
                     network_manager.send_message(FromClient(GameAction::DiscardWildColor(button.color)));

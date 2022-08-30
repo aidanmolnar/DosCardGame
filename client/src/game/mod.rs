@@ -45,6 +45,7 @@ impl Plugin for GamePlugin {
         
         // Handle input from clients
         .add_plugin(input::WildCardPlugin)
+        .add_plugin(input::DrawButtonPlugin)
         .add_system(input::play_card_system
             .run_in_state(GameState::InGame)
             .run_on_event::<PickingEvent>());

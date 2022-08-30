@@ -1,13 +1,12 @@
-use dos_shared::cards::Card;
-use dos_shared::dos_game::DosGame;
+use dos_shared::cards::{Card, CardType, CardColor};
+use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
 use dos_shared::{table::*, GameInfo};
-use dos_shared::transfer::CardTransfer;
+use dos_shared::transfer::{CardTransfer, Table};
 use super::sync::ServerSyncer;
 use super::table::ServerTable;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
-
 
 #[derive(SystemParam)]
 pub struct ServerGame<'w,'s> {
@@ -28,7 +27,7 @@ impl ServerGame<'_,'_> {
         for player in 0..self.game_info.num_players() {
             if !self.is_visible(from, player) &&
             self.is_visible(to, player) {
-                self.syncer.add(player, card)
+                self.syncer.add_card(player, card)
             }
         }
     }
@@ -64,8 +63,9 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
 
     fn server_condition<F>(&mut self, condition: F) -> bool
     where F: Fn(&Self) -> bool {
-        self.syncer.increment_condition_counter();
-        condition(self)
+        let res = condition(self);
+        self.syncer.add_condition(res);
+        res
     }
 
     fn set_discard_last(&mut self, card: Option<Card>) {
@@ -88,5 +88,22 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
         self.record_card_value(&from.location, &to.location, card);
 
         self.push(to, card);
+    }
+
+    fn reshuffle(&mut self) {
+        while self.get_table(&Location::DiscardPile).len() > 1 {
+            self.transfer(
+                &CardReference { location: Location::DiscardPile, hand_position:HandPosition::Index(0)}, 
+                &DECK_REFERENCE
+            );
+
+            // Reset wildcard colors
+            let e = self.get_mut(&DECK_REFERENCE).unwrap();
+            if e.ty == CardType::Wild || e.ty == CardType::DrawFour {
+                e.color = CardColor::Wild;
+            }
+        }
+
+        self.get_table_mut(&Location::Deck).shuffle();
     }
 }

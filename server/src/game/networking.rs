@@ -72,10 +72,17 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.card_tracker.draw_cards();
 
                     // TODO: Clean this up.  Issue is that all clients need to receive this message.  Including sender.
-                    let condition_counter = self.card_tracker.syncer.take_condition_counter();
+                    let conditions = self.card_tracker.syncer.take_conditions();
                     for (_, _, agent) in query.iter() {
-                        let cards = self.card_tracker.syncer.take_player(agent.turn_id);
-                        self.send_to_one(query, FromServer{action: GameAction::DrawCards, condition_counter, cards}, agent.turn_id)
+                        let cards = self.card_tracker.syncer.take_player_cards(agent.turn_id);
+                        self.send_to_one(query, 
+                            FromServer {
+                                action: GameAction::DrawCards, 
+                                conditions: conditions.clone(), 
+                                cards
+                            }, 
+                            agent.turn_id
+                        )
                     }
                     return;
                 } else {
@@ -106,33 +113,21 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         }
 
         if let Some(action) = action {
-            let condition_counter = self.card_tracker.syncer.take_condition_counter();
-
+            let conditions = self.card_tracker.syncer.take_conditions();
+            
             for (_, _, a) in query.iter().filter(|x|x.2.turn_id != agent.turn_id) {
-                let cards = self.card_tracker.syncer.take_player(a.turn_id);
-                self.send_to_one(query, FromServer{action, condition_counter, cards}, a.turn_id)
+                let cards = self.card_tracker.syncer.take_player_cards(a.turn_id);
+                self.send_to_one(query, 
+                    FromServer{
+                        action, 
+                        conditions: conditions.clone(), 
+                        cards
+                    }, 
+                    a.turn_id
+                )
             }
         }
     }
-
-    // fn broadcast(
-    //     &mut self,
-    //     query: &Query<(Entity, &NetPlayer, &Agent)>, 
-    //     message: FromServer,
-    //     skip_player_id: usize,
-    // ) {
-    //     let bytes = bincode::serialize(&message).expect("Failed to serialize message");
-
-    //     for (_, player, agent) in query.iter() {
-    //         if agent.turn_id != skip_player_id {
-    //             // TODO: Cloning the stream is not the best way to handle having an immutable reference here
-    //             if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
-    //                 panic!("Leave lobby message failed to send {e}");
-    //                 // TODO: might need to disconnect client here, or return to lobby?
-    //             }
-    //         }
-    //     }
-    // }
 
     pub fn send_to_one(
         &mut self,
@@ -144,7 +139,6 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         
         for (_, player, agent) in query.iter() {
             if agent.turn_id == receiver_id {
-                println!("Sent to: {}", agent.turn_id);
                 // TODO: Cloning the stream is not the best way to handle having an immutable reference here
                 if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
                     panic!("Leave lobby message failed to send {e}");

@@ -15,7 +15,7 @@ use std::io::Write;
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w, 's> {
     pub commands: Commands<'w,'s>,
-    pub card_tracker: ClientGame<'w,'s>,
+    pub game: ClientGame<'w,'s>,
 }
 
 // Recieves and handles messages from the server
@@ -23,7 +23,7 @@ pub fn game_network_system(
     mut network_manager: GameNetworkManager,
 ) {
     let stream =
-        match &network_manager.card_tracker.mp_state.stream {
+        match &network_manager.game.mp_state.stream {
             None => return,
             Some(i) => i,
     };
@@ -43,29 +43,26 @@ pub fn game_network_system(
 impl<'w,'s> GameNetworkManager<'w,'s> {
     fn handle_update(&mut self, game_update: FromServer) {
 
-        self.card_tracker.syncer.condition_counter = game_update.condition_counter;
+        let action = game_update.action;
+        self.game.syncer.enque_all(game_update);
 
-        for card in game_update.cards {
-            self.card_tracker.syncer.enque(card);
-        }
-
-        match game_update.action {
+        match action {
             GameAction::DealIn => {
-                println!("{:?}", self.card_tracker.syncer);
+                println!("{:?}", self.game.syncer);
 
-                self.card_tracker.deal_starting_cards(DECK_SIZE)
+                self.game.deal_starting_cards(DECK_SIZE)
             },
             GameAction::PlayCard(card) => {
-                self.card_tracker.play_card(&card);
+                self.game.play_card(&card);
             },
             GameAction::DrawCards => {
-                self.card_tracker.draw_cards();
+                self.game.draw_cards();
             },
             GameAction::KeepStaging => {
-                self.card_tracker.keep_last_drawn_card();
+                self.game.keep_last_drawn_card();
             },
             GameAction::DiscardWildColor(color) => {
-                self.card_tracker.declare_wildcard_color(&color);
+                self.game.declare_wildcard_color(&color);
             },
         }
     }
@@ -77,14 +74,14 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 println!("Message receive error: {}", e);
                 println!("Disconnecting!");
     
-                self.card_tracker.mp_state.set_disconnected();
+                self.game.mp_state.set_disconnected();
                 // TODO: return to lobby?
             }
         }
     }
 
     pub fn send_message(&mut self, message: FromClient) {
-        self.card_tracker.mp_state.stream.as_ref().unwrap()
+        self.game.mp_state.stream.as_ref().unwrap()
         .write_all(
             &bincode::serialize(&message).unwrap()
         ).expect("Failed to send message");

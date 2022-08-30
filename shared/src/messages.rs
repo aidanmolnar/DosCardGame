@@ -34,10 +34,10 @@ pub mod game {
         DiscardWildColor(CardColor),
     }
 
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug)]
     pub struct FromServer {
         pub action: GameAction,
-        pub condition_counter: usize,
+        pub conditions: Vec<bool>,
         pub cards: Vec<Card>,
     }
 

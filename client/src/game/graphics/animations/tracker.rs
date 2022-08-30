@@ -2,6 +2,7 @@ use dos_shared::cards::Card;
 use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
 use dos_shared::transfer::CardTransfer;
 
+use super::card_indexing::CARD_BACK_SPRITE_INDEX;
 use super::table::{AnimationItem, AnimationTable};
 use super::core::components::MouseOffset;
 use super::card_indexing::SpriteIndex;
@@ -69,9 +70,12 @@ pub fn update_animation_actions(
 
 impl AnimationTracker<'_,'_> {
     pub fn set_sprite(&mut self, item: &AnimationItem, new_card: Option<Card>) {
+        let mut sprite = self.sprites.get_mut(item.1).unwrap();
+
         if let Some(card) = new_card {
-            let mut sprite = self.sprites.get_mut(item.1).unwrap();
             sprite.index = card.get_sprite_index();
+        } else {
+            sprite.index = CARD_BACK_SPRITE_INDEX;
         }
     }
 
@@ -112,11 +116,8 @@ impl AnimationTracker<'_,'_> {
         let mut item = self.remove(from).expect("Item did not exist");
         
         self.reset_mouse_offset(&item);
-
-        if item.0.is_none() {
-            item.0 = card;
-            self.set_sprite(&item, card); // TODO: could combine above and this line into set_card func
-        }
+        self.set_sprite(&item, card);
+        item.0 = card;
 
         self.push(to, item);
     }
@@ -133,5 +134,9 @@ impl AnimationTracker<'_,'_> {
         let item = *discard;
 
         self.set_sprite(&item, card);
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.animation_queue.queue.is_empty()
     }
 }
