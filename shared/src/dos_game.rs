@@ -180,21 +180,6 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         self.is_players_turn(player) && self.get_turn_state() == TurnState::Default
     }
     
-    // Tries to deal a card. Will reshuffle the deck if it needs to. Returns false if there are no cards in the discard pile and deck 
-    // fn deal_card(&mut self, to: &CardReference) -> bool {
-    //     // Reshuffle if needed
-    //     if self.get_table(&Location::Deck).is_empty() {
-    //         self.reshuffle();
-    //     } 
-
-    //     if self.get_table(&Location::Deck).is_empty() {
-    //         false
-    //     } else {
-    //         self.transfer(&DECK_REFERENCE, to);
-    //         true
-    //     }
-    // }
-    
     fn keep_last_drawn_card(
         &mut self,
     ) {

@@ -1,6 +1,6 @@
 use dos_shared::*;
 
-use super::multiplayer::{Agent,AgentTracker,NetPlayer};
+use super::multiplayer::AgentTracker;
 use super::GameState;
 
 use bevy::prelude::*;
@@ -36,12 +36,15 @@ impl Plugin for ConnectionListeningPlugin {
             CoreStage::PostUpdate,
             handle_playercount_change_system
             //.run_in_state(GameState::MainMenu)
-            //.run_on_event::<PlayerCountChange>()
+            .run_on_event::<PlayerCountChange>()
         );
     }
 }
 
-pub struct PlayerCountChange;
+pub enum PlayerCountChange{
+    Connect,
+    Disconnect(usize),
+}
 
 // TODO: break up / simplify this function
 fn listen_for_connections(
@@ -129,16 +132,11 @@ fn handle_connection_task(
 
         if let Some(player_option) = future::block_on(future::poll_once(&mut task.0)) {
             if let Some((name,stream)) = player_option {
-                commands.entity(entity)
-                    .remove::<ConnectionTask>()
-                    .insert(NetPlayer { stream})
-                    .insert(Agent {name, turn_id: 255});
-                
-                agent_tracker.agents.push(entity);
-                events.send(PlayerCountChange{});
-            } else {
-                commands.entity(entity).despawn();
-            }
+                agent_tracker.new_player(name, stream);
+                events.send(PlayerCountChange::Connect);
+            } 
+
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -146,56 +144,57 @@ fn handle_connection_task(
 // TODO: Is there a way to handle this by spawning an event or resource or entity 
 //       so that all of these resources don't need to be passed around
 pub fn disconnect(
-    entity: Entity, 
-    player: &NetPlayer,
+    player: usize,
     events: &mut EventWriter<PlayerCountChange>, 
-    commands: &mut Commands,
-    agent_tracker: &mut ResMut<AgentTracker>
 ) {
-    println!("disconnect ocurred");
-
-    if let Err(e) = bincode::serialize_into(&player.stream, &messages::lobby::FromServer::Disconnect) {
-        println!("Disconnect message failed to send {e}");
-    }
-
-    let index = agent_tracker.agents.iter().position(|e| *e == entity).unwrap();
-    agent_tracker.agents.remove(index);
-
-    events.send(PlayerCountChange{});
-    commands.entity(entity).despawn();
+    events.send(PlayerCountChange::Disconnect(player));
 }
 
 // TODO: Rename this to something less wordy and more descriptive
 pub fn handle_playercount_change_system(
-    mut query: Query<(&mut Agent, Option<&NetPlayer>)>, 
     mut events: ResMut<Events<PlayerCountChange>>,
-    agent_tracker: Res<AgentTracker>,
+    mut agent_tracker: ResMut<AgentTracker>,
 ) {
     if !events.is_empty() {
         println!("Player count changed");
-        events.clear();
+
+        remove_disconnected_players(&mut events, &mut agent_tracker);
+        
         // TODO: Agents should have names, not netplayers
-        let names = query.iter().map(
-            |(agent, _)| agent.name.clone())
-        .collect::<Vec<_>>();
+        let names = agent_tracker.names();
 
         // Update all the players about the current lobby state
-        for (i,entity) in agent_tracker.agents.iter().enumerate() {
-            let (mut agent, player_option, ) = query.get_mut(*entity).unwrap();
+        for (player, stream) in agent_tracker.iter_ids_and_streams() {
 
-            agent.turn_id = i;
-
-            if let Some(player) = player_option {
-                if let Err(e) = bincode::serialize_into(&player.stream, 
-                    &messages::lobby::FromServer::CurrentPlayers{
-                        player_names: names.clone(), 
-                        turn_id: i as u8}) 
-                {
-                    println!("Error sending message to lobby leader {}: {e}", agent.name)
-                    // TODO: Should disconnect
-                }
+            if let Err(e) = bincode::serialize_into(stream, 
+                &messages::lobby::FromServer::CurrentPlayers{
+                    player_names: names.clone(), 
+                    turn_id: player as u8}) 
+            {
+                panic!("Error sending message to lobby leader {player}: {e}")
+                // TODO: Should disconnect not panic
             }
+            
         }
 
     }
+}
+
+fn remove_disconnected_players(
+    events: &mut ResMut<Events<PlayerCountChange>>,
+    agent_tracker: &mut ResMut<AgentTracker>,
+) {
+    let mut to_remove = events.drain().filter_map(|event| {
+        match event {
+            PlayerCountChange::Connect => None,
+            PlayerCountChange::Disconnect(player) => Some(player),
+        }
+    }).collect::<Vec<_>>();
+
+    to_remove.sort();
+    to_remove.reverse();
+    for r in to_remove {
+        agent_tracker.remove(r);
+    }
+
 }

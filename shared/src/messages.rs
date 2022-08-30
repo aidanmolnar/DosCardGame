@@ -8,7 +8,6 @@ pub mod lobby {
     #[derive(Serialize, Deserialize, Debug)]
     pub enum FromServer {
         CurrentPlayers { player_names: Vec<String>, turn_id: u8},
-        //YouAreLobbyLeader,
         Disconnect,
         StartGame,
     }
@@ -22,7 +21,6 @@ pub mod lobby {
 
 pub mod game {
     use super::{Card, CardColor, CardReference};
-
     use serde::{Serialize, Deserialize};
 
     #[derive(Serialize, Deserialize, Debug, Copy, Clone)]

@@ -3,45 +3,49 @@ use dos_shared::messages::game::*;
 
 use crate::connection_listening::{PlayerCountChange, disconnect};
 use super::server_game::ServerGame;
-use super::multiplayer::{NetPlayer, Agent, AgentTracker};
+use super::multiplayer::AgentTracker;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 
 use::bincode;
+
 use std::net::TcpStream;
 use std::io;
 use std::io::Write;
 
+
+
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w,'s> {
     events: EventWriter<'w, 's, PlayerCountChange>, 
-    commands: Commands<'w, 's>,
-    agent_tracker: ResMut<'w, AgentTracker>,
-    pub card_tracker: ServerGame<'w,'s>,
+    pub game: ServerGame<'w,'s>,
+
+    agent_tracker: Res<'w, AgentTracker>,
 }
 
-// TODO: Incorporate query so it doesn't need to be passed around
 pub fn game_network_system (
-    query: Query<(Entity, &NetPlayer, &Agent)>, 
-    mut manager: GameNetworkManager
+    mut manager: GameNetworkManager,
+    
 ) {
-    for (entity, player, agent) in query.iter() {
-        match bincode::deserialize_from::<&TcpStream, FromClient>(&player.stream) {
-            Ok(update) => {
-                manager.handle_update(
-                    &query,
-                    update,   
-                    agent, 
-                );
-            },
-            Err(e) => {
-                manager.handle_error(
-                    e, 
-                    entity, 
-                    player, 
-                );
+    for player in 0..manager.agent_tracker.num_agents() {
+        if let Some(stream) = manager.agent_tracker.try_get_stream(player) {
+
+            match bincode::deserialize_from::<&TcpStream, FromClient>(stream) {
+                Ok(update) => {
+                    manager.handle_update(
+                        update,   
+                        player, 
+                    );
+                },
+                Err(e) => {
+                    manager.handle_error(
+                        e, 
+                        player, 
+                    );
+                }
             }
+
         }
     }
 }
@@ -51,58 +55,42 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
     // TODO: Replace panics
     fn handle_update(
         &mut self,
-        query: &Query<(Entity, &NetPlayer, &Agent)>, 
         update: FromClient, 
-        agent: &Agent, 
+        player: usize,
     ) {
-        let action;
-
         match update.0 {
             GameAction::PlayCard (card)=> {
-                if self.card_tracker.validate_play_card(agent.turn_id, &card) {
-                    self.card_tracker.play_card(&card);
+                if self.game.validate_play_card(player, &card) {
+                    self.game.play_card(&card);
 
-                    action = Some(GameAction::PlayCard(card));
+                    self.send_to_filtered(GameAction::PlayCard(card), |p|p!=player)
                 } else {
                     panic!("Invalid play card");
                 }
             },
             GameAction::DrawCards => {
-                if self.card_tracker.validate_draw_cards(agent.turn_id) {
-                    self.card_tracker.draw_cards();
+                if self.game.validate_draw_cards(player) {
+                    self.game.draw_cards();
 
-                    // TODO: Clean this up.  Issue is that all clients need to receive this message.  Including sender.
-                    let conditions = self.card_tracker.syncer.take_conditions();
-                    for (_, _, agent) in query.iter() {
-                        let cards = self.card_tracker.syncer.take_player_cards(agent.turn_id);
-                        self.send_to_one(query, 
-                            FromServer {
-                                action: GameAction::DrawCards, 
-                                conditions: conditions.clone(), 
-                                cards
-                            }, 
-                            agent.turn_id
-                        )
-                    }
-                    return;
+                    self.send_to_all(GameAction::DrawCards)
                 } else {
                     panic!("Invalid draw cards");
                 }
             },
             GameAction::KeepStaging => {
-                if self.card_tracker.validate_keep_last_drawn_card(agent.turn_id) {
-                    self.card_tracker.keep_last_drawn_card();
+                if self.game.validate_keep_last_drawn_card(player) {
+                    self.game.keep_last_drawn_card();
 
-                    action = Some(GameAction::KeepStaging);
+                    self.send_to_filtered(GameAction::KeepStaging, |p|p!=player)
                 } else {
                     panic!("Invalid keep last drawn card");
                 }
             },
             GameAction::DiscardWildColor(color) => {
-                if self.card_tracker.validate_declare_wildcard_color(agent.turn_id, &color) {
-                    self.card_tracker.declare_wildcard_color(&color);
+                if self.game.validate_declare_wildcard_color(player, &color) {
+                    self.game.declare_wildcard_color(&color);
 
-                    action = Some(GameAction::DiscardWildColor(color));
+                    self.send_to_filtered(GameAction::DiscardWildColor(color), |p|p!=player)
                 } else {
                     panic!("Invalid wildcard select color");
                 }
@@ -111,63 +99,53 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 panic!("Invalid client action")
             }
         }
-
-        if let Some(action) = action {
-            let conditions = self.card_tracker.syncer.take_conditions();
-            
-            for (_, _, a) in query.iter().filter(|x|x.2.turn_id != agent.turn_id) {
-                let cards = self.card_tracker.syncer.take_player_cards(a.turn_id);
-                self.send_to_one(query, 
-                    FromServer{
-                        action, 
-                        conditions: conditions.clone(), 
-                        cards
-                    }, 
-                    a.turn_id
-                )
-            }
-        }
     }
 
-    pub fn send_to_one(
+    pub fn send_to_filtered<F> (
         &mut self,
-        query: &Query<(Entity, &NetPlayer, &Agent)>, 
-        message: FromServer,
-        receiver_id: usize,
-    ) {
-        let bytes = bincode::serialize(&message).expect("Failed to serialize message");
-        
-        for (_, player, agent) in query.iter() {
-            if agent.turn_id == receiver_id {
-                // TODO: Cloning the stream is not the best way to handle having an immutable reference here
-                if let Err(e) =  player.stream.try_clone().unwrap().write_all(&bytes) {
-                    panic!("Leave lobby message failed to send {e}");
-                    // TODO: might need to disconnect client here, or return to lobby?
-                }
-                return;
+        action: GameAction,
+        filter: F
+    ) where F: Fn(usize) -> bool{
+        let conditions = self.game.syncer.take_conditions();
+
+        for (player, mut stream) in self.agent_tracker.iter_ids_and_streams()
+        .filter(|(player,_)|filter(*player)) {
+
+            let cards = self.game.syncer.take_player_cards(player);
+            let bytes = bincode::serialize(&FromServer{
+                action, 
+                conditions: conditions.clone(), 
+                cards
+            }).expect("Failed to serialize message");
+
+            if let Err(e) =  stream.write_all(&bytes) {
+                panic!("Leave lobby message failed to send {e}");
+                // TODO: might need to disconnect client here, or return to lobby?
             }
         }
+    }   
+
+    pub fn send_to_all(
+        &mut self,
+        action: GameAction,
+    ) {
+        self.send_to_filtered(action, |_|{true})
     }
 
     // Checks if error is just non-blocking error
     fn handle_error(
         &mut self,
         e: Box<bincode::ErrorKind>,
-        entity: Entity,
-        player: &NetPlayer,
+        player: usize,
     ) {
         match *e {
             bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
             _ => {
                 println!("Message receive error: {}", e);
 
-                // TODO: Should disconnect be a method... probably
                 disconnect(
-                    entity, 
                     player, 
                     &mut self.events, 
-                    &mut self.commands, 
-                    &mut self.agent_tracker
                 );
             }
         }

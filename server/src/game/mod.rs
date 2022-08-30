@@ -24,7 +24,7 @@ impl Plugin for GamePlugin {
         .add_exit_system(
             GameState::MainMenu, 
             |mut commands: Commands, agent_tracker: Res<AgentTracker>|{
-                commands.insert_resource(GameInfo::new(agent_tracker.agents.len()))
+                commands.insert_resource(GameInfo::new(agent_tracker.num_agents()))
             }
         )
 
@@ -36,7 +36,7 @@ impl Plugin for GamePlugin {
         .add_enter_system(
             TableConstructionState::TableMapCreation, 
             |commands: Commands, agent_tracker: Res<AgentTracker>|{
-                build_table_map(commands, agent_tracker.agents.len())
+                build_table_map(commands, agent_tracker.num_agents())
             }
         )
         .add_enter_system(

@@ -42,5 +42,5 @@ pub fn setup_syncer(
     agent_tracker: Res<AgentTracker>,
     mut commands: Commands,
 ) {
-    commands.insert_resource(ServerSyncer::new(agent_tracker.agents.len()))
+    commands.insert_resource(ServerSyncer::new(agent_tracker.num_agents()))
 }
