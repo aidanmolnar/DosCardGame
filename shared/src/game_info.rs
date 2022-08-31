@@ -3,6 +3,7 @@ pub struct GameInfo {
     num_players: usize,
     current_turn: usize,
     direction: Direction,
+    pub stacked_draws: usize,
 }
 
 enum Direction {
@@ -15,7 +16,8 @@ impl GameInfo {
         GameInfo { 
             num_players, 
             current_turn: 0, 
-            direction: Direction::Clockwise 
+            direction: Direction::Clockwise,
+            stacked_draws: 0,
         }
     }
 
@@ -26,15 +28,21 @@ impl GameInfo {
         }
     }
 
-    pub fn next_turn(&mut self) -> usize {
+    pub fn next_turn(&mut self)  {
         let offset = match &self.direction {
             Direction::Clockwise => 1,
             Direction::CounterClockwise => -1,
         };
         let total = self.current_turn as i32 + offset;
-        self.current_turn = (total  % self.num_players as i32) as usize;
+        self.current_turn = (total.rem_euclid(self.num_players as i32)) as usize;
+    }
 
-        self.current_turn
+    pub fn skip_turn(&mut self) {
+        self.next_turn();
+
+        if self.num_players > 1 {
+            self.next_turn();
+        }
     }
 
     pub fn current_turn(&self) -> usize {

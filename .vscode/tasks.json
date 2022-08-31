@@ -9,7 +9,7 @@
         },
         {
             "label": "Run Both",
-            "dependsOn": ["Run Server", "Run Client", "Run Client"],
+            "dependsOn": ["Run Server", "Run Client", "Run Client", "Run Client"],
             "dependsOrder": "parallel"
         },
         {

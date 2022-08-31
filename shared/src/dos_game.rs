@@ -98,11 +98,49 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
 
         let card = self.get(&DISCARD_REFERENCE).expect("Discarded card must be visible for all").card();
 
-        // TODO: Handle card effects: ex. draw cards, skip, reverse, etc.
+        // TODO: If stacking is not allowed in the future, draw-x cards should deal immediately and skip the next player
+        // Note: Wild and DrawFour don't end a players turn because the player must select a color
+        match card.ty {
+            CardType::Basic(_) => {
+                self.game_info_mut().next_turn();
+            },
+            CardType::Skip => {
+                self.game_info_mut().skip_turn();
+            },
+            CardType::Reverse => {
+                self.game_info_mut().switch_direction();
 
-        if card.color != CardColor::Wild {
-            self.game_info_mut().next_turn();
-        } 
+                if self.game_info().num_players() == 2 {
+                    self.game_info_mut().skip_turn();
+                } else {
+                    self.game_info_mut().next_turn();
+                }
+            },
+            CardType::DrawTwo => {
+                self.game_info_mut().stacked_draws += 2;
+                self.game_info_mut().next_turn();
+            },
+            CardType::Wild => {},
+            CardType::DrawFour => {
+                self.game_info_mut().stacked_draws += 4;
+            },  
+        }
+
+        let hand = self.get_table(
+            &Location::Hand { 
+                player_id: self.game_info().current_turn() 
+            }
+        );
+
+        //TODO: Check if a player has Dos or is out of cards
+        if hand.len() == 2 {
+            dbg!("Dos");
+            // This is tricky, because its a time based action that can happen whenever
+        } else if hand.len() == 0 {
+            dbg!("Victory");
+            // Move to post game?
+        }
+
     }
 
     fn validate_play_card(
@@ -128,7 +166,13 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                 let discard = self.get(&DISCARD_REFERENCE).unwrap().card(); // Can unwrap because we already checked that a discarded card exists in get_turn_state
 
                 // Check that the card is playable
-                is_valid_move(card_wrapper.card(), discard)
+                if self.game_info().stacked_draws > 0 {
+                    // Must play a card that can stack.
+                    is_valid_move(card_wrapper.card(), discard) && 
+                    (card_wrapper.card().ty == CardType::DrawFour || card_wrapper.card().ty == CardType::DrawTwo)
+                } else {
+                    is_valid_move(card_wrapper.card(), discard)
+                }
             } else {
                 false
             }
@@ -153,7 +197,32 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             hand_position: HandPosition::Last
         };
 
+        // Handle case where draw-x cards have been played/stacked
+        let mut stacked_draws = self.game_info().stacked_draws;
+        if stacked_draws > 0 {
+            while stacked_draws > 0 {
+                // Reshuffle deck if needed
+                if self.get_table(&Location::Deck).is_empty() {
+                    if self.get_table(&Location::DiscardPile).len() == 1 {
+                        // Failed to supply a needed card.
+                        break
+                    } else {
+                        self.reshuffle();
+                    }
+                }
+
+                stacked_draws -= 1;
+                self.transfer(&DECK_REFERENCE, &to);
+            }
+
+            self.game_info_mut().stacked_draws = 0;
+            self.game_info_mut().next_turn();
+            return;
+        }
+        
+        // Handle normal drawing case
         loop {
+            // Reshuffle deck if needed
             if self.get_table(&Location::Deck).is_empty() {
                 if self.get_table(&Location::DiscardPile).len() == 1 {
                     // Failed to supply a needed card.
