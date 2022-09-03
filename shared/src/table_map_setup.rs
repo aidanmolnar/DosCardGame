@@ -27,8 +27,8 @@ impl Plugin for TableConstructionPlugin {
         )
 
         // Clear table map and entities on returning to main menu
-        .add_enter_system(
-            GameState::MainMenu, 
+        .add_exit_system(
+            GameState::InGame, 
             remove_tables.run_if_resource_exists::<TableMap>()
         );
     }

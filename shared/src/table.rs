@@ -1,12 +1,7 @@
-use super::cards::Card;
-
-use bevy::prelude::*;
+use bevy::prelude::Entity;
 use bevy::utils::HashMap;
 
 use serde::{Serialize, Deserialize};
-
-// Shared
-
 
 #[derive(Default)]
 pub struct TableMap (pub HashMap<Location, Entity>);
@@ -32,12 +27,5 @@ pub struct CardReference {
 pub enum HandPosition {
     Last,
     Index(usize)
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct CardTransfer {
-    pub from: CardReference,
-    pub to: CardReference,
-    pub value: Option<Card>,
 }
 

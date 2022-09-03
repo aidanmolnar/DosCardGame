@@ -22,7 +22,7 @@ CardReference {
     hand_position: HandPosition::Last
 };
 
-// TODO: Rename default state to "Normal" or something similar to avoid confusion about it not being actual default state lol
+// TODO: Rename "Default" state to "Normal" or something similar to avoid confusion about it not being actual default state lol
 #[derive(PartialEq, Eq, Default, Debug)]
 pub enum TurnState {
     Default, 
@@ -56,8 +56,8 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
 
     fn deal_starting_cards(&mut self, deck_size: usize) {
         
+        // Deal the player hand cards
         let mut count = 0;
-
         for _ in 0..NUM_STARTING_CARDS {
             for player_id in 0..self.game_info().num_players() {
                 let to = CardReference{location: Location::Hand{player_id}, hand_position: HandPosition::Last};
@@ -73,6 +73,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             }
         }
 
+        // Deal the discard pile cards
         loop {
             self.transfer(
                 &DECK_REFERENCE,
@@ -96,9 +97,24 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             &DISCARD_REFERENCE
         );
 
-        let card = self.get(&DISCARD_REFERENCE).expect("Discarded card must be visible for all").card();
+        let card = *self.get(&DISCARD_REFERENCE).expect("Discarded card must be visible for all").card();
 
-        // TODO: If stacking is not allowed in the future, draw-x cards should deal immediately and skip the next player
+        let hand = self.get_table(
+            &Location::Hand { 
+                player_id: self.game_info().current_turn() 
+            }
+        );
+
+        //TODO: Check if a player has Dos or is out of cards
+        if hand.len() == 2 {
+            self.someone_has_two_cards(self.game_info().current_turn() )
+            // This is tricky, because its a time based action that can happen whenever
+        } else if hand.len() == 0 {
+            self.victory(self.game_info().current_turn());
+            // Move to post game?
+        }
+
+        // TODO: If stacking is not allowed in the future (by rules options), draw-x cards should deal immediately and skip the next player
         // Note: Wild and DrawFour don't end a players turn because the player must select a color
         match card.ty {
             CardType::Basic(_) => {
@@ -125,21 +141,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                 self.game_info_mut().stacked_draws += 4;
             },  
         }
-
-        let hand = self.get_table(
-            &Location::Hand { 
-                player_id: self.game_info().current_turn() 
-            }
-        );
-
-        //TODO: Check if a player has Dos or is out of cards
-        if hand.len() == 2 {
-            dbg!("Dos");
-            // This is tricky, because its a time based action that can happen whenever
-        } else if hand.len() == 0 {
-            dbg!("Victory");
-            // Move to post game?
-        }
+        
 
     }
 
@@ -345,6 +347,10 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
     );
 
     fn reshuffle(&mut self);
+
+    fn victory(&mut self, winner: usize);
+
+    fn someone_has_two_cards(&mut self, player: usize);
 }
 
 

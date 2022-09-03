@@ -1,6 +1,10 @@
+use dos_shared::GameState;
 use dos_shared::cards::Card;
 use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
 use dos_shared::transfer::CardTransfer;
+use iyes_loopless::state::NextState;
+
+use crate::postgame::Victory;
 
 use super::card_indexing::CARD_BACK_SPRITE_INDEX;
 use super::table::{AnimationItem, AnimationTable};
@@ -20,8 +24,8 @@ pub struct AnimationTracker<'w,'s> {
 
     pub animation_queue: ResMut<'w, AnimationActionQueue>,
     
-    commands: Commands<'w, 's>,
     sprites: Query<'w, 's, &'static mut TextureAtlasSprite>,
+    commands: Commands<'w, 's>,
 }
 
 #[derive(Default)]
@@ -43,7 +47,10 @@ pub enum AnimationAction {
     },
     SetDiscardLast {
         card: Option<Card>,
-    }
+    },
+    Victory {
+        winner: usize,
+    },
 }
 
 pub fn update_animation_actions(
@@ -61,6 +68,9 @@ pub fn update_animation_actions(
                 AnimationAction::SetDiscardLast { card } => {
                     animation_tracker.set_discard_last(card)
                 },
+                AnimationAction::Victory{winner} => {
+                    animation_tracker.victory(winner)
+                }
             }
 
             animation_tracker.animation_queue.timer = Timer::from_seconds(delayed_action.delay, false);
@@ -81,6 +91,12 @@ impl AnimationTracker<'_,'_> {
 
     pub fn reset_mouse_offset(&mut self, item: &AnimationItem) {
         self.commands.entity(item.1).insert(MouseOffset{offset: Vec3::ZERO, scale: 1.});
+    }
+
+    fn victory(&mut self, winner: usize) {
+        println!("player with id {} won the game!", winner);
+        self.commands.insert_resource(Victory{winner});
+        self.commands.insert_resource(NextState(GameState::PostGame));
     }
 }
 

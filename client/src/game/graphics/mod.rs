@@ -6,6 +6,7 @@ mod assets;
 mod camera;
 mod card_indexing;
 mod deck;
+mod remove_cards;
 
 pub use deck::DeckBuilder;
 pub use animations::{components, FocusedCard, AnimationTracker, DelayedAnimationAction, AnimationAction};
@@ -23,6 +24,7 @@ impl Plugin for GraphicsPlugin {
         .add_plugin(animations::AnimationPlugin)
 
         .add_startup_system(assets::load_assets)
-        .add_enter_system(GameState::InGame, camera::add_camera);
+        .add_enter_system(GameState::InGame, camera::add_camera)
+        .add_exit_system(GameState::InGame, remove_cards::remove_all_cards);
     }
 }

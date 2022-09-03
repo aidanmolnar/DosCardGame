@@ -23,6 +23,10 @@ impl Plugin for DrawButtonPlugin {
             GameState::InGame, 
             draw_button_setup
         )
+        .add_exit_system(
+            GameState::InGame, 
+            draw_button_cleanup
+        )
         .add_system(
             draw_button_display_system
             .run_in_state(GameState::InGame)
@@ -85,5 +89,14 @@ fn draw_button_clicked_system (
                 }
             }
         }
+    }
+}
+
+fn draw_button_cleanup(
+    mut commands: Commands,
+    cards: Query<Entity, With<DrawButton>>,
+) {
+    for entity in &cards {
+        commands.entity(entity).despawn();
     }
 }

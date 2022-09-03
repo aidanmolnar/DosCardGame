@@ -1,4 +1,3 @@
-use dos_shared::cards::Card;
 use dos_shared::dos_game::DosGame;
 use dos_shared::table::{CardReference, Location, HandPosition};
 use dos_shared::messages::game::{FromClient, GameAction};
@@ -9,12 +8,7 @@ use crate::game::networking::GameNetworkManager;
 use bevy::prelude::*;
 use bevy_mod_picking::*;
 
-#[derive(Component)]
-pub struct CardValue (pub Card);
-
 // Runs on PickingEvent
-
-// TODO: Break this up and make it more readable
 pub fn play_card_system (
     mut network_manager: GameNetworkManager,
     mut events: EventReader<PickingEvent>,

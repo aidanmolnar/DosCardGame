@@ -26,6 +26,7 @@ impl Plugin for AnimationPlugin {
         app
         .add_plugin(targeting::TargetingPlugin)
         .add_plugin(core::CoreAnimationPlugin)
+
         // Create table arrangers and animation tables
         .add_enter_system(
             TableConstructionState::TableCreation, 
@@ -36,8 +37,12 @@ impl Plugin for AnimationPlugin {
             setup_table::add_animation_tables
         )
 
+        .add_enter_system(GameState::InGame, 
+            |mut commands: Commands| {
+            commands.init_resource::<tracker::AnimationActionQueue>()
+        })
+
         // Update delayed transfers in card tracker
-        .init_resource::<tracker::AnimationActionQueue>()
         .add_system(tracker::update_animation_actions
             .run_in_state(GameState::InGame));
     }

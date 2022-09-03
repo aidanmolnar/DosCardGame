@@ -100,8 +100,8 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
                 None
             }
         };
-
         item.0 = card;
+
         self.push(to, item);
 
         self.animation_tracker.enque_action(DelayedAnimationAction{
@@ -118,6 +118,17 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
             );
         }
     }
+
+    // TODO: these need to be enqueed
+    fn victory(&mut self, winner: usize) {
+        
+        self.animation_tracker.enque_action(DelayedAnimationAction{ action: AnimationAction::Victory{winner}, delay: 0.5 })
+    }
+
+    fn someone_has_two_cards(&mut self, player: usize) {
+        println!("player with id {} has two cards!", player);
+    }
+
 }
 
 impl ClientGame<'_,'_> {

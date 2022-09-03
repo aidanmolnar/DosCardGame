@@ -24,6 +24,10 @@ impl Plugin for WildCardPlugin {
             GameState::InGame, 
             wildcard_select_setup
         )
+        .add_exit_system(
+            GameState::InGame, 
+            wildcard_buttons_cleanup
+        )
         .add_system(
             wildcard_button_clicked_system
             .run_in_state(GameState::InGame)
@@ -149,5 +153,14 @@ fn wildcard_button_clicked_system (
                 }
             }
         }
+    }
+}
+
+fn wildcard_buttons_cleanup(
+    mut commands: Commands,
+    cards: Query<Entity, With<WildCardButton>>,
+) {
+    for entity in &cards {
+        commands.entity(entity).despawn();
     }
 }

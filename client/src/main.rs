@@ -5,6 +5,7 @@ use dos_shared::GameState;
 
 mod lobby;
 mod game;
+mod postgame;
 mod multiplayer;
 
 use game::GamePlugin;
@@ -13,6 +14,7 @@ use multiplayer::MultiplayerState;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
+use postgame::PostGamePlugin;
 
 fn main() {
     App::new()
@@ -32,6 +34,7 @@ fn main() {
         // Dos plugins
         .add_plugin(LobbyPlugin)
         .add_plugin(GamePlugin)
+        .add_plugin(PostGamePlugin)
         
         .run()
 }

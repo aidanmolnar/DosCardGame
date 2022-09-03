@@ -11,6 +11,7 @@ mod graphics;
 mod setup_table;
 mod sync;
 
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use bevy_mod_picking::{PickingPlugin,InteractablePickingPlugin, PickingEvent };
@@ -29,8 +30,8 @@ impl Plugin for GamePlugin {
         .add_plugin(graphics::GraphicsPlugin)
 
         // Create resource for controlling turn advancement
-        .add_exit_system(
-            GameState::MainMenu, 
+        .add_enter_system(
+            GameState::InGame, 
             |mut commands: Commands, mp_state: Res<MultiplayerState>|{
                 commands.insert_resource(GameInfo::new(mp_state.player_names.len()))
             }

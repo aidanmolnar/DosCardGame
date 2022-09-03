@@ -22,5 +22,6 @@ const CARDS_TO_RETAIN: usize = 9;
 pub enum GameState {
     MainMenu,
     InGame,
+    PostGame,
 }
 

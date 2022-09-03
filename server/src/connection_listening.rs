@@ -65,7 +65,7 @@ fn listen_for_connections(
                     });
                     commands.spawn().insert(ConnectionTask(task));
                 }
-                GameState::InGame => {
+                GameState::InGame | GameState::PostGame => {
                     // TODO: clean up these task entities or just don't make them to begin with (i.e. keep single threaded)
                     let task = thread_pool.spawn(async move {
                         create_rejection_task(stream);

@@ -26,7 +26,7 @@ impl Plugin for ClientTableSetupPlugin {
     }
 }
 
-pub fn add_client_tables(
+fn add_client_tables(
     mut commands: Commands,
     table_map: Res<TableMap>,
 ) {
@@ -43,4 +43,3 @@ pub fn add_client_tables(
         commands.entity(*entity).insert(table);
     }
 }
-

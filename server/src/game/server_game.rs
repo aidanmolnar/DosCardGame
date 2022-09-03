@@ -1,7 +1,8 @@
 use dos_shared::cards::{Card, CardType, CardColor};
 use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
-use dos_shared::{table::*, GameInfo};
+use dos_shared::{table::*, GameInfo, GameState};
 use dos_shared::transfer::{CardTransfer, Table};
+use iyes_loopless::state::NextState;
 use super::sync::ServerSyncer;
 use super::table::ServerTable;
 
@@ -13,6 +14,7 @@ pub struct ServerGame<'w,'s> {
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut ServerTable>,
     pub syncer: ResMut<'w, ServerSyncer>,
+    commands: Commands<'w,'s>,
 
     game_info: ResMut<'w, GameInfo>,
 }
@@ -106,4 +108,14 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
 
         self.get_table_mut(&Location::Deck).shuffle();
     }
+
+    fn victory(&mut self, winner: usize) {
+        println!("player with id {} won the game!", winner);
+        self.commands.insert_resource(NextState(GameState::MainMenu));
+    }
+
+    fn someone_has_two_cards(&mut self, player: usize) {
+        println!("player with id {} has two cards!", player);
+    }
+
 }
