@@ -1,6 +1,6 @@
 use dos_shared::cards::Card;
 
-use dos_shared::transfer::{Table, BasicTable, CardWrapper};
+use dos_shared::table::{Table, BasicTable, CardWrapper};
 
 use bevy::prelude::{Entity, Component};
 

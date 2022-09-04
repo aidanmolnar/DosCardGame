@@ -1,4 +1,4 @@
-use dos_shared::{cards::Card, transfer::{Table, BasicTable}};
+use dos_shared::{cards::Card, table::{Table, BasicTable}};
 
 use bevy::prelude::Component;
 

@@ -1,4 +1,4 @@
-use dos_shared::transfer::Table;
+use dos_shared::table::Table;
 
 use super::core::components::*;
 use super::layout::{expressions::*,constants::*};

@@ -1,4 +1,4 @@
-use dos_shared::{table::*, table_map_setup::{TableConstructionPlugin, TableConstructionState, build_table_map}};
+use dos_shared::{table::*, table_map::{TableConstructionPlugin, TableConstructionState, build_table_map, TableMap}};
 
 use crate::multiplayer::MultiplayerState;
 

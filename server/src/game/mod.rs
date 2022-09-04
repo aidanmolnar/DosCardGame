@@ -1,5 +1,5 @@
 use dos_shared::GameInfo;
-use dos_shared::table_map_setup::*;
+use dos_shared::table_map::*;
 
 use crate::multiplayer::AgentTracker;
 use super::GameState;

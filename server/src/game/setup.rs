@@ -1,5 +1,6 @@
 use dos_shared::table::*;
 use dos_shared::cards::*;
+use dos_shared::table_map::TableMap;
 
 use super::table::ServerTable;
 

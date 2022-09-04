@@ -1,8 +1,9 @@
 use dos_shared::cards::{Card, CardType, CardColor};
 use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
+use dos_shared::table_map::TableMap;
+use dos_shared::transfer::CardTransfer;
 use dos_shared::{table::*, GameInfo, GameState};
-use dos_shared::transfer::{CardTransfer, Table};
-use iyes_loopless::state::NextState;
+
 use crate::game::call_dos::CallDos;
 
 use super::sync::ServerSyncer;
@@ -10,6 +11,7 @@ use super::table::ServerTable;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
+use iyes_loopless::state::NextState;
 
 #[derive(SystemParam)]
 pub struct ServerGame<'w,'s> {

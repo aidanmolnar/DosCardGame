@@ -1,5 +1,5 @@
 use dos_shared::table::Location;
-use dos_shared::table::TableMap;
+use dos_shared::table_map::TableMap;
 
 use crate::game::MultiplayerState;
 use super::layout::expressions::*;

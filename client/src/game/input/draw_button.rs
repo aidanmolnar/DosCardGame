@@ -1,7 +1,7 @@
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::{FromClient, GameAction};
-use dos_shared::table::Location;
-use dos_shared::transfer::{CardTransfer, Table};
+use dos_shared::table::{Location, Table};
+use dos_shared::transfer::CardTransfer;
 
 use crate::game::GameState;
 use crate::game::graphics::{DeckBuilder, CARD_BACK_SPRITE_INDEX};

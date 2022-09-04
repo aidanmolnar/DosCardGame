@@ -1,6 +1,6 @@
-use crate::transfer::{Table, CardTransfer, CardWrapper};
-use crate::table::{Location, CardReference, HandPosition};
+use crate::table::{Table, CardWrapper, Location, CardReference, HandPosition};
 use crate::cards::{Card, CardType, CardColor};
+use crate::transfer::CardTransfer;
 use crate::{GameInfo, NUM_STARTING_CARDS, CARDS_TO_RETAIN};
 
 pub const DECK_REFERENCE: CardReference = 

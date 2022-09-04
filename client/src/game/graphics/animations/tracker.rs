@@ -1,6 +1,7 @@
 use dos_shared::GameState;
 use dos_shared::cards::Card;
-use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
+use dos_shared::table::{Location, CardReference, HandPosition};
+use dos_shared::table_map::TableMap;
 use dos_shared::transfer::CardTransfer;
 use iyes_loopless::state::NextState;
 

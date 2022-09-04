@@ -1,5 +1,5 @@
 use dos_shared::GameState;
-use dos_shared::table_map_setup::TableConstructionState;
+use dos_shared::table_map::TableConstructionState;
 
 use super::layout;
 use super::deck;

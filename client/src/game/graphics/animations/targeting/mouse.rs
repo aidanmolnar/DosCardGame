@@ -1,6 +1,7 @@
 use dos_shared::table::*;
 use dos_shared::cards::Card;
-use dos_shared::transfer::Table;
+use dos_shared::table::Table;
+use dos_shared::table_map::TableMap;
 
 use super::core::components::*;
 use super::layout::{expressions::*, constants::*};

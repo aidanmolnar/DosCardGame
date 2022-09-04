@@ -2,9 +2,12 @@ use super::GameState;
 
 use super::table::*;
 
-
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use iyes_loopless::prelude::*;
+
+#[derive(Default)]
+pub struct TableMap (pub HashMap<Location, Entity>);
 
 pub struct TableConstructionPlugin;
 

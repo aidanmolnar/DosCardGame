@@ -1,8 +1,9 @@
 use dos_shared::GameInfo;
 use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
-use dos_shared::table::{TableMap, Location, CardReference, HandPosition};
-use dos_shared::transfer::Table;
-use dos_shared::{transfer::CardTransfer, cards::Card};
+use dos_shared::table::{Table, Location, CardReference, HandPosition};
+use dos_shared::cards::Card;
+use dos_shared::table_map::TableMap;
+use dos_shared::transfer::CardTransfer;
 
 use crate::multiplayer::MultiplayerState;
 use super::graphics::{AnimationTracker, DelayedAnimationAction, AnimationAction};
