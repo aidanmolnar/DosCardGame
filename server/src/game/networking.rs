@@ -3,6 +3,7 @@ use dos_shared::messages::game::*;
 
 use crate::connection_listening::{PlayerCountChange, disconnect};
 use super::server_game::ServerGame;
+use super::call_dos::CallDos;
 use super::multiplayer::AgentTracker;
 
 use bevy::prelude::*;
@@ -20,6 +21,8 @@ use std::io::Write;
 pub struct GameNetworkManager<'w,'s> {
     events: EventWriter<'w, 's, PlayerCountChange>, 
     pub game: ServerGame<'w,'s>,
+
+    pub call_dos: Option<ResMut<'w, CallDos>>,
 
     agent_tracker: Res<'w, AgentTracker>,
 }
@@ -95,6 +98,30 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     panic!("Invalid wildcard select color");
                 }
             },
+            GameAction::CallDos{..} => {
+                if let Some(call_dos) = &mut self.call_dos {
+                    if player == call_dos.player {
+                        let action = GameAction::CallDos (
+                            Some(CallDosInfo {
+                                player: call_dos.player,
+                                caller: call_dos.player,
+                            })
+                        );
+                        // Remove call dos, send message that someone called it
+                        self.game.commands.remove_resource::<CallDos>();
+                        self.send_to_all(action);
+                    } else {
+                        // Start the timer running if it is not already running
+                        if call_dos.graceperiod.is_none() {
+                            call_dos.caller = Some(player);
+                            call_dos.graceperiod = Some(Timer::from_seconds(0.5, false));
+                        }
+                    }
+                } else {
+                    // This isn't necessarily a desync, just client not receiving call dos message yet.
+                    println!("Invalid call dos");
+                }
+            }
             _ => {
                 panic!("Invalid client action")
             }

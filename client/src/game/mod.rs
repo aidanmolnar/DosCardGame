@@ -10,7 +10,7 @@ mod table;
 mod graphics;
 mod setup_table;
 mod sync;
-
+mod call_dos;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -47,6 +47,7 @@ impl Plugin for GamePlugin {
         // Handle input from clients
         .add_plugin(input::WildCardPlugin)
         .add_plugin(input::DrawButtonPlugin)
+        .add_plugin(input::CallDosPlugin)
         .add_system(input::play_card_system
             .run_in_state(GameState::InGame)
             .run_on_event::<PickingEvent>());

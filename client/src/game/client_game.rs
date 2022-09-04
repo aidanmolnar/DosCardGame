@@ -125,8 +125,8 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
         self.animation_tracker.enque_action(DelayedAnimationAction{ action: AnimationAction::Victory{winner}, delay: 0.5 })
     }
 
-    fn someone_has_two_cards(&mut self, player: usize) {
-        println!("player with id {} has two cards!", player);
+    fn someone_has_two_cards(&mut self, _player: usize) {
+        self.animation_tracker.enque_action(DelayedAnimationAction{ action: AnimationAction::SomeoneHasTwoCards, delay: 0.0});
     }
 
 }

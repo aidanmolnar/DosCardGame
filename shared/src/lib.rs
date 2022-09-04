@@ -11,7 +11,7 @@ pub use game_info::GameInfo;
 
 pub const DEFAULT_IP: &str = "localhost:3333";
 
-pub const NUM_STARTING_CARDS: u8 = 10;
+pub const NUM_STARTING_CARDS: u8 = 4;
 pub const DECK_SIZE: usize = 108;
 const CARDS_TO_RETAIN: usize = 9; 
 // Cards to refrain from dealing

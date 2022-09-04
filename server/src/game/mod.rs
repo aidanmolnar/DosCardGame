@@ -11,6 +11,7 @@ mod setup;
 mod deal;
 mod server_game;
 mod table;
+mod call_dos;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -51,6 +52,11 @@ impl Plugin for GamePlugin {
         // Handle receiving network events and advancing game state
         .add_system(networking::game_network_system
             .run_in_state(GameState::InGame)
+        )
+
+        .add_system(call_dos::call_dos_graceperiod
+            .run_in_state(GameState::InGame)
+            .run_if_resource_exists::<call_dos::CallDos>()
         );
     }
 

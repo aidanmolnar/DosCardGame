@@ -292,6 +292,33 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
+    fn punish_missed_dos(&mut self, player: usize) {
+        let to = CardReference{
+            location: Location::Hand{
+                player_id: player,
+            }, 
+            hand_position: HandPosition::Last
+        };
+
+        let mut punish_cards = 3;
+
+        while punish_cards > 0 {
+            // Reshuffle deck if needed
+            if self.get_table(&Location::Deck).is_empty() {
+                if self.get_table(&Location::DiscardPile).len() == 1 {
+                    // Failed to supply a needed card.
+                    self.game_info_mut().next_turn();
+                    break
+                } else {
+                    self.reshuffle();
+                }
+            }
+
+            punish_cards -= 1;
+            self.transfer(&DECK_REFERENCE, &to);
+        }
+    }
+
     fn is_players_turn(
         &self, 
         player: usize

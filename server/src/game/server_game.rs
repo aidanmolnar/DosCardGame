@@ -3,6 +3,8 @@ use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
 use dos_shared::{table::*, GameInfo, GameState};
 use dos_shared::transfer::{CardTransfer, Table};
 use iyes_loopless::state::NextState;
+use crate::game::call_dos::CallDos;
+
 use super::sync::ServerSyncer;
 use super::table::ServerTable;
 
@@ -14,7 +16,7 @@ pub struct ServerGame<'w,'s> {
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut ServerTable>,
     pub syncer: ResMut<'w, ServerSyncer>,
-    commands: Commands<'w,'s>,
+    pub commands: Commands<'w,'s>,
 
     game_info: ResMut<'w, GameInfo>,
 }
@@ -116,6 +118,11 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
 
     fn someone_has_two_cards(&mut self, player: usize) {
         println!("player with id {} has two cards!", player);
+        self.commands.insert_resource(CallDos {
+            player,
+            caller: None,
+            graceperiod: None,
+        })
     }
 
 }

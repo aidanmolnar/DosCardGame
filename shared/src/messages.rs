@@ -30,6 +30,13 @@ pub mod game {
         DrawCards,
         KeepStaging,
         DiscardWildColor(CardColor),
+        CallDos(Option<CallDosInfo>), // Server includes.  Client does not.
+    }
+
+    #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+    pub struct CallDosInfo {
+        pub player: usize,
+        pub caller: usize, 
     }
 
     #[derive(Serialize, Deserialize, Debug)]

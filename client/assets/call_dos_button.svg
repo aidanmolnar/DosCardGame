@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="360mm"
+   height="360mm"
+   viewBox="0 0 240 240"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2 (dc2aedaf03, 2022-05-15)"
+   sodipodi:docname="call_dos_button.svg"
+   inkscape:export-filename="call_dos_button.png"
+   inkscape:export-xdpi="25.4"
+   inkscape:export-ydpi="25.4"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#505050"
+     bordercolor="#eeeeee"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#505050"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.457453"
+     inkscape:cx="1320.3542"
+     inkscape:cy="515.89999"
+     inkscape:window-width="2560"
+     inkscape:window-height="1377"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g2381" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(4.7357656,-40.940216)">
+    <g
+       id="g2381"
+       transform="translate(13.209902,4.6238559)">
+      <path
+         sodipodi:type="star"
+         style="fill:#00a933;fill-opacity:1;stroke:#f6f6f6;stroke-width:4;stroke-dasharray:none;paint-order:fill markers stroke"
+         id="path184-6"
+         inkscape:flatsided="false"
+         sodipodi:sides="5"
+         sodipodi:cx="52.343719"
+         sodipodi:cy="104.97663"
+         sodipodi:r1="108.37943"
+         sodipodi:r2="54.189716"
+         sodipodi:arg1="0.87229995"
+         sodipodi:arg2="1.5006185"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="M 122.03895,187.97468 56.143515,159.03296 -5.0551082,196.90854 2.1072952,125.29478 -52.825935,78.795624 17.496106,63.477605 44.744126,-3.1360305 81.043134,59.010677 152.81657,64.340338 104.92855,118.06714 Z"
+         inkscape:transform-center-x="-1.0583227"
+         inkscape:transform-center-y="9.337617"
+         transform="rotate(-33.789965,165.59995,51.023033)" />
+      <path
+         sodipodi:type="star"
+         style="fill:#ff5555;fill-opacity:1;stroke:#f6f6f6;stroke-width:4;stroke-dasharray:none;paint-order:fill markers stroke"
+         id="path184"
+         inkscape:flatsided="false"
+         sodipodi:sides="5"
+         sodipodi:cx="52.343719"
+         sodipodi:cy="104.97663"
+         sodipodi:r1="108.37943"
+         sodipodi:r2="54.189716"
+         sodipodi:arg1="0.87229995"
+         sodipodi:arg2="1.5006185"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="M 122.03895,187.97468 56.143515,159.03296 -5.0551082,196.90854 2.1072952,125.29478 -52.825935,78.795624 17.496106,63.477605 44.744126,-3.1360305 81.043134,59.010677 152.81657,64.340338 104.92855,118.06714 Z"
+         inkscape:transform-center-x="2.3484041"
+         inkscape:transform-center-y="-8.0903774"
+         transform="translate(52.825935,48.584226)" />
+      <text
+         xml:space="preserve"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:73.037px;line-height:1.25;font-family:'Bernard MT Condensed';-inkscape-font-specification:'Bernard MT Condensed, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#000000;fill-opacity:1;stroke:none;stroke-width:1.82592"
+         x="68.400429"
+         y="168.12375"
+         id="text1599"
+         transform="scale(0.90679194,1.1027888)"><tspan
+           sodipodi:role="line"
+           id="tspan1597"
+           style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:73.037px;font-family:'Bernard MT Condensed';-inkscape-font-specification:'Bernard MT Condensed, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:1.82592"
+           x="68.400429"
+           y="168.12375">Dos</tspan></text>
+    </g>
+  </g>
+</svg>

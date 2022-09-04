@@ -12,6 +12,7 @@ pub use deck::DeckBuilder;
 pub use animations::{components, FocusedCard, AnimationTracker, DelayedAnimationAction, AnimationAction};
 pub use card_indexing::{SpriteIndex,CARD_BACK_SPRITE_INDEX};
 pub use layout::constants;
+pub use assets::DosButtonHandle;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -24,7 +25,7 @@ impl Plugin for GraphicsPlugin {
         .add_plugin(animations::AnimationPlugin)
 
         .add_startup_system(assets::load_assets)
-        .add_enter_system(GameState::InGame, camera::add_camera)
+        .add_startup_system(camera::add_camera)
         .add_exit_system(GameState::InGame, remove_cards::remove_all_cards);
     }
 }

@@ -3,6 +3,7 @@ use dos_shared::messages::game::*;
 use dos_shared::DECK_SIZE;
     
 use super::client_game::ClientGame;
+use super::call_dos::CallDos;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
@@ -64,6 +65,14 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
             GameAction::DiscardWildColor(color) => {
                 self.game.declare_wildcard_color(&color);
             },
+            GameAction::CallDos(call_dos_info) => {
+                let info = call_dos_info.expect("Server always sends caller");
+                if info.player != info.caller {
+                    self.game.punish_missed_dos(info.player);
+                }
+                self.commands.remove_resource::<CallDos>();
+                //TODO: spawn effects or do within game>?
+            }
         }
     }
 

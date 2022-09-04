@@ -4,6 +4,7 @@ use dos_shared::table::{Location, CardReference, TableMap, HandPosition};
 use dos_shared::transfer::CardTransfer;
 use iyes_loopless::state::NextState;
 
+use crate::game::call_dos::CallDos;
 use crate::postgame::Victory;
 
 use super::card_indexing::CARD_BACK_SPRITE_INDEX;
@@ -51,6 +52,7 @@ pub enum AnimationAction {
     Victory {
         winner: usize,
     },
+    SomeoneHasTwoCards,
 }
 
 pub fn update_animation_actions(
@@ -71,6 +73,9 @@ pub fn update_animation_actions(
                 AnimationAction::Victory{winner} => {
                     animation_tracker.victory(winner)
                 }
+                AnimationAction::SomeoneHasTwoCards => {
+                    animation_tracker.someone_has_two_cards();
+                },
             }
 
             animation_tracker.animation_queue.timer = Timer::from_seconds(delayed_action.delay, false);
@@ -91,12 +96,6 @@ impl AnimationTracker<'_,'_> {
 
     pub fn reset_mouse_offset(&mut self, item: &AnimationItem) {
         self.commands.entity(item.1).insert(MouseOffset{offset: Vec3::ZERO, scale: 1.});
-    }
-
-    fn victory(&mut self, winner: usize) {
-        println!("player with id {} won the game!", winner);
-        self.commands.insert_resource(Victory{winner});
-        self.commands.insert_resource(NextState(GameState::PostGame));
     }
 }
 
@@ -154,5 +153,15 @@ impl AnimationTracker<'_,'_> {
 
     pub fn is_empty(&self) -> bool {
         self.animation_queue.queue.is_empty()
+    }
+
+    fn victory(&mut self, winner: usize) {
+        println!("player with id {} won the game!", winner);
+        self.commands.insert_resource(Victory{winner});
+        self.commands.insert_resource(NextState(GameState::PostGame));
+    }
+
+    pub fn someone_has_two_cards(&mut self) {
+        self.commands.init_resource::<CallDos>();
     }
 }
