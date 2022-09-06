@@ -26,15 +26,18 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app
         // Create resource for controlling turn advancement
-        .add_enter_system(
-            GameState::InGame, 
+        .add_exit_system(
+            GameState::MainMenu, 
             |mut commands: Commands, agent_tracker: Res<AgentTracker>|{
                 commands.insert_resource(GameInfo::new(agent_tracker.num_agents()))
             }
         )
 
         // Create resource for caching card values
-        .add_enter_system(GameState::InGame, sync::setup_syncer)
+        .add_exit_system(
+            GameState::MainMenu, 
+            sync::setup_syncer
+        )
 
         // Setup table map and tables, then deal out starting cards.  Plugin advances state automatically
         .add_plugin(TableConstructionPlugin)

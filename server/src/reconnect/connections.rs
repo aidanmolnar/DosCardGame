@@ -71,7 +71,7 @@ pub fn playercount_change_system(
             game.commands.insert_resource(NextState(GameState::InGame));
         } else if agent_tracker.all_disconnected() {
             println!("All disconnected. Resetting server.");
-            game.commands.init_resource::<AgentTracker>();
+            game.commands.insert_resource(AgentTracker::default());
             game.commands.insert_resource(NextState(GameState::MainMenu));
         }
 
@@ -125,7 +125,7 @@ pub fn on_leave_system(
         ).expect("Failed to serialize message");
 
         if let Err(e) =  stream.write_all(&bytes) {
-            println!("Message failed to send {e}");
+            println!("Message failed to send: {e}");
             disconnects.push(player);
         }
     }
