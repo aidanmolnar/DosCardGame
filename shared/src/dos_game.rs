@@ -126,23 +126,27 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             CardType::Reverse => {
                 self.game_info_mut().switch_direction();
 
+                #[allow(clippy::comparison_chain)] // More readable than match
                 if self.game_info().num_players() == 2 {
                     self.game_info_mut().skip_turn();
-                } else {
+                } else if self.game_info().num_players() > 2 {
                     self.game_info_mut().next_turn();
                 }
             },
             CardType::DrawTwo => {
-                self.game_info_mut().stacked_draws += 2;
+                if self.game_info().num_players() > 1 {
+                    self.game_info_mut().stacked_draws += 2;
+                }
                 self.game_info_mut().next_turn();
             },
             CardType::Wild => {},
             CardType::DrawFour => {
-                self.game_info_mut().stacked_draws += 4;
+                if self.game_info().num_players() > 1 {
+                    self.game_info_mut().stacked_draws += 4;
+                }
             },  
         }
         
-
     }
 
     fn validate_play_card(

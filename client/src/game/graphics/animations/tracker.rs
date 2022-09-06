@@ -9,7 +9,7 @@ use crate::game::call_dos::CallDos;
 use crate::postgame::Victory;
 
 use super::card_indexing::CARD_BACK_SPRITE_INDEX;
-use super::table::{AnimationItem, AnimationTable};
+use super::table::{AnimationTable, AnimationItem};
 use super::core::components::MouseOffset;
 use super::card_indexing::SpriteIndex;
 

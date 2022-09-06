@@ -23,5 +23,6 @@ pub enum GameState {
     MainMenu,
     InGame,
     PostGame,
+    Reconnect,
 }
 

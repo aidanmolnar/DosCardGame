@@ -16,7 +16,7 @@ pub fn postgame_ui(
 ) {
     egui::SidePanel::left("left_panel").show(egui_context.ctx_mut(), |ui| {
 
-        ui.label(format!("{} won the game!", mp_state.player_names[victory.winner]));
+        ui.label(format!("{} won the game!", mp_state.player_names[victory.winner])); // TODO: Make this robust to errors with multiplayer state. Crashes client if server crashes currently...
         if ui.button("Return to Main Menu").clicked() {
             commands.insert_resource(NextState(GameState::MainMenu));
         }

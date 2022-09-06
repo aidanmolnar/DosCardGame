@@ -14,10 +14,10 @@ mod table;
 pub use self::core::components;
 pub use self::targeting::FocusedCard;
 pub use self::tracker::{AnimationTracker, DelayedAnimationAction, AnimationAction};
+pub use self::table::AnimationItem;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
-
 
 pub struct AnimationPlugin;
 
@@ -37,7 +37,7 @@ impl Plugin for AnimationPlugin {
             setup_table::add_animation_tables
         )
 
-        .add_enter_system(GameState::InGame, 
+        .add_exit_system(GameState::MainMenu, 
             |mut commands: Commands| {
             commands.init_resource::<tracker::AnimationActionQueue>()
         })

@@ -1,15 +1,14 @@
-#![feature(type_alias_impl_trait)]
-#![feature(generic_associated_types)]
-
 use dos_shared::GameState;
 
 mod lobby;
 mod game;
 mod postgame;
 mod multiplayer;
+mod reconnect;
 
 use game::GamePlugin;
 use lobby::LobbyPlugin;
+use reconnect::ReconnectPlugin;
 use multiplayer::MultiplayerState;
 
 use bevy::prelude::*;
@@ -35,6 +34,7 @@ fn main() {
         .add_plugin(LobbyPlugin)
         .add_plugin(GamePlugin)
         .add_plugin(PostGamePlugin)
+        .add_plugin(ReconnectPlugin)
         
         .run()
 }

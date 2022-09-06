@@ -12,6 +12,10 @@ mod deal;
 mod server_game;
 mod table;
 mod call_dos;
+mod connections;
+
+pub use connections::playercount_change_system;
+pub use server_game::ServerGame;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -51,6 +55,11 @@ impl Plugin for GamePlugin {
 
         // Handle receiving network events and advancing game state
         .add_system(networking::game_network_system
+            .run_in_state(GameState::InGame)
+        )
+        .add_system(connections::playercount_change_system
+            .run_in_state(GameState::InGame)
+        ).add_system(connections::handle_connection_task
             .run_in_state(GameState::InGame)
         )
 

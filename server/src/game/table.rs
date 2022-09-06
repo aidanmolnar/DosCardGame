@@ -11,6 +11,10 @@ impl ServerTable {
             BasicTable::<Card>(cards)
         )
     }
+
+    pub fn cards(&self) -> Vec<Card> {
+        self.0.0.clone()
+    }
 }
 
 impl Default for ServerTable {

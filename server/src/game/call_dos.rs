@@ -15,13 +15,13 @@ pub fn call_dos_graceperiod(
     mut network_manager: GameNetworkManager,
     time: Res<Time>
 ) {
-    if let Some(graceperiod) = &mut network_manager.call_dos.as_mut().unwrap().graceperiod {
+    if let Some(graceperiod) = &mut network_manager.game.call_dos.as_mut().unwrap().graceperiod {
         if graceperiod.finished() {
 
-            network_manager.game.punish_missed_dos(network_manager.call_dos.as_ref().unwrap().player);
+            network_manager.game.punish_missed_dos(network_manager.game.call_dos.as_ref().unwrap().player);
             network_manager.send_to_all(GameAction::CallDos(Some(CallDosInfo {
-                player: network_manager.call_dos.as_ref().unwrap().player,
-                caller: network_manager.call_dos.as_ref().unwrap().caller.expect("Caller must be set when timer is set"),
+                player: network_manager.game.call_dos.as_ref().unwrap().player,
+                caller: network_manager.game.call_dos.as_ref().unwrap().caller.expect("Caller must be set when timer is set"),
             })));
             network_manager.game.commands.remove_resource::<CallDos>();
         } else {

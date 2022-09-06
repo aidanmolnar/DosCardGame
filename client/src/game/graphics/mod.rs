@@ -26,6 +26,6 @@ impl Plugin for GraphicsPlugin {
 
         .add_startup_system(assets::load_assets)
         .add_startup_system(camera::add_camera)
-        .add_exit_system(GameState::InGame, remove_cards::remove_all_cards);
+        .add_enter_system(GameState::PostGame, remove_cards::remove_all_cards);
     }
 }

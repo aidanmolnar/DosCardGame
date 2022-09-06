@@ -10,7 +10,7 @@ mod ui;
 mod connecting;
 
 use connecting::handle_connection_task;
-use networking::lobby_network_system;
+pub use networking::lobby_network_system;
 use ui::*;
 
 pub struct LobbyPlugin;

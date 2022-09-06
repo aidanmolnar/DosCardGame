@@ -1,10 +1,10 @@
-use dos_shared::GameState;
+//use dos_shared::GameState;
 
 pub mod components;
 mod systems;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
+//use iyes_loopless::prelude::*;
 
 pub struct CoreAnimationPlugin;
 
@@ -13,13 +13,13 @@ impl Plugin for CoreAnimationPlugin {
         app
         .add_system(
             systems::retarget
-            .run_in_state(GameState::InGame)
+            //.run_in_state(GameState::InGame)
             .label("retarget")
         )
 
         .add_system(
             systems::run
-            .run_in_state(GameState::InGame)
+            //.run_in_state(GameState::InGame)
             .after("retarget")
         );
     }

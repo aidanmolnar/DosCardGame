@@ -1,31 +1,16 @@
 use dos_shared::messages::lobby::*;
-use super::GameState;
-use super::multiplayer::AgentTracker;
+
+use crate::multiplayer::AgentTracker;
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 
 use::bincode;
 use std::net::TcpStream;
-use std::io::{self, Write};
+use std::io::ErrorKind;
 
-// Runs when the server transitions from lobby state to game state
-pub fn leave_lobby_system (
-    agent_tracker: Res<AgentTracker>,
-) {
-    let message = bincode::serialize(&FromServer::StartGame).expect("Failed to serialize message.");
+// If there are no more disconnected players, resume the game.  Send a message to anyone who was disconnected.  Eepers 
 
-
-    for mut stream in agent_tracker.iter_streams() {
-        if let Err(e) = stream.write_all(&message) {
-            println!("Leave lobby message failed to send {e}");
-            // TODO: might need to disconnect client here, or return to lobby?
-        }
-    }
-}
-
-pub fn lobby_network_system(
-    mut commands: Commands,
+pub fn reconnect_network_system(
     mut agent_tracker: ResMut<AgentTracker>,
 ) {
     // Loop over all the streams
@@ -38,14 +23,16 @@ pub fn lobby_network_system(
             // Handle each stream
             match bincode::deserialize_from::<&TcpStream, FromClient>(stream) {
                 Ok(lobby_update) => {
-                    handle_lobby_update(
-                        lobby_update, 
-                        player,
-                        &mut commands, 
-                    );
+                    // handle_reconnect_update(
+                    //     lobby_update, 
+                    //     player,
+                    //     &mut commands, 
+                    // );
+                    // TODO: Shouldn't panic.
+                    panic!("Received lobby update out of turn: {:?}", lobby_update);
                 },
                 Err(e) => {
-                    handle_lobby_update_error(
+                    handle_reconnect_update_error(
                         e, 
                         player, 
                         &mut agent_tracker,
@@ -58,12 +45,13 @@ pub fn lobby_network_system(
 }
 
 
-fn handle_lobby_update(
+/* fn handle_reconnect_update(
     lobby_update: FromClient, 
     player: usize,
     commands: &mut Commands
 ) {
-    match lobby_update {
+    //todo!();
+    /* match lobby_update {
         FromClient::Connect{..} => {
             println!("Client sent a second connect message?");
         }
@@ -77,17 +65,17 @@ fn handle_lobby_update(
                 panic!("Non-lobby leader sent start game message");
             }
         }
-    }
-}
+    } */
+} */
 
 // Checks if error is just non-blocking error
-fn handle_lobby_update_error(
+fn handle_reconnect_update_error(
     e: Box<bincode::ErrorKind>,
     player: usize,
     agent_tracker: &mut ResMut<AgentTracker>
 ) {
     match *e {
-        bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+        bincode::ErrorKind::Io(ref e) if e.kind() == ErrorKind::WouldBlock => {}
         _ => {
             println!("Message receive error: {}", e);
 
@@ -95,7 +83,3 @@ fn handle_lobby_update_error(
         }
     }
 }
-
-
-
-

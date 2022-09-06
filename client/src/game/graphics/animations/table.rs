@@ -1,8 +1,11 @@
 use dos_shared::cards::Card;
 
+use dos_shared::messages::lobby::TableSnapshot;
 use dos_shared::table::{Table, BasicTable, CardWrapper};
 
 use bevy::prelude::{Entity, Component};
+
+use crate::game::graphics::DeckBuilder;
 
 // Animation representation of a card for tables and trackers
 #[derive(Copy, Clone, Debug)]
@@ -30,6 +33,15 @@ impl SortedTable {
         .map(|x|x.1)
         .position(|e| e == entity)
     }
+
+    fn new_with_items(mut items: Vec<AnimationItem>) -> Self {
+        let entities = items.iter().map(|item| item.1).collect::<Vec<_>>();
+        items.sort_by(|a,b|a.0.cmp(&b.0));
+        Self { 
+            entities: BasicTable(entities), 
+            cards: items 
+        }
+    }
 }
 
 // TODO: Goals: implement all required methods in a coherent way.  Reasonable efficiency
@@ -51,6 +63,31 @@ impl AnimationTable {
         AnimationTable::Unsorted(
             BasicTable(items)
         )
+    }
+
+    pub fn unsorted_from_snapshot(deck_builder: &mut DeckBuilder, snapshot: TableSnapshot) -> Self {
+        match snapshot {
+            TableSnapshot::Known(cards) => {
+                Self::new_unsorted_with_items(deck_builder.make_known_cards(cards))
+            },
+            TableSnapshot::Unknown(num_cards) => {
+                Self::new_unsorted_with_items(deck_builder.make_unknown_cards(num_cards))
+            },
+        }
+
+    }
+
+    pub fn sorted_from_snapshot(deck_builder: &mut DeckBuilder, snapshot: TableSnapshot) -> Self {
+        match snapshot {
+            TableSnapshot::Known(cards) => 
+                AnimationTable::Sorted(
+                    SortedTable::new_with_items(
+                        deck_builder.make_known_cards(cards)
+                    )
+                ),
+            TableSnapshot::Unknown(_) => 
+                panic!("Must be known values for table to be sorted!"),
+        }
     }
 
     // TODO: Doesn't distinguish between table not having sorted index (i.e. unsorted) and entity not being in table

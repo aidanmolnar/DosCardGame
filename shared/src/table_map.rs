@@ -17,8 +17,8 @@ impl Plugin for TableConstructionPlugin {
         .add_loopless_state(TableConstructionState::NotStarted)
 
         // State chain for building tables
-        .add_enter_system(
-            GameState::InGame, 
+        .add_exit_system(
+            GameState::MainMenu, 
             |mut commands: Commands| commands.insert_resource(NextState(TableConstructionState::TableMapCreation))
         )
         .add_enter_system(
@@ -29,9 +29,9 @@ impl Plugin for TableConstructionPlugin {
             |mut commands: Commands| commands.insert_resource(NextState(TableConstructionState::Completed))
         )
 
-        // Clear table map and entities on returning to main menu
-        .add_exit_system(
-            GameState::InGame, 
+        // Clear table map and entities when game/round ends
+        .add_enter_system(
+            GameState::PostGame, 
             remove_tables.run_if_resource_exists::<TableMap>()
         );
     }

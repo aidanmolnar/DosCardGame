@@ -1,5 +1,7 @@
+use bevy::utils::HashMap;
 use dos_shared::cards::{Card, CardType, CardColor};
 use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
+use dos_shared::messages::lobby::{TableSnapshot, GameSnapshot};
 use dos_shared::table_map::TableMap;
 use dos_shared::transfer::CardTransfer;
 use dos_shared::{table::*, GameInfo, GameState};
@@ -19,6 +21,7 @@ pub struct ServerGame<'w,'s> {
     tables: Query<'w, 's, &'static mut ServerTable>,
     pub syncer: ResMut<'w, ServerSyncer>,
     pub commands: Commands<'w,'s>,
+    pub call_dos: Option<ResMut<'w, CallDos>>,
 
     game_info: ResMut<'w, GameInfo>,
 }
@@ -35,6 +38,28 @@ impl ServerGame<'_,'_> {
             self.is_visible(to, player) {
                 self.syncer.add_card(player, card)
             }
+        }
+    }
+
+    pub fn get_snapshot(&self, player: usize) -> GameSnapshot {
+        let mut tables = HashMap::new();
+
+        for (location, _) in &self.map.0 {
+            let table = self.get_table(location);
+
+            let data = if self.is_visible(location, player) {
+                TableSnapshot::Known(table.cards())
+            } else {
+                TableSnapshot::Unknown(table.len())
+            };
+
+            tables.insert(*location, data);
+        }
+
+        GameSnapshot {
+            tables,
+            game_info: self.game_info.clone(),
+            dos: self.call_dos.as_ref().map(|call| call.player),
         }
     }
 }
@@ -115,7 +140,7 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
 
     fn victory(&mut self, winner: usize) {
         println!("player with id {} won the game!", winner);
-        self.commands.insert_resource(NextState(GameState::MainMenu));
+        self.commands.insert_resource(NextState(GameState::PostGame));
     }
 
     fn someone_has_two_cards(&mut self, player: usize) {

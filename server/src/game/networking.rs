@@ -1,7 +1,6 @@
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 
-use crate::connection_listening::{PlayerCountChange, disconnect};
 use super::server_game::ServerGame;
 use super::call_dos::CallDos;
 use super::multiplayer::AgentTracker;
@@ -19,21 +18,20 @@ use std::io::Write;
 
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w,'s> {
-    events: EventWriter<'w, 's, PlayerCountChange>, 
     pub game: ServerGame<'w,'s>,
-
-    pub call_dos: Option<ResMut<'w, CallDos>>,
-
-    agent_tracker: Res<'w, AgentTracker>,
+    
+    agent_tracker: ResMut<'w, AgentTracker>,
 }
 
 pub fn game_network_system (
     mut manager: GameNetworkManager,
     
 ) {
+    // Loop over all the streams
     for player in 0..manager.agent_tracker.num_agents() {
         if let Some(stream) = manager.agent_tracker.try_get_stream(player) {
 
+            // Handle message from this stream
             match bincode::deserialize_from::<&TcpStream, FromClient>(stream) {
                 Ok(update) => {
                     manager.handle_update(
@@ -68,7 +66,8 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
                     self.send_to_filtered(GameAction::PlayCard(card), |p|p!=player)
                 } else {
-                    panic!("Invalid play card");
+                    println!("Invalid play card");
+                    self.handle_disconnect(player);
                 }
             },
             GameAction::DrawCards => {
@@ -77,7 +76,8 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
                     self.send_to_all(GameAction::DrawCards)
                 } else {
-                    panic!("Invalid draw cards");
+                    println!("Invalid draw cards");
+                    self.handle_disconnect(player);
                 }
             },
             GameAction::KeepStaging => {
@@ -86,7 +86,8 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
                     self.send_to_filtered(GameAction::KeepStaging, |p|p!=player)
                 } else {
-                    panic!("Invalid keep last drawn card");
+                    println!("Invalid keep last drawn card");
+                    self.handle_disconnect(player);
                 }
             },
             GameAction::DiscardWildColor(color) => {
@@ -95,11 +96,12 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
                     self.send_to_filtered(GameAction::DiscardWildColor(color), |p|p!=player)
                 } else {
-                    panic!("Invalid wildcard select color");
+                    println!("Invalid wildcard select color");
+                    self.handle_disconnect(player);
                 }
             },
             GameAction::CallDos{..} => {
-                if let Some(call_dos) = &mut self.call_dos {
+                if let Some(call_dos) = &mut self.game.call_dos {
                     if player == call_dos.player {
                         let action = GameAction::CallDos (
                             Some(CallDosInfo {
@@ -123,32 +125,44 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 }
             }
             _ => {
-                panic!("Invalid client action")
+                println!("Invalid client action");
+                self.handle_disconnect(player);
             }
         }
     }
 
+    
     pub fn send_to_filtered<F> (
         &mut self,
         action: GameAction,
-        filter: F
+        filter: F // Takes player_id as argument. Sends message if true.
     ) where F: Fn(usize) -> bool{
         let conditions = self.game.syncer.take_conditions();
 
-        for (player, mut stream) in self.agent_tracker.iter_ids_and_streams()
-        .filter(|(player,_)|filter(*player)) {
+        // Keep track of players that have errors on send
+        let mut disconnects = Vec::new();
 
+        // Loop over playes that meet condition
+        for (player, mut stream) in self.agent_tracker.iter_ids_and_streams()
+        .filter(
+            |(player,_)| filter(*player)
+        ) {
             let cards = self.game.syncer.take_player_cards(player);
             let bytes = bincode::serialize(&FromServer{
-                action, 
+                action: action.clone(), 
                 conditions: conditions.clone(), 
                 cards
             }).expect("Failed to serialize message");
 
             if let Err(e) =  stream.write_all(&bytes) {
-                panic!("Leave lobby message failed to send {e}");
-                // TODO: might need to disconnect client here, or return to lobby?
+                println!("Message failed to send {e}");
+                disconnects.push(player);
             }
+        }
+
+        // Deal with errored players
+        for player in disconnects {
+            self.handle_disconnect(player);
         }
     }   
 
@@ -168,14 +182,19 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         match *e {
             bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
             _ => {
-                println!("Message receive error: {}", e);
-
-                disconnect(
-                    player, 
-                    &mut self.events, 
-                );
+                println!("Message failed to receive: {}", e);
+                self.handle_disconnect(player);
             }
         }
+    }
+
+    fn handle_disconnect(
+        &mut self,
+        player: usize,
+    ) {
+        println!("Player disconnected: {}", player);
+        
+        self.agent_tracker.disconnect_player(player);
     }
 }
 

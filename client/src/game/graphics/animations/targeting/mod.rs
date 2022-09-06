@@ -1,5 +1,3 @@
-use dos_shared::GameState;
-
 use super::layout;
 use super::core;
 use super::table::AnimationTable;
@@ -22,13 +20,16 @@ impl Plugin for TargetingPlugin {
         // Mouse targeting
         .init_resource::<mouse::FocusedCard>()
         .add_system(mouse::focus_system
-            .run_in_state(GameState::InGame)
-            .run_on_event::<PickingEvent>())
-         .add_system(mouse::update_system
-             .run_in_state(GameState::InGame))
+            //.run_in_state(GameState::InGame)
+            .run_on_event::<PickingEvent>()
+        )
+        .add_system(mouse::update_system
+             //.run_in_state(GameState::InGame)
+        )
 
         // Position targeting
         .add_system(position::update_system
-            .run_in_state(GameState::InGame));
+            //.run_in_state(GameState::InGame)
+        );
     }
 }

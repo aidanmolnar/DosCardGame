@@ -13,17 +13,17 @@ use bevy_egui::{egui::{self, Color32}, EguiContext};
 pub struct UiState {
     ip: String,
     name: String,
-    error: &'static str,
+    error: String,
     status: ConnectionStatus,
 }
 
 impl UiState {
     pub fn set_connected(&mut self) {
-        self.error = "";
+        self.error = "".to_owned();
         self.status = ConnectionStatus::Connected;
     }
-    pub fn set_disconnected(&mut self, error_message: &'static str) {
-        self.error = error_message;
+    pub fn set_disconnected(&mut self, error_message: &str) {
+        self.error = error_message.to_owned();
         self.status = ConnectionStatus::Disconnected;
     }
 }
@@ -39,7 +39,7 @@ impl Default for UiState {
         UiState{
             ip: DEFAULT_IP.to_string(), 
             name: "".to_string(),
-            error: "", 
+            error: "".to_string(), 
             status: ConnectionStatus::Disconnected,
     }}
 }
@@ -98,7 +98,7 @@ pub fn lobby_ui(
         }
         
         if !ui_state.error.is_empty() {
-            ui.colored_label(Color32::from_rgb(255,0,0), ui_state.error);
+            ui.colored_label(Color32::from_rgb(255,0,0), &ui_state.error);
         }
 
         if !mp_state.player_names.is_empty() {

@@ -1,7 +1,8 @@
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
-use dos_shared::DECK_SIZE;
-    
+use dos_shared::{DECK_SIZE, GameState};
+use iyes_loopless::state::NextState;
+
 use super::client_game::ClientGame;
 use super::call_dos::CallDos;
 
@@ -44,14 +45,12 @@ pub fn game_network_system(
 impl<'w,'s> GameNetworkManager<'w,'s> {
     fn handle_update(&mut self, game_update: FromServer) {
 
-        let action = game_update.action;
+        let action = game_update.action.clone();
         self.game.syncer.enque_all(game_update);
 
         match action {
             GameAction::DealIn => {
-                println!("{:?}", self.game.syncer);
-
-                self.game.deal_starting_cards(DECK_SIZE)
+                 self.game.deal_starting_cards(DECK_SIZE)
             },
             GameAction::PlayCard(card) => {
                 self.game.play_card(&card);
@@ -69,10 +68,15 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 let info = call_dos_info.expect("Server always sends caller");
                 if info.player != info.caller {
                     self.game.punish_missed_dos(info.player);
+                } else {
+                    //TODO: Game function to spawn effects?
                 }
                 self.commands.remove_resource::<CallDos>();
-                //TODO: spawn effects or do within game>?
+                
             }
+            GameAction::DisconnectOccurred => {
+                self.commands.insert_resource(NextState(GameState::Reconnect));
+            },
         }
     }
 
@@ -84,7 +88,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 println!("Disconnecting!");
     
                 self.game.mp_state.set_disconnected();
-                // TODO: return to lobby?
+                self.commands.insert_resource(NextState(GameState::MainMenu)); // TODO: reset resources?
             }
         }
     }
@@ -93,9 +97,10 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         self.game.mp_state.stream.as_ref().unwrap()
         .write_all(
             &bincode::serialize(&message).unwrap()
-        ).expect("Failed to send message");
+        ).expect("Failed to send message"); // TODO: get rid of except
         // NOTE: Using bincode::serialize_into was causing crashes related to enum discriminants
-        //       Not completely sure why it seems to work elsewhere.  
-        //      bincode::serialize and bincode::serialize_into do have different default behavior and this seems to solve the issue here
+        //       Not completely sure why it seems to work elsewhere (lobby messages).  
+        //       bincode::serialize and bincode::serialize_into do have different default behavior
+        //       This switch seems to solve the issue here
     }
 }

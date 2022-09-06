@@ -1,4 +1,5 @@
 use dos_shared::GameInfo;
+use dos_shared::messages::lobby::GameSnapshot;
 
 use super::GameState;
 use super::MultiplayerState;
@@ -11,6 +12,8 @@ mod graphics;
 mod setup_table;
 mod sync;
 mod call_dos;
+
+pub use call_dos::CallDos;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -30,11 +33,9 @@ impl Plugin for GamePlugin {
         .add_plugin(graphics::GraphicsPlugin)
 
         // Create resource for controlling turn advancement
-        .add_enter_system(
-            GameState::InGame, 
-            |mut commands: Commands, mp_state: Res<MultiplayerState>|{
-                commands.insert_resource(GameInfo::new(mp_state.player_names.len()))
-            }
+        .add_exit_system(
+            GameState::MainMenu, 
+            insert_game_info
         )
         
         // Create resource for caching cards that become visible
@@ -42,7 +43,8 @@ impl Plugin for GamePlugin {
 
         // Handle messages from server
         .add_system(networking::game_network_system
-            .run_in_state(GameState::InGame))
+            .run_in_state(GameState::InGame)
+        )
         
         // Handle input from clients
         .add_plugin(input::WildCardPlugin)
@@ -50,7 +52,22 @@ impl Plugin for GamePlugin {
         .add_plugin(input::CallDosPlugin)
         .add_system(input::play_card_system
             .run_in_state(GameState::InGame)
-            .run_on_event::<PickingEvent>());
+            .run_on_event::<PickingEvent>()
+        );
     }
 
+}
+
+fn insert_game_info(
+    mut commands: Commands, 
+    mp_state: Res<MultiplayerState>,
+    snapshot_opt: Option<Res<GameSnapshot>>,
+) {
+    if let Some(snapshot) = snapshot_opt {
+        commands.insert_resource(snapshot.game_info.clone())
+    } else {
+        commands.insert_resource(
+            GameInfo::new(mp_state.player_names.len())
+        )
+    }
 }

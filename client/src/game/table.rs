@@ -1,4 +1,4 @@
-use dos_shared::{table::{BasicTable, Table, CardWrapper}, cards::Card};
+use dos_shared::{table::{BasicTable, Table, CardWrapper}, cards::Card, messages::lobby::TableSnapshot};
 
 use bevy::prelude::*;
 
@@ -19,16 +19,34 @@ impl CardWrapper for ClientItem {
 }
 
 impl ClientTable {
-    pub fn new() -> Self {
+    pub fn new_empty() -> Self {
         ClientTable (
             BasicTable(Vec::new())
         )
     }
 
-    pub fn new_deck(num_cards: usize) -> Self {
+    pub fn new_with_size(num_cards: usize) -> Self {
         ClientTable (
             BasicTable(vec![ClientItem(None); num_cards])
         )
+    }
+
+    pub fn new_with_cards(cards: Vec<Card>) -> Self {
+        ClientTable (
+            BasicTable(
+                cards.iter().map(
+                    |card|
+                    ClientItem(Some(*card))
+                ).collect()
+            )
+        )
+    }
+
+    pub fn from_snapshot(snapshot: TableSnapshot) -> Self {
+        match snapshot {
+            TableSnapshot::Known(cards) => Self::new_with_cards(cards),
+            TableSnapshot::Unknown(num_cards) => Self::new_with_size(num_cards),
+        }
     }
 }
 

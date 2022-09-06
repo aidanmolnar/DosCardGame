@@ -1,4 +1,7 @@
+use serde::{Serialize, Deserialize};
 
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameInfo {
     num_players: usize,
     current_turn: usize,
@@ -6,6 +9,7 @@ pub struct GameInfo {
     pub stacked_draws: usize,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
 enum Direction {
     Clockwise, 
     CounterClockwise
