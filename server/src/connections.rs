@@ -34,7 +34,7 @@ impl Plugin for ConnectionListeningPlugin {
             .run_on_event::<ServerEvent>()
             .after(connection_events_system)
         )
-        .add_system(exit_system);
+        .add_system_to_stage(CoreStage::PostUpdate, exit_system);
     }
 }
 

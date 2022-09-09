@@ -1,37 +1,28 @@
 use bevy_egui::egui::Ui;
 use bevy_renet::renet::RenetClient;
 use dos_shared::DEFAULT_IP;
+use crate::connections::new_renet_client;
 use super::networking::*;
-use super::connections::{ConnectionTask, create_connection_task};
 use super::MultiplayerState;
 
 use bevy::prelude::*;
-use bevy::tasks::AsyncComputeTaskPool;
 use bevy_egui::{egui::{self, Color32}, EguiContext};
 
 pub struct UiState {
     ip: String,
     name: String,
     error: String,
-    status: ConnectionStatus,
 }
 
 impl UiState {
     pub fn set_connected(&mut self) {
         self.error = "".to_owned();
-        self.status = ConnectionStatus::Connected;
     }
     pub fn set_disconnected(&mut self, error_message: String) {
         self.error = error_message;
-        self.status = ConnectionStatus::Disconnected;
     }
 }
 
-enum ConnectionStatus {
-    Disconnected,
-    Connecting,
-    Connected,
-}
 
 impl Default for UiState {
     fn default() -> Self {
@@ -39,7 +30,6 @@ impl Default for UiState {
             ip: DEFAULT_IP.to_string(), 
             name: "".to_string(),
             error: "".to_string(), 
-            status: ConnectionStatus::Disconnected,
     }}
 }
 
@@ -52,6 +42,7 @@ pub fn lobby_ui(
     mut renet_client_opt: Option<ResMut<RenetClient>>,
 ) {
     egui::SidePanel::left("left_panel").show(
+
         egui_context.ctx_mut(), |ui| {
 
         ui.label("Lobby");
@@ -87,7 +78,7 @@ pub fn lobby_ui(
         }
 
         if let Some(renet_client) = renet_client_opt.as_mut() {
-            if mp_state.turn_id == 0 {
+            if renet_client.is_connected() && mp_state.turn_id == 0 {
                 ui.label("You are the Lobby Leader");
                 if ui.button("Start Game").clicked() {
                     send_start_game(renet_client);
@@ -104,42 +95,41 @@ fn connect_button_ui (
     ui_state: &mut UiState,
     mp_state: &mut MultiplayerState,
     commands: &mut Commands,
-    mut renet_client_opt: Option<&mut RenetClient>,
+    renet_client_opt: Option<&mut RenetClient>,
 ) {
-    let thread_pool = AsyncComputeTaskPool::get();
-
-    match ui_state.status {
-        ConnectionStatus::Disconnected => {
-            if ui.button("Connect").clicked() {
-                let address = ui_state.ip.clone();
-                let name = ui_state.name.clone();
-
-                // Spawn a task for connecting to the server if the ip was valid
-                if let Ok(socket_address) = address.parse() {
-                    let task = thread_pool.spawn(async move {
-                        create_connection_task(socket_address, &name)
-                    });
-                    commands.spawn().insert(ConnectionTask(task));
-
-                    ui_state.status = ConnectionStatus::Connecting;
-                } else {
-                    ui_state.error = "Failed to parse server address".to_string();
-                }
-            }    
-        },
-        ConnectionStatus::Connecting => {
+    if let Some(renet_client) = renet_client_opt {
+        if !renet_client.is_connected() {
             ui.add(egui::Button::new("Connecting..."));
-        },
-        ConnectionStatus::Connected => {
-            if ui.button("Disconnect").clicked() {
-                if let Some(renet_client) = renet_client_opt.as_mut() {
-                    renet_client.disconnect();
-                    commands.remove_resource::<RenetClient>();
+        } else if ui.button("Disconnect").clicked() {
+            renet_client.disconnect();
+            mp_state.disconnect();
+            commands.remove_resource::<RenetClient>();
+        }
+    } else if ui.button("Connect").clicked() {
+        let address = ui_state.ip.clone();
+        let name = ui_state.name.clone();
+
+        // Check name is valid
+        if name.len() > 20 {
+            ui_state.error = "Name is too long".to_string();
+            return;
+        }
+
+        // Check address is valid
+        if let Ok(socket_address) = address.parse() {
+            // Attempt to connect a renet client to server
+            match new_renet_client(socket_address, &name) {
+                Ok(client) => {
+                    commands.insert_resource(client);
+                    ui_state.set_connected();
                 }
-                
-                mp_state.disconnect();
-                ui_state.status = ConnectionStatus::Disconnected;
+                Err(e) => {
+                    println!("{e}");
+                    ui_state.set_disconnected(format!("Connection Failed: {e}"));
+                }
             }
-        },
-    }
+        } else {
+            ui_state.error = "Failed to parse server address".to_string();
+        }
+    }  
 }

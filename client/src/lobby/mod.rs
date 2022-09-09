@@ -1,7 +1,6 @@
-use self::connections::exit_system;
-
 use super::GameState;
 use super::MultiplayerState;
+use crate::connections;
 
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
@@ -10,9 +9,7 @@ use iyes_loopless::prelude::*;
 
 mod networking;
 mod ui;
-mod connections;
 
-use connections::handle_connection_task;
 pub use networking::lobby_network_system;
 use ui::*;
 pub struct LobbyPlugin;
@@ -22,12 +19,9 @@ impl Plugin for LobbyPlugin {
         app
         .add_plugin(EguiPlugin)
         .init_resource::<UiState>() 
-        .add_system_to_stage(CoreStage::PostUpdate, exit_system)
+        .add_system_to_stage(CoreStage::PostUpdate, connections::exit_system)
 
         .add_system(lobby_ui
-            .run_in_state(GameState::MainMenu)
-        )
-        .add_system(handle_connection_task
             .run_in_state(GameState::MainMenu)
         )
         .add_system(lobby_network_system

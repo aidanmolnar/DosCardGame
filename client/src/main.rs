@@ -6,6 +6,7 @@ mod game;
 mod postgame;
 mod multiplayer;
 mod reconnect;
+mod connections;
 
 use game::GamePlugin;
 use lobby::LobbyPlugin;

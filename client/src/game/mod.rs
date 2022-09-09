@@ -37,6 +37,13 @@ impl Plugin for GamePlugin {
             GameState::MainMenu, 
             insert_game_info
         )
+
+        // Clear optional game resources when exiting to main menu
+        .add_enter_system(
+            GameState::MainMenu, 
+            |mut commands: Commands| {commands.remove_resource::<CallDos>()}
+        )
+
         
         // Create resource for caching cards that become visible
         .init_resource::<sync::ClientSyncer>()

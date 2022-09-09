@@ -20,7 +20,13 @@ pub fn lobby_network_system(
 ) {    
     if renet_client.disconnected().is_some() {
         mp_state.disconnect();
+        ui_state.set_disconnected("Connection failed".into());
         commands.remove_resource::<RenetClient>();
+
+        // Return to the main menu if not already there
+        if game_state.0 != GameState::MainMenu {
+            commands.insert_resource(NextState(GameState::MainMenu));
+        }
         return;
     }
 

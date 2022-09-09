@@ -2,6 +2,8 @@ use dos_shared::GameInfo;
 use dos_shared::table_map::*;
 
 use crate::multiplayer::MultiplayerState;
+use self::call_dos::CallDos;
+
 use super::GameState;
 
 mod sync;
@@ -34,6 +36,12 @@ impl Plugin for GamePlugin {
         .add_exit_system(
             GameState::MainMenu, 
             sync::setup_syncer
+        )
+
+        // Clear optional game resources when exiting to main menu
+        .add_enter_system(
+            GameState::MainMenu, 
+            |mut commands: Commands| {commands.remove_resource::<CallDos>()}
         )
 
         // Setup table map and tables, then deal out starting cards.  Plugin advances state automatically
