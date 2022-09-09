@@ -1,7 +1,7 @@
 use bevy_renet::renet::RenetClient;
-use dos_shared::channel_config::GAME_CHANNEL_ID;
+use dos_shared::net_config::GAME_CHANNEL_ID;
 use dos_shared::dos_game::DosGame;
-use dos_shared::messages::game::*;
+use dos_shared::messages::game::{FromClient, FromServer, GameAction};
 use dos_shared::{DECK_SIZE, GameState};
 use iyes_loopless::state::NextState;
 
@@ -46,7 +46,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
         match action {
             GameAction::DealIn => {
-                 self.game.deal_starting_cards(DECK_SIZE)
+                 self.game.deal_starting_cards(DECK_SIZE);
             },
             GameAction::PlayCard(card) => {
                 self.game.play_card(&card);
@@ -64,8 +64,6 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 let info = call_dos_info.expect("Server always sends caller");
                 if info.player != info.caller {
                     self.game.punish_missed_dos(info.player);
-                } else {
-                    //TODO: Game function to spawn effects?
                 }
                 self.commands.remove_resource::<CallDos>();
                 

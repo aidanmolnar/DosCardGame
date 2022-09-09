@@ -66,13 +66,13 @@ pub fn update_animation_actions(
         if let Some(delayed_action) = animation_tracker.animation_queue.queue.pop_front() {
             match delayed_action.action {
                 AnimationAction::Transfer { from, to, card } => {
-                    animation_tracker.transfer(&from, &to, card)
+                    animation_tracker.transfer(&from, &to, card);
                 },
                 AnimationAction::SetDiscardLast { card } => {
-                    animation_tracker.set_discard_last(card)
+                    animation_tracker.set_discard_last(card);
                 },
                 AnimationAction::Victory{winner} => {
-                    animation_tracker.victory(winner)
+                    animation_tracker.victory(winner);
                 }
                 AnimationAction::SomeoneHasTwoCards => {
                     animation_tracker.someone_has_two_cards();
@@ -120,7 +120,7 @@ impl CardTransfer<AnimationItem, AnimationTable> for AnimationTracker<'_, '_> {
 
 impl AnimationTracker<'_,'_> {
     pub fn enque_action(&mut self, action: DelayedAnimationAction) {
-        self.animation_queue.queue.push_back(action)
+        self.animation_queue.queue.push_back(action);
     }
 
     fn transfer(

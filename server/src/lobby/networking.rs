@@ -1,6 +1,6 @@
 use bevy_renet::renet::RenetServer;
-use dos_shared::channel_config::LOBBY_CHANNEL_ID;
-use dos_shared::messages::lobby::*;
+use dos_shared::net_config::LOBBY_CHANNEL_ID;
+use dos_shared::messages::lobby::{FromClient, FromServer};
 use super::GameState;
 use super::multiplayer::MultiplayerState;
 
@@ -23,7 +23,7 @@ pub fn lobby_network_system(
     mp_state: Res<MultiplayerState>,
     mut renet_server: ResMut<RenetServer>,
 ) {
-    for client_id in renet_server.clients_id().into_iter() {
+    for client_id in renet_server.clients_id() {
         while let Some(message) = renet_server.receive_message(client_id, LOBBY_CHANNEL_ID) {
 
             let player = mp_state.player_from_renet_id(client_id);

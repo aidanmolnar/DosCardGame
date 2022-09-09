@@ -71,10 +71,10 @@ fn insert_game_info(
     snapshot_opt: Option<Res<GameSnapshot>>,
 ) {
     if let Some(snapshot) = snapshot_opt {
-        commands.insert_resource(snapshot.game_info.clone())
+        commands.insert_resource(snapshot.game_info.clone());
     } else {
         commands.insert_resource(
             GameInfo::new(mp_state.player_names.len())
-        )
+        );
     }
 }

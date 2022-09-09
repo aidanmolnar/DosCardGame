@@ -1,4 +1,4 @@
-use super::components::*;
+use super::components::{BoardPosition, LinearAnimation, MouseOffset};
 
 use bevy::prelude::*;
 
@@ -46,10 +46,7 @@ pub fn retarget(
 // Linear interpolation
 fn lerp<T>(start: T, end: T, percent: f32) -> T 
 where 
-    T: Add<Output = T>,
-    T: Sub<Output = T>,
-    T: Mul<f32, Output = T>,
-    T: Copy,
+    T: Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T> + Copy
 {
     start + (end - start) * percent
 }

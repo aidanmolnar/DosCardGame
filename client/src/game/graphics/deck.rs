@@ -26,32 +26,12 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         let mut items = Vec::new();
 
         for i in 0..num_cards {
+            #[allow(clippy::cast_precision_loss)]
+            let z = 0.1 * i as f32;
 
-            let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, 0.1 * i as f32);
-            let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
+            let entity = self.make_card(CARD_BACK_SPRITE_INDEX, z);
 
-            let entity = self.make_pickable_sprite(transform, CARD_BACK_SPRITE_INDEX);
-            
-            self.commands.entity(entity)
-            .insert(
-                LinearAnimation {
-                    start: transform,
-                    end: transform,
-                    timer: Timer::from_seconds(0.01, false),
-                }
-            )
-            .insert(
-                BoardPosition {
-                    position: translation
-                }
-            ).insert(
-                MouseOffset {
-                    offset: Vec3::ZERO,
-                    scale: 1.,
-                }
-            );
-
-            items.push(AnimationItem(None, entity))
+            items.push(AnimationItem(None, entity));
         }
 
         items
@@ -62,35 +42,44 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         let mut items = Vec::new();
 
         for (i, card) in cards.iter().enumerate() {
+            #[allow(clippy::cast_precision_loss)]
+            let z = 0.1 * i as f32;
 
-            let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, 0.1 * i as f32);
-            let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
+            let entity = self.make_card(card.get_sprite_index(), z);
 
-            let entity = self.make_pickable_sprite(transform, card.get_sprite_index());
-            
-            self.commands.entity(entity)
-            .insert(
-                LinearAnimation {
-                    start: transform,
-                    end: transform,
-                    timer: Timer::from_seconds(0.01, false),
-                }
-            )
-            .insert(
-                BoardPosition {
-                    position: translation
-                }
-            ).insert(
-                MouseOffset {
-                    offset: Vec3::ZERO,
-                    scale: 1.,
-                }
-            );
-
-            items.push(AnimationItem(Some(*card), entity))
+            items.push(AnimationItem(Some(*card), entity));
         }
 
         items
+    }
+
+    fn make_card(&mut self, sprite_index: usize, z: f32) -> Entity {
+
+        let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, z);
+        let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
+
+        let entity = self.make_pickable_sprite(transform, sprite_index);
+        
+        self.commands.entity(entity)
+        .insert(
+            LinearAnimation {
+                start: transform,
+                end: transform,
+                timer: Timer::from_seconds(0.01, false),
+            }
+        )
+        .insert(
+            BoardPosition {
+                position: translation
+            }
+        ).insert(
+            MouseOffset {
+                offset: Vec3::ZERO,
+                scale: 1.,
+            }
+        );
+
+        entity
     }
 
 

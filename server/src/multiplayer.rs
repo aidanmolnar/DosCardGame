@@ -38,7 +38,7 @@ impl MultiplayerState {
                 renet_id,
                 status: PlayerStatus::Ready,
             },
-        })
+        });
     }
 
     #[allow(dead_code)] // Will be used in the future
@@ -47,7 +47,7 @@ impl MultiplayerState {
         self.agents.push(Agent {
             name,
             ty: AgentType::Bot,
-        })
+        });
     }
 
     pub fn disconnect_player(
@@ -127,8 +127,8 @@ impl MultiplayerState {
     }
 
     #[allow(dead_code)] // Will be used in the future
-    pub fn remove(&mut self, player: &usize) {
-        self.agents.remove(*player);
+    pub fn remove(&mut self, player: usize) {
+        self.agents.remove(player);
     }
 
     pub fn remove_disconnected_players(&mut self) {
@@ -138,7 +138,7 @@ impl MultiplayerState {
                 AgentType::Player { status,.. } => !(*status == PlayerStatus::Disconnected),
                 AgentType::Bot => true,
             }
-        )
+        );
     }
 
 

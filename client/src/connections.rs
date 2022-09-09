@@ -1,4 +1,4 @@
-use dos_shared::{*, channel_config::connection_config};
+use dos_shared::net_config::{PROTOCOL_ID, connection_config};
 
 use bevy::{prelude::*, app::AppExit};
 use bevy_renet::renet::{RenetClient, RenetError, ClientAuthentication};
@@ -28,7 +28,10 @@ pub fn new_renet_client (address: SocketAddr, name: &str) -> Result<RenetClient,
     let user_data = Some(bytes);
     
     let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+
+    #[allow(clippy::cast_possible_truncation)] // Truncation is intended
     let client_id = current_time.as_millis() as u64;
+
     let authentication = ClientAuthentication::Unsecure {
         client_id,
         protocol_id: PROTOCOL_ID,
@@ -45,6 +48,7 @@ pub fn new_renet_client (address: SocketAddr, name: &str) -> Result<RenetClient,
     )
 }
 
+// Gracefully disconnects when closing the app instead of relying on timeout
 pub fn exit_system(
     renet_client: Option<ResMut<RenetClient>>,
     events: EventReader<AppExit>,

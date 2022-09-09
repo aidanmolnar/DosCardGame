@@ -1,5 +1,5 @@
 use dos_shared::GameInfo;
-use dos_shared::table_map::*;
+use dos_shared::table_map::{TableConstructionPlugin, TableConstructionState, build_table_map};
 
 use crate::multiplayer::MultiplayerState;
 use self::call_dos::CallDos;
@@ -28,7 +28,7 @@ impl Plugin for GamePlugin {
         .add_exit_system(
             GameState::MainMenu, 
             |mut commands: Commands, mp_state: Res<MultiplayerState>|{
-                commands.insert_resource(GameInfo::new(mp_state.num_agents()))
+                commands.insert_resource(GameInfo::new(mp_state.num_agents()));
             }
         )
 
@@ -49,7 +49,7 @@ impl Plugin for GamePlugin {
         .add_enter_system(
             TableConstructionState::TableMapCreation, 
             |commands: Commands, mp_state: Res<MultiplayerState>|{
-                build_table_map(commands, mp_state.num_agents())
+                build_table_map(commands, mp_state.num_agents());
             }
         )
         .add_enter_system(

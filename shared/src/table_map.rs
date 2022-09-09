@@ -1,6 +1,5 @@
 use super::GameState;
-
-use super::table::*;
+use super::table::Location;
 
 use bevy::prelude::*;
 use bevy::utils::HashMap;

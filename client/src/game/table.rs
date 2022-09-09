@@ -19,20 +19,20 @@ impl CardWrapper for ClientItem {
 }
 
 impl ClientTable {
-    pub fn new_empty() -> Self {
-        ClientTable (
+    pub const fn new_empty() -> Self {
+        Self (
             BasicTable(Vec::new())
         )
     }
 
     pub fn new_with_size(num_cards: usize) -> Self {
-        ClientTable (
+        Self (
             BasicTable(vec![ClientItem(None); num_cards])
         )
     }
 
     pub fn new_with_cards(cards: Vec<Card>) -> Self {
-        ClientTable (
+        Self (
             BasicTable(
                 cards.iter().map(
                     |card|
@@ -62,7 +62,7 @@ impl Table<ClientItem> for ClientTable {
         &mut self,
         item: ClientItem
     ) {
-        self.0.push(item)
+        self.0.push(item);
     }
 
     fn last(

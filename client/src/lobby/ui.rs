@@ -1,12 +1,13 @@
-use bevy_egui::egui::Ui;
-use bevy_renet::renet::RenetClient;
-use dos_shared::DEFAULT_IP;
+use dos_shared::net_config::DEFAULT_IP;
 use crate::connections::new_renet_client;
-use super::networking::*;
+use super::networking::send_start_game;
 use super::MultiplayerState;
 
 use bevy::prelude::*;
 use bevy_egui::{egui::{self, Color32}, EguiContext};
+use bevy_renet::renet::RenetClient;
+use bevy_egui::egui::Ui;
+
 
 pub struct UiState {
     ip: String,
@@ -26,7 +27,7 @@ impl UiState {
 
 impl Default for UiState {
     fn default() -> Self {
-        UiState{
+        Self {
             ip: DEFAULT_IP.to_string(), 
             name: "".to_string(),
             error: "".to_string(), 

@@ -9,7 +9,7 @@ impl Plugin for PostgamePlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::PostGame, 
             |mut commands: Commands| {
-                commands.insert_resource(NextState(GameState::MainMenu))
+                commands.insert_resource(NextState(GameState::MainMenu));
             }
         );
             

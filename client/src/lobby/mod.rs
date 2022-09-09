@@ -11,7 +11,8 @@ mod networking;
 mod ui;
 
 pub use networking::lobby_network_system;
-use ui::*;
+use ui::{UiState, lobby_ui};
+
 pub struct LobbyPlugin;
 
 impl Plugin for LobbyPlugin {

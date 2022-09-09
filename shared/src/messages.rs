@@ -10,7 +10,7 @@ pub mod lobby {
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromServer {
-        CurrentPlayers { player_names: Vec<String>, turn_id: u8},
+        CurrentPlayers { player_names: Vec<String>, turn_id: usize},
         StartGame,
         Reject{reason: String},
         Reconnect (GameSnapshot)

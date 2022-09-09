@@ -1,3 +1,12 @@
+#![deny(clippy::all)]
+#![deny(clippy::pedantic)]
+#![deny(clippy::nursery)]
+#![deny(clippy::cargo)]
+
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::needless_pass_by_value)] // Bevy systems require resources to be passed by value
+#![allow(clippy::use_self)]
+
 pub mod cards;
 pub mod messages;
 pub mod table;
@@ -5,12 +14,9 @@ pub mod game_info;
 pub mod dos_game;
 pub mod table_map;
 pub mod transfer;
-pub mod channel_config;
+pub mod net_config;
 
 pub use game_info::GameInfo;
-
-pub const PROTOCOL_ID: u64 = 7;
-pub const DEFAULT_IP: &str = "127.0.0.1:3333";
 
 pub const NUM_STARTING_CARDS: u8 = 4;
 pub const DECK_SIZE: usize = 108;

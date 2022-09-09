@@ -1,5 +1,11 @@
+#![warn(clippy::all)]
+#![warn(clippy::pedantic)]
+#![warn(clippy::nursery)]
+#![warn(clippy::cargo)]
 
-use dos_shared::GameState;
+#![allow(clippy::module_name_repetitions)]
+#![allow(clippy::needless_pass_by_value)] // Bevy systems require resources to be passed by value
+#![allow(clippy::only_used_in_recursion)] // No recursive functions and had false positives
 
 mod lobby;
 mod game;
@@ -7,6 +13,8 @@ mod postgame;
 mod multiplayer;
 mod reconnect;
 mod connections;
+
+use dos_shared::GameState;
 
 use game::GamePlugin;
 use lobby::LobbyPlugin;
@@ -43,5 +51,5 @@ fn main() {
         .add_plugin(PostGamePlugin)
         .add_plugin(ReconnectPlugin)
         
-        .run()
+        .run();
 }

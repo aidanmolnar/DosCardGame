@@ -2,7 +2,7 @@ use super::layout::constants::HEIGHT_SCALE;
 
 use bevy::prelude::*;
 use bevy::render::camera::ScalingMode;
-use bevy_mod_picking::*;
+use bevy_mod_picking::PickingCameraBundle;
 
 pub fn add_camera(
     mut commands: Commands,

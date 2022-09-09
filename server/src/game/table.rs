@@ -7,7 +7,7 @@ pub struct ServerTable(BasicTable<Card>);
 
 impl ServerTable {
     pub fn new(cards: Vec<Card>) -> Self {
-        ServerTable(
+        Self(
             BasicTable::<Card>(cards)
         )
     }
@@ -19,7 +19,7 @@ impl ServerTable {
 
 impl Default for ServerTable {
     fn default() -> Self {
-        ServerTable(
+        Self(
             BasicTable::<Card>(Vec::new())
         )
     }
@@ -37,7 +37,7 @@ impl Table<Card> for ServerTable {
         &mut self,
         item: Card
     ) {
-        self.0.push(item)
+        self.0.push(item);
     }
 
     fn last(
@@ -79,6 +79,6 @@ impl Table<Card> for ServerTable {
     }
 
     fn shuffle(&mut self) {
-        self.0.shuffle()
+        self.0.shuffle();
     }
 }

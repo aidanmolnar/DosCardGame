@@ -2,6 +2,12 @@
 name = "dos-shared"
 version = "0.1.0"
 edition = "2021"
+description = "Shared reseources for a multiplayer UNO clone written in rust with Bevy"
+repository = "https://github.com/sporadic0/DosCardGame"
+readme = "./README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["bevy", "UNO", "multiplayer"]
+categories = ["games"]
 
 [dependencies]
 bevy = "0.8.0"

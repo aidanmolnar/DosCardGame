@@ -1,8 +1,6 @@
-use dos_shared::cards::*;
+use dos_shared::cards::{Card, CardColor, CardType};
 
 pub const CARD_BACK_SPRITE_INDEX: usize = 4*15;
-
-// TODO: this could be moved to graphic_interface/assets?
 
 // Get the index of the card from the sprite sheet
 
@@ -31,15 +29,8 @@ impl SpriteIndex for Card {
     }
 }
 
-impl SpriteIndex for Option<Card> {
-    fn get_sprite_index(&self) -> usize {
-
-        // Get sprite info
-        if let Some(card_value) = self {
-            // TODO: move this to shared or implement as trait on Card?
-            card_value.get_sprite_index()
-        } else {
-            CARD_BACK_SPRITE_INDEX // Card back sprite index
-        }
-    }
-}
+// impl SpriteIndex for Option<Card> {
+//     fn get_sprite_index(&self) -> usize {
+//         self.map_or(CARD_BACK_SPRITE_INDEX, |card_value| card_value.get_sprite_index())
+//     }
+// }

@@ -92,7 +92,7 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
                 None
             }
         } else {
-            #[allow(clippy::collapsible_else_if)] // Makes it more readable
+            #[allow(clippy::collapsible_else_if)] // Makes it more readable imo
             if self.is_visible(&to.location, self.mp_state.turn_id) {
                 // Get the value
                 Some(self.syncer.deque_card())
@@ -120,14 +120,23 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
         }
     }
 
-    // TODO: these need to be enqueed
+
     fn victory(&mut self, winner: usize) {
-        
-        self.animation_tracker.enque_action(DelayedAnimationAction{ action: AnimationAction::Victory{winner}, delay: 0.5 })
+        self.animation_tracker.enque_action(
+            DelayedAnimationAction { 
+                action: AnimationAction::Victory{winner}, 
+                delay: 0.5 
+            }
+        );
     }
 
     fn someone_has_two_cards(&mut self, _player: usize) {
-        self.animation_tracker.enque_action(DelayedAnimationAction{ action: AnimationAction::SomeoneHasTwoCards, delay: 0.0});
+        self.animation_tracker.enque_action(
+            DelayedAnimationAction{ 
+                action: AnimationAction::SomeoneHasTwoCards, 
+                delay: 0.0
+            }
+        );
     }
 
 }

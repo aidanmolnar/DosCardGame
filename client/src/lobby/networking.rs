@@ -1,5 +1,5 @@
-use dos_shared::channel_config::LOBBY_CHANNEL_ID;
-use dos_shared::messages::lobby::*;
+use dos_shared::net_config::LOBBY_CHANNEL_ID;
+use dos_shared::messages::lobby::{FromClient, FromServer};
 
 use super::GameState;
 use super::MultiplayerState;
@@ -41,9 +41,9 @@ pub fn lobby_network_system(
             &mut mp_state, 
             &mut ui_state, 
             &mut commands, 
-            &game_state.clone().0,
+            game_state.clone().0,
             update
-        )
+        );
     }
 }
 
@@ -52,7 +52,7 @@ fn handle_lobby_update(
     mp_state: &mut ResMut<MultiplayerState>, 
     ui_state: &mut ResMut<UiState>, 
     commands: &mut Commands,
-    game_state: &GameState,
+    game_state: GameState,
     lobby_update: FromServer,
 ) {
     match lobby_update {
@@ -61,7 +61,7 @@ fn handle_lobby_update(
             mp_state.connect(player_names);
             mp_state.turn_id = turn_id as usize;
 
-            if *game_state == GameState::InGame {
+            if game_state == GameState::InGame {
                 commands.insert_resource(NextState(GameState::Reconnect));
             }
         }

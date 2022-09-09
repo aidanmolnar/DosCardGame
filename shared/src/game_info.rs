@@ -16,8 +16,9 @@ enum Direction {
 }
 
 impl GameInfo {
-    pub fn new(num_players: usize) -> Self {
-        GameInfo { 
+    #[must_use]
+    pub const fn new(num_players: usize) -> Self {
+        Self { 
             num_players, 
             current_turn: 0, 
             direction: Direction::Clockwise,
@@ -37,8 +38,12 @@ impl GameInfo {
             Direction::Clockwise => 1,
             Direction::CounterClockwise => -1,
         };
-        let total = self.current_turn as i32 + offset;
-        self.current_turn = (total.rem_euclid(self.num_players as i32)) as usize;
+
+        let current_turn = isize::try_from(self.current_turn).expect("Player count should not be large enough to wrap");
+        let num_players  = isize::try_from(self.num_players ).expect("Player count should not be large enough to wrap");
+
+        let total = current_turn + offset;
+        self.current_turn = total.rem_euclid(num_players) as usize;
     }
 
     pub fn skip_turn(&mut self) {
@@ -49,11 +54,13 @@ impl GameInfo {
         }
     }
 
-    pub fn current_turn(&self) -> usize {
+    #[must_use]
+    pub const fn current_turn(&self) -> usize {
         self.current_turn
     }
 
-    pub fn num_players(&self) -> usize {
+    #[must_use]
+    pub const fn num_players(&self) -> usize {
         self.num_players
     }
 }

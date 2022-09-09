@@ -1,7 +1,7 @@
 use bevy_renet::renet::RenetServer;
-use dos_shared::channel_config::GAME_CHANNEL_ID;
+use dos_shared::net_config::GAME_CHANNEL_ID;
 use dos_shared::dos_game::DosGame;
-use dos_shared::messages::game::*;
+use dos_shared::messages::game::{CallDosInfo, FromClient, FromServer, GameAction};
 
 use crate::multiplayer::MultiplayerState;
 
@@ -24,7 +24,7 @@ pub struct GameNetworkManager<'w,'s> {
 pub fn game_network_system (
     mut manager: GameNetworkManager,
 ) {
-    for client_id in manager.renet_server.clients_id().into_iter() {
+    for client_id in manager.renet_server.clients_id() {
         while let Some(message) = manager.renet_server.receive_message(client_id, GAME_CHANNEL_ID) {
 
             let player = manager.mp_state.player_from_renet_id(client_id);
@@ -56,7 +56,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 if self.game.validate_play_card(player, &card) {
                     self.game.play_card(&card);
 
-                    self.send_to_filtered(GameAction::PlayCard(card), |p|p!=player)
+                    self.send_to_filtered(GameAction::PlayCard(card), |p|p!=player);
                 } else {
                     println!("Invalid play card");
                     self.handle_disconnect(player);
@@ -66,7 +66,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 if self.game.validate_draw_cards(player) {
                     self.game.draw_cards();
 
-                    self.send_to_all(GameAction::DrawCards)
+                    self.send_to_all(GameAction::DrawCards);
                 } else {
                     println!("Invalid draw cards");
                     self.handle_disconnect(player);
@@ -76,7 +76,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 if self.game.validate_keep_last_drawn_card(player) {
                     self.game.keep_last_drawn_card();
 
-                    self.send_to_filtered(GameAction::KeepStaging, |p|p!=player)
+                    self.send_to_filtered(GameAction::KeepStaging, |p|p!=player);
                 } else {
                     println!("Invalid keep last drawn card");
                     self.handle_disconnect(player);
@@ -86,7 +86,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 if self.game.validate_declare_wildcard_color(player, &color) {
                     self.game.declare_wildcard_color(&color);
 
-                    self.send_to_filtered(GameAction::DiscardWildColor(color), |p|p!=player)
+                    self.send_to_filtered(GameAction::DiscardWildColor(color), |p|p!=player);
                 } else {
                     println!("Invalid wildcard select color");
                     self.handle_disconnect(player);
@@ -117,7 +117,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     println!("Invalid call dos");
                 }
             }
-            _ => {
+            GameAction::DealIn => {
                 println!("Invalid client action");
                 self.handle_disconnect(player);
             }
@@ -144,7 +144,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 cards
             }).expect("Failed to serialize message");
 
-            self.renet_server.send_message(renet_id, GAME_CHANNEL_ID, message)
+            self.renet_server.send_message(renet_id, GAME_CHANNEL_ID, message);
         }
     }   
 
@@ -152,7 +152,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         &mut self,
         action: GameAction,
     ) {
-        self.send_to_filtered(action, |_|{true})
+        self.send_to_filtered(action, |_|{true});
     }
 
     fn handle_disconnect(&mut self, player: usize) {

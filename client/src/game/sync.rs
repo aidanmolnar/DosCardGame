@@ -12,7 +12,7 @@ pub struct ClientSyncer{
 impl ClientSyncer {
     pub fn enque_all(&mut self, message: FromServer) {
         self.cards = VecDeque::from(message.cards);
-        self.conditions = VecDeque::from(message.conditions)
+        self.conditions = VecDeque::from(message.conditions);
     }
 
     pub fn deque_card(&mut self) -> Card {

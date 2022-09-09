@@ -13,9 +13,9 @@ impl ServerSyncer {
     fn new(num_players: usize) -> Self {
         let mut players = Vec::with_capacity(num_players);
         for _ in 0..num_players {
-            players.push(Vec::new())
+            players.push(Vec::new());
         }
-        ServerSyncer {
+        Self {
             cards: players, 
             conditions: Vec::new(),
         }
@@ -30,7 +30,7 @@ impl ServerSyncer {
     }
 
     pub fn add_condition(&mut self, condition: bool) {
-        self.conditions.push(condition)
+        self.conditions.push(condition);
     }
 
     pub fn take_conditions(&mut self) -> Vec<bool> {
@@ -42,5 +42,7 @@ pub fn setup_syncer(
     mp_state: Res<MultiplayerState>,
     mut commands: Commands,
 ) {
-    commands.insert_resource(ServerSyncer::new(mp_state.num_agents()))
+    commands.insert_resource(
+        ServerSyncer::new(mp_state.num_agents())
+    );
 }

@@ -39,7 +39,7 @@ impl Plugin for AnimationPlugin {
 
         .add_exit_system(GameState::MainMenu, 
             |mut commands: Commands| {
-            commands.init_resource::<tracker::AnimationActionQueue>()
+            commands.init_resource::<tracker::AnimationActionQueue>();
         })
 
         // Update delayed transfers in card tracker

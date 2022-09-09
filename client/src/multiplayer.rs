@@ -7,10 +7,10 @@ pub struct MultiplayerState {
 
 impl MultiplayerState {
     pub fn connect(&mut self, player_names: Vec<String>) {
-        self.player_names = player_names
+        self.player_names = player_names;
     }
 
     pub fn disconnect(&mut self) {
-        self.player_names = Vec::new()
+        self.player_names = Vec::new();
     }
 }

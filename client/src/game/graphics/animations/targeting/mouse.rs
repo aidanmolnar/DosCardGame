@@ -1,10 +1,15 @@
-use dos_shared::table::*;
+use dos_shared::table::Location;
 use dos_shared::cards::Card;
 use dos_shared::table::Table;
 use dos_shared::table_map::TableMap;
 
-use super::core::components::*;
-use super::layout::{expressions::*, constants::*};
+use super::core::components::MouseOffset;
+use super::layout::{
+    expressions::horizontal_offset, 
+    constants::{
+        HIGHLIGHT_SCALE, 
+        HIGHLIGHT_Y_OFFSET
+    }};
 use super::AnimationTable;
 
 
@@ -138,7 +143,7 @@ fn reset_offsets <'a> (
     }
 }
 
-// Calculate appropriate offset for each card
+// Calculate appropriate highlighting offsets for each card
 fn calculate_offsets <'a> (
     mouse_offsets: &mut Query<&mut MouseOffset>,
     entities: impl Iterator<Item = &'a Entity>,
@@ -155,7 +160,8 @@ fn calculate_offsets <'a> (
             mouse_offset.offset = HIGHLIGHT_Y_OFFSET * Vec3::Y;
             mouse_offset.scale = HIGHLIGHT_SCALE;
         } else {
-            mouse_offset.offset = offset * (i as isize - focused_index as isize).signum() as f32 * Vec3::X;
+            let offset_dir = if i > focused_index {1.} else {-1.};
+            mouse_offset.offset = offset * offset_dir * Vec3::X;
             mouse_offset.scale = 1.;
         }
     }

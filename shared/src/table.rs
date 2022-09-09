@@ -122,7 +122,7 @@ impl<T: std::fmt::Debug> Table<T> for BasicTable<T> {
         &mut self,
         item: T
     ) {
-        self.0.push(item)
+        self.0.push(item);
     }
 
     fn last(

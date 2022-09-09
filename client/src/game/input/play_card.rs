@@ -6,7 +6,7 @@ use crate::game::graphics::FocusedCard;
 use crate::game::networking::GameNetworkManager;
 
 use bevy::prelude::*;
-use bevy_mod_picking::*;
+use bevy_mod_picking::PickingEvent;
 
 // Runs on PickingEvent
 pub fn play_card_system (

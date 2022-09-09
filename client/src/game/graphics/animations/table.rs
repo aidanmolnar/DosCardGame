@@ -46,21 +46,22 @@ impl SortedTable {
 
 // TODO: Goals: implement all required methods in a coherent way.  Reasonable efficiency
 impl AnimationTable {
-    pub fn new_sorted() -> Self {
-        AnimationTable::Sorted(SortedTable {
+    pub const fn new_sorted() -> Self {
+        Self::Sorted(
+        SortedTable {
             entities: BasicTable(Vec::new()),
             cards: Vec::new(),
         })
     }
 
-    pub fn new_unsorted() -> Self {
-        AnimationTable::Unsorted(
+    pub const fn new_unsorted() -> Self {
+        Self::Unsorted(
             BasicTable(Vec::new())
         )
     }
 
     pub fn new_unsorted_with_items(items: Vec<AnimationItem>) -> Self {
-        AnimationTable::Unsorted(
+        Self::Unsorted(
             BasicTable(items)
         )
     }
@@ -80,7 +81,7 @@ impl AnimationTable {
     pub fn sorted_from_snapshot(deck_builder: &mut DeckBuilder, snapshot: TableSnapshot) -> Self {
         match snapshot {
             TableSnapshot::Known(cards) => 
-                AnimationTable::Sorted(
+                Self::Sorted(
                     SortedTable::new_with_items(
                         deck_builder.make_known_cards(cards)
                     )
@@ -93,10 +94,10 @@ impl AnimationTable {
     // TODO: Doesn't distinguish between table not having sorted index (i.e. unsorted) and entity not being in table
     pub fn sorted_index(&self, entity: Entity) -> Option<usize> {
         match self {
-            AnimationTable::Sorted(table) => {
+            Self::Sorted(table) => {
                 table.sorted_index(entity)
             }
-            AnimationTable::Unsorted(_) => {
+            Self::Unsorted(_) => {
                 None
             }
         }
@@ -104,10 +105,10 @@ impl AnimationTable {
 
     pub fn actual_index(&self, entity: Entity) -> Option<usize> {
         match self {
-            AnimationTable::Sorted(table) => {
+            Self::Sorted(table) => {
                 table.entities.0.iter().position(|e| *e == entity)
             }
-            AnimationTable::Unsorted(table) => {
+            Self::Unsorted(table) => {
                 table.0.iter().position(|e| e.1 == entity)
             }
         }
@@ -116,19 +117,13 @@ impl AnimationTable {
     // TODO: Doesn't distinguish between card value being unknown/face-down and card not being in table
     pub fn card(&self, entity: Entity) -> Option<Card> {
         match self {
-            AnimationTable::Sorted(table) => {
-                if let Some(index) = self.sorted_index(entity) {
-                    table.cards[index].0
-                } else {
-                    None
-                }
+            Self::Sorted(table) => {
+                self.sorted_index(entity)
+                .and_then(|index| table.cards[index].0)
             }
-            AnimationTable::Unsorted(table) => {
-                if let Some(index) = self.actual_index(entity) {
-                    table.0[index].0
-                } else {
-                    None
-                }
+            Self::Unsorted(table) => {
+                self.actual_index(entity)
+                .and_then(|index| table.0[index].0)
             }
         }
     }
@@ -136,10 +131,10 @@ impl AnimationTable {
     // TODO: Maybe consider just defining iter on each sub-type instead of requiring dynamic dispatch
     pub fn iter_entities(&'_ self) -> Box<dyn Iterator<Item = &Entity> + '_> {
         match self {
-            AnimationTable::Sorted(table) => {
+            Self::Sorted(table) => {
                 Box::new(table.cards.iter().map(|x| &x.1))
             }
-            AnimationTable::Unsorted(table) => {
+            Self::Unsorted(table) => {
                 Box::new(table.0.iter().map(|x| &x.1))
             }
         }
@@ -165,12 +160,10 @@ impl Table<AnimationItem> for SortedTable {
     }
 
     fn last(&self) -> Option<&AnimationItem> {
-        if let Some(entity) = self.entities.last() {
-            // We know the entity has been inserted into the table if it was in entities
-            Some(&self.cards[self.sorted_index(*entity).unwrap()])
-        } else {
-            None
-        }
+        self.entities.last()
+        .map(|entity| 
+            &self.cards[self.sorted_index(*entity).unwrap()]
+        )
     }
 
     fn last_mut(
@@ -202,14 +195,10 @@ impl Table<AnimationItem> for SortedTable {
         &self,
         index: usize,
     ) -> Option<&AnimationItem> {
-        if let Some(entity) = self.entities.get(index) {
-            // We know the entity has been inserted into the table if it was in entities
-            Some(&self.cards[
-                self.sorted_index(*entity).unwrap()
-            ])
-        } else {
-            None
-        }
+        self.entities.get(index)
+            .map(|entity| 
+                &self.cards[self.sorted_index(*entity).unwrap()]
+            )
     }
 
     fn get_mut(
@@ -245,8 +234,8 @@ impl Table<AnimationItem> for AnimationTable {
         index: usize
     ) -> Option<AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.remove(index)}
-            AnimationTable::Unsorted(table) => {table.remove(index)}
+            Self::Sorted(table) => {table.remove(index)}
+            Self::Unsorted(table) => {table.remove(index)}
         }
     }
 
@@ -255,8 +244,8 @@ impl Table<AnimationItem> for AnimationTable {
         item: AnimationItem
     ) {
         match self {
-            AnimationTable::Sorted(table) => {table.push(item)}
-            AnimationTable::Unsorted(table) => {table.push(item)}
+            Self::Sorted(table) => {table.push(item)}
+            Self::Unsorted(table) => {table.push(item)}
         }
     }
 
@@ -264,8 +253,8 @@ impl Table<AnimationItem> for AnimationTable {
         &self,
     ) -> Option<&AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.last()}
-            AnimationTable::Unsorted(table) => {table.last()}
+            Self::Sorted(table) => {table.last()}
+            Self::Unsorted(table) => {table.last()}
         }
     }
 
@@ -273,8 +262,8 @@ impl Table<AnimationItem> for AnimationTable {
         &mut self,
     ) -> Option<&mut AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.last_mut()}
-            AnimationTable::Unsorted(table) => {table.last_mut()}
+            Self::Sorted(table) => {table.last_mut()}
+            Self::Unsorted(table) => {table.last_mut()}
         }
     }
 
@@ -282,8 +271,8 @@ impl Table<AnimationItem> for AnimationTable {
         &self
     ) -> usize {
         match self {
-            AnimationTable::Sorted(table) => {table.len()}
-            AnimationTable::Unsorted(table) => {table.len()}
+            Self::Sorted(table) => {table.len()}
+            Self::Unsorted(table) => {table.len()}
         }
     }
 
@@ -291,8 +280,8 @@ impl Table<AnimationItem> for AnimationTable {
         &mut self
     ) -> Option<AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.pop()}
-            AnimationTable::Unsorted(table) => {table.pop()}
+            Self::Sorted(table) => {table.pop()}
+            Self::Unsorted(table) => {table.pop()}
         }
     }
 
@@ -301,8 +290,8 @@ impl Table<AnimationItem> for AnimationTable {
         index: usize,
     ) -> Option<&AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.get(index)}
-            AnimationTable::Unsorted(table) => {table.get(index)}
+            Self::Sorted(table) => {table.get(index)}
+            Self::Unsorted(table) => {table.get(index)}
         }
     }
 
@@ -311,8 +300,8 @@ impl Table<AnimationItem> for AnimationTable {
         index: usize,
     ) -> Option<&mut AnimationItem> {
         match self {
-            AnimationTable::Sorted(table) => {table.get_mut(index)}
-            AnimationTable::Unsorted(table) => {table.get_mut(index)}
+            Self::Sorted(table) => {table.get_mut(index)}
+            Self::Unsorted(table) => {table.get_mut(index)}
         }
     }
 

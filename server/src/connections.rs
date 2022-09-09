@@ -1,9 +1,13 @@
 use bevy::app::AppExit;
 use bevy::ecs::system::SystemParam;
 use bevy_renet::renet::ServerEvent;
-use dos_shared::*;
-use dos_shared::channel_config::LOBBY_CHANNEL_ID;
-use dos_shared::channel_config::connection_config;
+use dos_shared::GameState;
+use dos_shared::net_config::{
+    DEFAULT_IP, 
+    PROTOCOL_ID, 
+    LOBBY_CHANNEL_ID, 
+    connection_config
+};
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -98,7 +102,7 @@ fn connection_events_system(
     // Send an update message to players if the lobby has changed
     if player_count_change {
         // Players enter reconnect state if they receive a lobby update while in game state
-        manager.send_player_count_update()
+        manager.send_player_count_update();
     }
 
     // Check if every player has disconnected and return to the main menu if so
@@ -180,7 +184,7 @@ impl ConnectionManager<'_,'_> {
             &FromServer::Reject { reason}
         ).expect("Failed to serialize message");
     
-        self.renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message)
+        self.renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message);
     }
 
     fn send_player_count_update(
@@ -192,11 +196,11 @@ impl ConnectionManager<'_,'_> {
             let message = bincode::serialize(
                 &FromServer::CurrentPlayers{
                     player_names: names.clone(), 
-                    turn_id: turn_id as u8
+                    turn_id
                 }
             ).expect("Failed to serialize message");
 
-            self.renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message)
+            self.renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message);
         }
     }
 }
@@ -216,7 +220,7 @@ fn reconnections_system(
             &FromServer::Reconnect(game.get_snapshot(player))
         ).expect("Failed to serialize message");
 
-        renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message)
+        renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, message);
     }
 
     // Decide to resume game if in reconnect state and all players reconnected
@@ -231,7 +235,7 @@ fn reconnections_system(
 
         // Send start messages to all clients
         for (_, renet_id) in mp_state.iter_players() {
-            renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, start_message.clone())
+            renet_server.send_message(renet_id, LOBBY_CHANNEL_ID, start_message.clone());
         }
     }
 }

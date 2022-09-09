@@ -81,8 +81,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             );
     
             match self.get(&DISCARD_REFERENCE).unwrap().card().ty {
-                CardType::Wild => {continue},
-                CardType::DrawFour => {continue}
+                CardType::Wild | CardType::DrawFour => {continue},
                 _=> {break}
             }
         }
@@ -107,7 +106,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
 
         //TODO: Check if a player has Dos or is out of cards
         if hand.len() == 2 {
-            self.someone_has_two_cards(self.game_info().current_turn() )
+            self.someone_has_two_cards(self.game_info().current_turn());
             // This is tricky, because its a time based action that can happen whenever
         } else if hand.len() == 0 {
             self.victory(self.game_info().current_turn());
@@ -168,20 +167,19 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         if self.is_players_turn(player) && (turn_state == TurnState::Default || turn_state == TurnState::StagedCard) {
 
             // Check that the card actually exists
-            if let Some(card_wrapper) = self.get(card_reference) {
+            self.get(card_reference)
+            .map_or(false, |card_wrapper| {
                 let discard = self.get(&DISCARD_REFERENCE).unwrap().card(); // Can unwrap because we already checked that a discarded card exists in get_turn_state
 
                 // Check that the card is playable
                 if self.game_info().stacked_draws > 0 {
                     // Must play a card that can stack.
-                    is_valid_move(card_wrapper.card(), discard) && 
+                    is_valid_move(*card_wrapper.card(), *discard) && 
                     (card_wrapper.card().ty == CardType::DrawFour || card_wrapper.card().ty == CardType::DrawTwo)
                 } else {
-                    is_valid_move(card_wrapper.card(), discard)
+                    is_valid_move(*card_wrapper.card(), *discard)
                 }
-            } else {
-                false
-            }
+            })
         } else {
             false
         }
@@ -193,7 +191,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         let condition = |game: &Self| {
             let discard = game.get(&DISCARD_REFERENCE).unwrap().card();
             let card = game.get(&DECK_REFERENCE).unwrap().card();
-            is_valid_move(card, discard)
+            is_valid_move(*card, *discard)
         };
 
         let to = CardReference{
@@ -212,9 +210,9 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                     if self.get_table(&Location::DiscardPile).len() == 1 {
                         // Failed to supply a needed card.
                         break
-                    } else {
-                        self.reshuffle();
-                    }
+                    } 
+                    
+                    self.reshuffle();
                 }
 
                 stacked_draws -= 1;
@@ -234,17 +232,17 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                     // Failed to supply a needed card.
                     self.game_info_mut().next_turn();
                     break
-                } else {
-                    self.reshuffle();
                 }
+                
+                self.reshuffle();
             }
 
             if self.server_condition(condition) {
                 self.transfer(&DECK_REFERENCE, &STAGING_REFERENCE);
                 break
-            } else {
-                self.transfer(&DECK_REFERENCE, &to);
             }
+
+            self.transfer(&DECK_REFERENCE, &to);
         }
     }
 
@@ -313,9 +311,9 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                     // Failed to supply a needed card.
                     self.game_info_mut().next_turn();
                     break
-                } else {
-                    self.reshuffle();
                 }
+
+                self.reshuffle();
             }
 
             punish_cards -= 1;
@@ -385,7 +383,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
 }
 
 
-fn is_valid_move(card: &Card, discard_pile: &Card) -> bool {
+fn is_valid_move(card: Card, discard_pile: Card) -> bool {
     card.ty == CardType::Wild || 
     card.ty == CardType::DrawFour ||
     card.color == discard_pile.color ||

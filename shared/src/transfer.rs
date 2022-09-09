@@ -50,6 +50,6 @@ pub trait CardTransfer<T, U: Table<T> + 'static> {
         to: &CardReference,
         item: T,
     ) {
-        self.get_table_mut(&to.location).push(item)
+        self.get_table_mut(&to.location).push(item);
     }
 }

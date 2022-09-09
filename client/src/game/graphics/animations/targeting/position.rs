@@ -1,7 +1,10 @@
 use dos_shared::table::Table;
 
-use super::core::components::*;
-use super::layout::{expressions::*,constants::*};
+use super::core::components::BoardPosition;
+use super::layout::{
+    expressions::arange_1d,
+    constants::MAX_HAND_SPACING
+};
 use super::AnimationTable;
 
 
@@ -34,6 +37,7 @@ fn calculate_positions<'a> (
     entities: impl Iterator<Item = &'a Entity>,
     num_cards: usize,
 ) {
+    #[allow(clippy::cast_precision_loss)]
     let width = f32::min(arranger.max_width, num_cards as f32 * MAX_HAND_SPACING);
 
     for (hand_position, entity) in entities.enumerate() {
@@ -41,6 +45,8 @@ fn calculate_positions<'a> (
 
         let pos = width * arange_1d(num_cards, hand_position); 
         
-        board_position.position = Vec3::new(arranger.center.0 + pos, arranger.center.1, 2. + (hand_position as f32) / 100.);
+        #[allow(clippy::cast_precision_loss)]
+        let z = 2. + (hand_position as f32) / 100.;
+        board_position.position = Vec3::new(arranger.center.0 + pos, arranger.center.1, z);
     }
 }

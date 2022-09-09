@@ -35,6 +35,7 @@ pub enum CardType {
     DrawFour,
 }
 
+#[allow(clippy::must_use_candidate)]
 pub fn new_deck() -> Vec<Card> {
     let mut deck = Vec::new();
 

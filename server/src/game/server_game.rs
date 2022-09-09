@@ -4,7 +4,10 @@ use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
 use dos_shared::messages::lobby::{TableSnapshot, GameSnapshot};
 use dos_shared::table_map::TableMap;
 use dos_shared::transfer::CardTransfer;
-use dos_shared::{table::*, GameInfo, GameState};
+use dos_shared::{
+    table::{CardReference, HandPosition, Location, Table}, 
+    GameInfo, GameState
+};
 
 use crate::game::call_dos::CallDos;
 
@@ -36,7 +39,7 @@ impl ServerGame<'_,'_> {
         for player in 0..self.game_info.num_players() {
             if !self.is_visible(from, player) &&
             self.is_visible(to, player) {
-                self.syncer.add_card(player, card)
+                self.syncer.add_card(player, card);
             }
         }
     }
@@ -145,11 +148,13 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
 
     fn someone_has_two_cards(&mut self, player: usize) {
         println!("player with id {} has two cards!", player);
-        self.commands.insert_resource(CallDos {
-            player,
-            caller: None,
-            graceperiod: None,
-        })
+        self.commands.insert_resource(
+            CallDos {
+                player,
+                caller: None,
+                graceperiod: None,
+            }
+        );
     }
 
 }

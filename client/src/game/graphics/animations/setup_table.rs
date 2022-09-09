@@ -4,8 +4,18 @@ use dos_shared::table::Location;
 use dos_shared::table_map::TableMap;
 
 use crate::game::MultiplayerState;
-use super::layout::expressions::*;
-use super::layout::constants::*;
+use super::layout::expressions::arange_arc;
+use super::layout::constants::{
+    DECK_LOCATION, 
+    DISCARD_LOCATION, 
+    MAX_HAND_WIDTH, 
+    MAX_OPPONENT_HAND_WIDTH, 
+    OPPONENT_ARC_ANGLE, 
+    OPPONENT_ARC_HEIGHT, 
+    OPPONENT_ARC_WIDTH, 
+    STAGING_LOCATION, 
+    YOUR_HAND_CENTER
+};
 use super::table::AnimationTable;
 use super::deck::DeckBuilder;
 
@@ -28,18 +38,6 @@ pub fn add_animation_tables(
         for (location, entity) in &table_map.0 {
             let table_snapshot = snapshot.tables[location].clone(); // TODO: Shouldn't need to clone
             let table = match location {
-                Location::Deck => 
-                    AnimationTable::unsorted_from_snapshot(
-                        &mut deck_builder, table_snapshot,
-                    ),
-                Location::DiscardPile => 
-                    AnimationTable::unsorted_from_snapshot(
-                        &mut deck_builder, table_snapshot,
-                    ),
-                Location::Staging => 
-                    AnimationTable::unsorted_from_snapshot(
-                        &mut deck_builder, table_snapshot,
-                    ),
                 Location::Hand { player_id } => {
                     if *player_id == mp_state.turn_id {
                         AnimationTable::sorted_from_snapshot(
@@ -51,6 +49,10 @@ pub fn add_animation_tables(
                         )
                     }
                 }
+                _ => 
+                AnimationTable::unsorted_from_snapshot(
+                    &mut deck_builder, table_snapshot,
+                ),
             };
             commands.entity(*entity).insert(table);
         }
@@ -63,8 +65,6 @@ pub fn add_animation_tables(
                         deck_builder.make_unknown_cards(DECK_SIZE)
                     )
                 },
-                Location::DiscardPile => AnimationTable::new_unsorted(),
-                Location::Staging => AnimationTable::new_unsorted(),
                 Location::Hand { player_id } => {
                     if *player_id == mp_state.turn_id {
                         AnimationTable::new_sorted()
@@ -72,6 +72,7 @@ pub fn add_animation_tables(
                         AnimationTable::new_unsorted()
                     }
                 }
+                Location::DiscardPile | Location::Staging => AnimationTable::new_unsorted(),
             };
     
             commands.entity(*entity).insert(table);
@@ -111,7 +112,7 @@ pub fn add_arrangers(
                         max_width: MAX_HAND_WIDTH,
                     }
                 } else {
-                    let local_id = ((*player_id as isize - mp_state.turn_id as isize).rem_euclid(num_players as isize) - 1) as usize;
+                    let local_id = get_local_id(*player_id, mp_state.turn_id, num_players);
                     let (x,y) = arange_arc(
                         num_players - 1, 
                         local_id ,
@@ -126,4 +127,17 @@ pub fn add_arrangers(
 
         commands.entity(*entity).insert(arranger);
     }
+}
+
+
+fn get_local_id(
+    player_id: usize,
+    local_id: usize,
+    num_players: usize,
+) -> usize {
+    let difference: isize  = isize::try_from(player_id  ).expect("Player ids should not be large enough to wrap") 
+                           - isize::try_from(local_id   ).expect("Player ids should not be large enough to wrap");
+    let num_players = isize::try_from(num_players).expect("Player count should not be large enough to wrap");
+
+    (difference.rem_euclid(num_players) - 1).try_into().expect("Result should be positive")
 }

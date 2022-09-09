@@ -17,19 +17,14 @@ pub struct TargetingPlugin;
 impl Plugin for TargetingPlugin {
     fn build(&self, app: &mut App) {
         app
-        // Mouse targeting
+        // Getting focused cards
         .init_resource::<mouse::FocusedCard>()
         .add_system(mouse::focus_system
-            //.run_in_state(GameState::InGame)
             .run_on_event::<PickingEvent>()
         )
-        .add_system(mouse::update_system
-             //.run_in_state(GameState::InGame)
-        )
 
-        // Position targeting
-        .add_system(position::update_system
-            //.run_in_state(GameState::InGame)
-        );
+        // Updating card targets
+        .add_system(mouse::update_system)
+        .add_system(position::update_system);
     }
 }
