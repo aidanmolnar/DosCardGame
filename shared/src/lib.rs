@@ -5,11 +5,12 @@ pub mod game_info;
 pub mod dos_game;
 pub mod table_map;
 pub mod transfer;
+pub mod channel_config;
 
 pub use game_info::GameInfo;
 
-
-pub const DEFAULT_IP: &str = "localhost:3333";
+pub const PROTOCOL_ID: u64 = 7;
+pub const DEFAULT_IP: &str = "127.0.0.1:3333";
 
 pub const NUM_STARTING_CARDS: u8 = 4;
 pub const DECK_SIZE: usize = 108;

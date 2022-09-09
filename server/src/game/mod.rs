@@ -1,9 +1,8 @@
 use dos_shared::GameInfo;
 use dos_shared::table_map::*;
 
-use crate::multiplayer::AgentTracker;
+use crate::multiplayer::MultiplayerState;
 use super::GameState;
-use super::multiplayer;
 
 mod sync;
 mod networking;
@@ -12,9 +11,7 @@ mod deal;
 mod server_game;
 mod table;
 mod call_dos;
-mod connections;
 
-pub use connections::playercount_change_system;
 pub use server_game::ServerGame;
 
 use bevy::prelude::*;
@@ -28,8 +25,8 @@ impl Plugin for GamePlugin {
         // Create resource for controlling turn advancement
         .add_exit_system(
             GameState::MainMenu, 
-            |mut commands: Commands, agent_tracker: Res<AgentTracker>|{
-                commands.insert_resource(GameInfo::new(agent_tracker.num_agents()))
+            |mut commands: Commands, mp_state: Res<MultiplayerState>|{
+                commands.insert_resource(GameInfo::new(mp_state.num_agents()))
             }
         )
 
@@ -43,8 +40,8 @@ impl Plugin for GamePlugin {
         .add_plugin(TableConstructionPlugin)
         .add_enter_system(
             TableConstructionState::TableMapCreation, 
-            |commands: Commands, agent_tracker: Res<AgentTracker>|{
-                build_table_map(commands, agent_tracker.num_agents())
+            |commands: Commands, mp_state: Res<MultiplayerState>|{
+                build_table_map(commands, mp_state.num_agents())
             }
         )
         .add_enter_system(
@@ -60,11 +57,7 @@ impl Plugin for GamePlugin {
         .add_system(networking::game_network_system
             .run_in_state(GameState::InGame)
         )
-        .add_system(connections::playercount_change_system
-            .run_in_state(GameState::InGame)
-        ).add_system(connections::handle_connection_task
-            .run_in_state(GameState::InGame)
-        )
+
 
         .add_system(call_dos::call_dos_graceperiod
             .run_in_state(GameState::InGame)

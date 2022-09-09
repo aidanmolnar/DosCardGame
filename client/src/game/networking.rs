@@ -1,3 +1,5 @@
+use bevy_renet::renet::RenetClient;
+use dos_shared::channel_config::GAME_CHANNEL_ID;
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 use dos_shared::{DECK_SIZE, GameState};
@@ -9,36 +11,30 @@ use super::call_dos::CallDos;
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 
-use std::net::TcpStream;
-use std::io;
-use std::io::Write;
-
-
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w, 's> {
     pub commands: Commands<'w,'s>,
     pub game: ClientGame<'w,'s>,
+    renet_client: ResMut<'w, RenetClient>,
 }
 
 // Recieves and handles messages from the server
 pub fn game_network_system(
     mut network_manager: GameNetworkManager,
 ) {
-    let stream =
-        match &network_manager.game.mp_state.stream {
-            None => return,
-            Some(i) => i,
-    };
-    
-    match bincode::deserialize_from::<&TcpStream, FromServer>(stream) {
-        Ok(game_update) => {
-            network_manager.handle_update(
-                game_update
-            )
-        },
-        Err(e) => {
-            network_manager.handle_error(e)
-        }
+    if !network_manager.renet_client.is_connected() {
+        network_manager.game.mp_state.disconnect();
+        network_manager.commands.remove_resource::<RenetClient>();
+
+        network_manager.commands.insert_resource(NextState(GameState::MainMenu)); 
+        return;
+    }
+
+    while let Some(message) = network_manager.renet_client.receive_message(GAME_CHANNEL_ID) {
+        let update = bincode::deserialize::<FromServer>(&message)
+        .expect("Failed to deserialize message!");
+
+        network_manager.handle_update(update);
     }
 }
 
@@ -74,33 +70,14 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 self.commands.remove_resource::<CallDos>();
                 
             }
-            GameAction::DisconnectOccurred => {
-                self.commands.insert_resource(NextState(GameState::Reconnect));
-            },
         }
     }
 
-    fn handle_error(&mut self, e: Box<bincode::ErrorKind>) {
-        match *e {
-            bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
-            _ => {
-                println!("Message receive error: {}", e);
-                println!("Disconnecting!");
-    
-                self.game.mp_state.set_disconnected();
-                self.commands.insert_resource(NextState(GameState::MainMenu)); // TODO: reset resources?
-            }
-        }
-    }
 
     pub fn send_message(&mut self, message: FromClient) {
-        self.game.mp_state.stream.as_ref().unwrap()
-        .write_all(
-            &bincode::serialize(&message).unwrap()
-        ).expect("Failed to send message"); // TODO: get rid of except
-        // NOTE: Using bincode::serialize_into was causing crashes related to enum discriminants
-        //       Not completely sure why it seems to work elsewhere (lobby messages).  
-        //       bincode::serialize and bincode::serialize_into do have different default behavior
-        //       This switch seems to solve the issue here
+        dbg!(message.clone());
+
+        let message = bincode::serialize(&message).expect("Failed to serialize message!");
+        self.renet_client.send_message(GAME_CHANNEL_ID, message);
     }
 }

@@ -1,10 +1,8 @@
-use std::net::TcpStream;
 
 // Maintains an ordered list of agents
 #[derive(Default)]
-pub struct AgentTracker {
+pub struct MultiplayerState {
     agents: Vec<Agent>,
-    updated: bool
 }
 
 struct Agent {
@@ -15,46 +13,105 @@ struct Agent {
 #[allow(dead_code)] // Will be used in the future
 enum AgentType {
     Player {
-        stream: TcpStream, 
-        connection_status: ConnectionStatus
+        renet_id: u64,
+        status: PlayerStatus
     },
     Bot, 
 }
 
 #[derive(PartialEq, Eq, Debug)]
-enum ConnectionStatus {
-    Connected,
-    Desynced,
+enum PlayerStatus {
+    Ready,
+    SendState,
     Disconnected,
 }
 
-impl AgentTracker {
-    pub fn new_player(&mut self, name: String, stream: TcpStream) {
-        self.updated = true;
+impl MultiplayerState {
+    pub fn new_player(
+        &mut self,
+        name: String, 
+        renet_id: u64
+    ) {
         self.agents.push(Agent {
             name,
             ty: AgentType::Player{
-                stream, 
-                connection_status: ConnectionStatus::Connected,
+                renet_id,
+                status: PlayerStatus::Ready,
             },
         })
     }
 
     #[allow(dead_code)] // Will be used in the future
     pub fn new_bot(&mut self, name: String) {
-        self.updated = true;
+
         self.agents.push(Agent {
             name,
             ty: AgentType::Bot,
         })
     }
 
+    pub fn disconnect_player(
+        &mut self,
+        renet_id: u64,
+    ) {
+        for agent in &mut self.agents {
+            match &mut agent.ty {
+                AgentType::Player { renet_id: this_id, status } =>  {
+                    if *this_id == renet_id {
+                        *status = PlayerStatus::Disconnected;
+                    }
+                },
+                AgentType::Bot => {},
+            }
+        }
+    }
+
+    pub fn player_from_renet_id(&self, renet_id: u64) -> usize {
+        for (turn_id, agent) in self.agents.iter().enumerate() {
+            match &agent.ty {
+                AgentType::Player { renet_id: this_id, .. } =>  {
+                    if *this_id == renet_id {
+                        return turn_id
+                    }
+                },
+                AgentType::Bot => {},
+            }
+        }
+
+        panic!("Player not found");
+    }
+
+    pub fn renet_id_from_player(&self, player: usize) -> u64 {
+        let agent = &self.agents[player];
+
+        match agent.ty {
+            AgentType::Player { renet_id, .. } => renet_id,
+            AgentType::Bot => panic!("Bots don't have renet ids"),
+        }
+    }
+
+    pub fn iter_players(&self) -> impl Iterator<Item = (usize, u64)> + '_ {
+        self.agents.iter().enumerate().filter_map(
+            |(turn_id, agent)|
+            match &agent.ty {
+                AgentType::Player {status,renet_id} => {
+                    if *status == PlayerStatus::Disconnected {
+                        None
+                    } else {
+                        Some((turn_id, *renet_id))
+                    }
+                },
+                AgentType::Bot => None,
+            }
+        )
+    }
+
     pub fn names(&self) -> Vec<String> {
         self.agents.iter().map(
             |agent|
             match &agent.ty {
-                AgentType::Player {connection_status,.. } => {
-                    if *connection_status == ConnectionStatus::Disconnected {
+                AgentType::Player {status,..} => {
+                    if *status == PlayerStatus::Disconnected {
                         "[DC] ".to_owned() + &agent.name
                     } else {
                         agent.name.clone()
@@ -69,89 +126,30 @@ impl AgentTracker {
         self.agents.len()
     }
 
-    pub fn iter_ids_and_streams(&self) -> impl Iterator<Item = (usize, &TcpStream)> {
-        self.agents.iter().enumerate().filter_map(|(i,agent)|{
-            match &agent.ty {
-                AgentType::Player{stream, ..} => Some((i, stream)),
-                AgentType::Bot => None,
-            }
-        })
-    }
-
-    pub fn iter_streams(&self) -> impl Iterator<Item = &TcpStream> {
-        self.agents.iter().filter_map(|agent| {
-            match &agent.ty {
-                AgentType::Player{stream, ..} => Some(stream),
-                AgentType::Bot => None,
-            }
-        })
-    }
-
     #[allow(dead_code)] // Will be used in the future
     pub fn remove(&mut self, player: &usize) {
-        self.updated = true;
         self.agents.remove(*player);
     }
 
-    pub fn try_get_stream(&self, player: usize) -> Option<&TcpStream> {
-        match &self.agents[player].ty {
-            AgentType::Player{stream,..} => Some(stream),
-            AgentType::Bot => None,
-        }
-    }
-
-    pub fn disconnect_player(&mut self, player: usize) {
-        self.updated = true;
-        match &mut self.agents[player].ty {
-            AgentType::Player{stream, connection_status,..} => {
-                stream.shutdown(std::net::Shutdown::Both).expect("Couldn't close stream!");
-                *connection_status = ConnectionStatus::Disconnected;
-            },
-            AgentType::Bot => panic!("Can't disconnect a bot"),
-        }
-    }
-
     pub fn remove_disconnected_players(&mut self) {
-        self.updated = true;
         self.agents.retain(
             |agent| 
             match &agent.ty {
-                AgentType::Player { connection_status,.. } => *connection_status == ConnectionStatus::Connected,
+                AgentType::Player { status,.. } => !(*status == PlayerStatus::Disconnected),
                 AgentType::Bot => true,
             }
         )
     }
 
-    pub fn is_connected(&self, player: usize) -> bool{
-        match &self.agents[player].ty {
-            AgentType::Player{connection_status,..} => *connection_status == ConnectionStatus::Connected,
-            AgentType::Bot => true,
-        }
-    }
-
-    pub fn is_desynced(&self, player: usize) -> bool{
-        match &self.agents[player].ty {
-            AgentType::Player{connection_status,..} => *connection_status == ConnectionStatus::Desynced,
-            AgentType::Bot => false,
-        }
-    }
 
     pub fn is_disconnected(&self, player: usize) -> bool{
         match &self.agents[player].ty {
-            AgentType::Player{connection_status,..} => *connection_status == ConnectionStatus::Disconnected,
+            AgentType::Player{status,..} => *status == PlayerStatus::Disconnected,
             AgentType::Bot => false,
         }
     }
 
-    pub fn were_players_updated(&self) -> bool {
-        self.updated
-    }
-
-    pub fn reset_players_updated(&mut self) {
-        self.updated = false;
-    }
-
-    pub fn player_id_from_name(&mut self, name: &str) -> Option<usize> {
+    pub fn player_from_name(&self, name: &str) -> Option<usize> {
         for (i,agent) in self.agents.iter().enumerate() {
             if agent.name == name {
                 return Some(i)
@@ -160,32 +158,41 @@ impl AgentTracker {
         None
     }
 
-    pub fn reconnect_player(&mut self, player: usize, new_stream: TcpStream) {
-        self.updated = true;
+    pub fn reconnect_player(&mut self, player: usize, new_renet_id: u64) {
         match &mut self.agents[player].ty {
-            AgentType::Player{stream,connection_status,..} => {
-                *stream = new_stream;
-                *connection_status = ConnectionStatus::Desynced;
+            AgentType::Player{renet_id ,status,..} => {
+                *renet_id = new_renet_id;
+                *status = PlayerStatus::SendState;
             }
             AgentType::Bot => panic!("Can't reconnect bot"),
         }
     }
 
-    pub fn resync_player(&mut self, player: usize) {
-        self.updated = true;
-        match &mut self.agents[player].ty {
-            AgentType::Player{connection_status,..} => {
-                *connection_status = ConnectionStatus::Connected;
+    // Iterate over players that are missing game info because they just reconnected.
+    // Sets them to ready during iteration.
+    pub fn send_state_to_desynced_players(&mut self) -> impl Iterator<Item = (usize, u64)> + '_ {
+        self.agents.iter_mut().enumerate().filter_map(
+            |(turn_id, agent)|
+            match &mut agent.ty {
+                AgentType::Player {status,renet_id} => {
+                    if *status == PlayerStatus::SendState {
+                        *status = PlayerStatus::Ready;
+                        Some((turn_id, *renet_id))
+                    } else {
+                        None
+                        
+                    }
+                },
+                AgentType::Bot => None,
             }
-            AgentType::Bot => panic!("Can't resync bot"),
-        }
+        )
     }
 
-    pub fn all_connected(&self) -> bool {
+    pub fn all_ready(&self) -> bool {
         self.agents.iter().all(
             |agent|
             match &agent.ty {
-                AgentType::Player {connection_status,.. } => *connection_status == ConnectionStatus::Connected,
+                AgentType::Player {status,.. } => *status == PlayerStatus::Ready,
                 AgentType::Bot => true,
             }
         )
@@ -195,7 +202,7 @@ impl AgentTracker {
         self.agents.iter().all(
             |agent|
             match &agent.ty {
-                AgentType::Player {connection_status,.. } => !(*connection_status == ConnectionStatus::Connected),
+                AgentType::Player {status,.. } => *status == PlayerStatus::Disconnected,
                 AgentType::Bot => true,
             }
         )

@@ -1,3 +1,4 @@
+
 use dos_shared::GameState;
 
 mod lobby;
@@ -14,6 +15,7 @@ use multiplayer::MultiplayerState;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use postgame::PostGamePlugin;
+use bevy_renet::RenetClientPlugin;
 
 fn main() {
     App::new()
@@ -26,6 +28,10 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
+
+        // Networking
+        .add_plugin(RenetClientPlugin)
+        .init_resource::<MultiplayerState>()
 
         // Starting state
         .add_loopless_state(GameState::MainMenu)

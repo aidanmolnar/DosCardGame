@@ -1,14 +1,13 @@
+use bevy_egui::egui::Ui;
+use bevy_renet::renet::RenetClient;
 use dos_shared::DEFAULT_IP;
 use super::networking::*;
-use super::connecting::{ConnectionTask, create_connection_task};
+use super::connections::{ConnectionTask, create_connection_task};
 use super::MultiplayerState;
 
 use bevy::prelude::*;
 use bevy::tasks::AsyncComputeTaskPool;
 use bevy_egui::{egui::{self, Color32}, EguiContext};
-
-
-// TODO: break up into sub modules (1 for UI state, 1 for building the lobby ui?)
 
 pub struct UiState {
     ip: String,
@@ -22,8 +21,8 @@ impl UiState {
         self.error = "".to_owned();
         self.status = ConnectionStatus::Connected;
     }
-    pub fn set_disconnected(&mut self, error_message: &str) {
-        self.error = error_message.to_owned();
+    pub fn set_disconnected(&mut self, error_message: String) {
+        self.error = error_message;
         self.status = ConnectionStatus::Disconnected;
     }
 }
@@ -44,16 +43,14 @@ impl Default for UiState {
     }}
 }
 
-// TODO: break up into smaller functions
+// A barebones egui for connecting to the game
 pub fn lobby_ui(
     mut egui_context: ResMut<EguiContext>, 
     mut ui_state: ResMut<UiState>, 
     mut mp_state: ResMut<MultiplayerState>,
     mut commands: Commands,
+    mut renet_client_opt: Option<ResMut<RenetClient>>,
 ) {
-
-    let thread_pool = AsyncComputeTaskPool::get();
-
     egui::SidePanel::left("left_panel").show(
         egui_context.ctx_mut(), |ui| {
 
@@ -69,39 +66,19 @@ pub fn lobby_ui(
             ui.text_edit_singleline(&mut ui_state.name);
         });
 
-        match ui_state.status {
-            ConnectionStatus::Disconnected => {
-
-                if ui.button("Connect").clicked() {
-
-                    let address = ui_state.ip.clone();
-                    let name = ui_state.name.clone();
-
-
-                    let task = thread_pool.spawn(async move {
-                        create_connection_task(&address, &name)
-                    });
-                    ui_state.status = ConnectionStatus::Connecting;
-                    commands.spawn().insert(ConnectionTask(task));
-                }
-                
-            },
-            ConnectionStatus::Connecting => {
-                ui.add(egui::Button::new("Connecting..."));
-            },
-            ConnectionStatus::Connected => {
-                if ui.button("Disconnect").clicked() {
-                    mp_state.set_disconnected();
-                    ui_state.status = ConnectionStatus::Disconnected;
-                }
-            },
-        }
+        connect_button_ui(
+            ui, 
+            ui_state.as_mut(), 
+            mp_state.as_mut(), 
+            &mut commands, 
+            renet_client_opt.as_deref_mut()
+        );
         
         if !ui_state.error.is_empty() {
             ui.colored_label(Color32::from_rgb(255,0,0), &ui_state.error);
         }
 
-        if !mp_state.player_names.is_empty() {
+        if !mp_state.player_names.is_empty() && renet_client_opt.is_some() {
             ui.label("Players:");
 
             for player in &mp_state.player_names {
@@ -109,14 +86,60 @@ pub fn lobby_ui(
             }
         }
 
-        if mp_state.stream.is_some() && mp_state.turn_id == 0 {
-            ui.label("You are the Lobby Leader");
-            if ui.button("Start Game").clicked() {
-                send_start_game(mp_state.stream.as_ref());
-                println!("Start the game");
+        if let Some(renet_client) = renet_client_opt.as_mut() {
+            if mp_state.turn_id == 0 {
+                ui.label("You are the Lobby Leader");
+                if ui.button("Start Game").clicked() {
+                    send_start_game(renet_client);
+                    println!("Start the game");
+                }
             }
         }
 
     });
 }
 
+fn connect_button_ui (
+    ui: &mut Ui,
+    ui_state: &mut UiState,
+    mp_state: &mut MultiplayerState,
+    commands: &mut Commands,
+    mut renet_client_opt: Option<&mut RenetClient>,
+) {
+    let thread_pool = AsyncComputeTaskPool::get();
+
+    match ui_state.status {
+        ConnectionStatus::Disconnected => {
+            if ui.button("Connect").clicked() {
+                let address = ui_state.ip.clone();
+                let name = ui_state.name.clone();
+
+                // Spawn a task for connecting to the server if the ip was valid
+                if let Ok(socket_address) = address.parse() {
+                    let task = thread_pool.spawn(async move {
+                        create_connection_task(socket_address, &name)
+                    });
+                    commands.spawn().insert(ConnectionTask(task));
+
+                    ui_state.status = ConnectionStatus::Connecting;
+                } else {
+                    ui_state.error = "Failed to parse server address".to_string();
+                }
+            }    
+        },
+        ConnectionStatus::Connecting => {
+            ui.add(egui::Button::new("Connecting..."));
+        },
+        ConnectionStatus::Connected => {
+            if ui.button("Disconnect").clicked() {
+                if let Some(renet_client) = renet_client_opt.as_mut() {
+                    renet_client.disconnect();
+                    commands.remove_resource::<RenetClient>();
+                }
+                
+                mp_state.disconnect();
+                ui_state.status = ConnectionStatus::Disconnected;
+            }
+        },
+    }
+}

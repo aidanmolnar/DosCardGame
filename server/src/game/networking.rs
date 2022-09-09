@@ -1,52 +1,42 @@
+use bevy_renet::renet::RenetServer;
+use dos_shared::channel_config::GAME_CHANNEL_ID;
 use dos_shared::dos_game::DosGame;
 use dos_shared::messages::game::*;
 
+use crate::multiplayer::MultiplayerState;
+
 use super::server_game::ServerGame;
 use super::call_dos::CallDos;
-use super::multiplayer::AgentTracker;
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 
 use::bincode;
 
-use std::net::TcpStream;
-use std::io;
-use std::io::Write;
-
-
 
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w,'s> {
     pub game: ServerGame<'w,'s>,
-    
-    agent_tracker: ResMut<'w, AgentTracker>,
+    pub renet_server: ResMut<'w, RenetServer>,
+    mp_state: Res<'w, MultiplayerState>,
 }
 
 pub fn game_network_system (
     mut manager: GameNetworkManager,
-    
 ) {
-    // Loop over all the streams
-    for player in 0..manager.agent_tracker.num_agents() {
-        if let Some(stream) = manager.agent_tracker.try_get_stream(player) {
+    for client_id in manager.renet_server.clients_id().into_iter() {
+        while let Some(message) = manager.renet_server.receive_message(client_id, GAME_CHANNEL_ID) {
 
-            // Handle message from this stream
-            match bincode::deserialize_from::<&TcpStream, FromClient>(stream) {
-                Ok(update) => {
-                    manager.handle_update(
-                        update,   
-                        player, 
-                    );
-                },
-                Err(e) => {
-                    manager.handle_error(
-                        e, 
-                        player, 
-                    );
-                }
-            }
+            let player = manager.mp_state.player_from_renet_id(client_id);
 
+            // TODO: don't expect
+            let update= bincode::deserialize(&message)
+            .expect("Couldn't deserialize message"); 
+
+            manager.handle_update(
+                update,   
+                player, 
+            );
         }
     }
 }
@@ -59,6 +49,8 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         update: FromClient, 
         player: usize,
     ) {
+        dbg!(update.clone());
+
         match update.0 {
             GameAction::PlayCard (card)=> {
                 if self.game.validate_play_card(player, &card) {
@@ -101,6 +93,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 }
             },
             GameAction::CallDos{..} => {
+                // TODO: Try to clean up
                 if let Some(call_dos) = &mut self.game.call_dos {
                     if player == call_dos.player {
                         let action = GameAction::CallDos (
@@ -139,30 +132,19 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
     ) where F: Fn(usize) -> bool{
         let conditions = self.game.syncer.take_conditions();
 
-        // Keep track of players that have errors on send
-        let mut disconnects = Vec::new();
-
         // Loop over playes that meet condition
-        for (player, mut stream) in self.agent_tracker.iter_ids_and_streams()
+        for (player, renet_id) in self.mp_state.iter_players()
         .filter(
             |(player,_)| filter(*player)
         ) {
             let cards = self.game.syncer.take_player_cards(player);
-            let bytes = bincode::serialize(&FromServer{
+            let message = bincode::serialize(&FromServer{
                 action: action.clone(), 
                 conditions: conditions.clone(), 
                 cards
             }).expect("Failed to serialize message");
 
-            if let Err(e) =  stream.write_all(&bytes) {
-                println!("Message failed to send {e}");
-                disconnects.push(player);
-            }
-        }
-
-        // Deal with errored players
-        for player in disconnects {
-            self.handle_disconnect(player);
+            self.renet_server.send_message(renet_id, GAME_CHANNEL_ID, message)
         }
     }   
 
@@ -173,28 +155,11 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         self.send_to_filtered(action, |_|{true})
     }
 
-    // Checks if error is just non-blocking error
-    fn handle_error(
-        &mut self,
-        e: Box<bincode::ErrorKind>,
-        player: usize,
-    ) {
-        match *e {
-            bincode::ErrorKind::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
-            _ => {
-                println!("Message failed to receive: {}", e);
-                self.handle_disconnect(player);
-            }
-        }
-    }
+    fn handle_disconnect(&mut self, player: usize) {
+        let renet_id = self.mp_state.renet_id_from_player(player);
+        self.renet_server.disconnect(renet_id);
 
-    fn handle_disconnect(
-        &mut self,
-        player: usize,
-    ) {
-        println!("Player disconnected: {}", player);
-        
-        self.agent_tracker.disconnect_player(player);
+        println!("Disconnecting {player}");
     }
 }
 

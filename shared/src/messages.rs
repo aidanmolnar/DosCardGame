@@ -29,7 +29,7 @@ pub mod lobby {
         pub dos: Option<usize>,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromClient {
         Connect {name: String},
         StartGame,
@@ -50,7 +50,6 @@ pub mod game {
         KeepStaging,
         DiscardWildColor(CardColor),
         CallDos(Option<CallDosInfo>), // Server includes info, client does not.
-        DisconnectOccurred, // TODO: This really shouldn't be a "game action".  Maybe make FromServer an enum instead
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -66,7 +65,7 @@ pub mod game {
         pub cards: Vec<Card>,
     }
 
-    #[derive(Serialize, Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct FromClient(pub GameAction);
 
     

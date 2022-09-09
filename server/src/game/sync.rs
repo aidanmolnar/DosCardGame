@@ -1,6 +1,6 @@
 use dos_shared::cards::Card;
 
-use crate::multiplayer::AgentTracker;
+use crate::multiplayer::MultiplayerState;
 
 use bevy::prelude::*;
 
@@ -39,8 +39,8 @@ impl ServerSyncer {
 }
 
 pub fn setup_syncer(
-    agent_tracker: Res<AgentTracker>,
+    mp_state: Res<MultiplayerState>,
     mut commands: Commands,
 ) {
-    commands.insert_resource(ServerSyncer::new(agent_tracker.num_agents()))
+    commands.insert_resource(ServerSyncer::new(mp_state.num_agents()))
 }
