@@ -1,6 +1,8 @@
 
 use super::table::{CardReference, Location, HandPosition, Table};
 
+// Methods for mapping a card reference to a card.
+// T is the type that represents a card.
 pub trait CardTransfer<T, U: Table<T> + 'static> {
     fn get_table(
         &self, 

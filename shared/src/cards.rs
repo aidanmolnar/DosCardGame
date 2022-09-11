@@ -6,28 +6,25 @@ use serde::{Serialize, Deserialize};
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub struct Card {
-    pub color: CardColor, //TODO: This doesn't have to be an option.. could be included in color
+    pub color: CardColor,
     pub ty: CardType,
 }
 
-
-
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
-
 pub enum CardColor {
     Red,
     Blue,
     Green,
     Yellow,
-    Wild,
+    Wild, // Wild cards before color is declared have this color
 }
 
 
 #[derive(Copy, Clone, Serialize, Deserialize, Debug)]
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum CardType {
-    Basic(u8),
+    Basic(u8), // A numbered card, up to 9
     Skip,
     Reverse,
     DrawTwo,
@@ -35,6 +32,7 @@ pub enum CardType {
     DrawFour,
 }
 
+// Generates a standard UNO deck
 #[allow(clippy::must_use_candidate)]
 pub fn new_deck() -> Vec<Card> {
     let mut deck = Vec::new();
@@ -44,6 +42,7 @@ pub fn new_deck() -> Vec<Card> {
     add_color_cards(&mut deck, CardColor::Blue);
     add_color_cards(&mut deck, CardColor::Yellow);
 
+    // Add wild cards
     for _ in 0..4 {
         deck.push(Card {
             color: CardColor::Wild,

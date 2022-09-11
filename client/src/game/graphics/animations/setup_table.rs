@@ -1,29 +1,34 @@
-use dos_shared::DECK_SIZE;
-use dos_shared::messages::lobby::GameSnapshot;
-use dos_shared::table::Location;
-use dos_shared::table_map::TableMap;
+use dos_shared::{
+    DECK_SIZE, 
+    messages::lobby::GameSnapshot, 
+    table::Location, 
+    table_map::TableMap
+};
 
 use crate::game::MultiplayerState;
-use super::layout::expressions::arange_arc;
-use super::layout::constants::{
-    DECK_LOCATION, 
-    DISCARD_LOCATION, 
-    MAX_HAND_WIDTH, 
-    MAX_OPPONENT_HAND_WIDTH, 
-    OPPONENT_ARC_ANGLE, 
-    OPPONENT_ARC_HEIGHT, 
-    OPPONENT_ARC_WIDTH, 
-    STAGING_LOCATION, 
-    YOUR_HAND_CENTER
+use super::{
+    layout::{
+        expressions::arange_arc, 
+        constants::{
+            DECK_LOCATION, 
+            DISCARD_LOCATION, 
+            MAX_HAND_WIDTH, 
+            MAX_OPPONENT_HAND_WIDTH, 
+            OPPONENT_ARC_ANGLE, 
+            OPPONENT_ARC_HEIGHT, 
+            OPPONENT_ARC_WIDTH, 
+            STAGING_LOCATION, 
+            YOUR_HAND_CENTER
+    }}, 
+    table::AnimationTable, 
+    deck::DeckBuilder
 };
-use super::table::AnimationTable;
-use super::deck::DeckBuilder;
 
 use super::targeting::TableArranger;
 
 use bevy::prelude::*;
 
-// TODO: Make more readable
+// Generates tables for tracking the client animation state
 pub fn add_animation_tables(
     mut commands: Commands,
     table_map: Res<TableMap>,
@@ -31,9 +36,8 @@ pub fn add_animation_tables(
     mut deck_builder: DeckBuilder,
     snapshot_opt: Option<Res<GameSnapshot>>,
 ) {
-    dbg!(snapshot_opt.is_some());
-    
-    // Load from server snapshot of state
+ 
+    // Load from server snapshot of state (when reconnecting to game)
     if let Some(snapshot) = snapshot_opt {
         for (location, entity) in &table_map.0 {
             let table_snapshot = snapshot.tables[location].clone(); // TODO: Shouldn't need to clone
@@ -81,6 +85,7 @@ pub fn add_animation_tables(
     
 }
 
+// Generates arrangers for calculating position of cards
 pub fn add_arrangers(
     mut commands: Commands,
     table_map: Res<TableMap>,
@@ -112,7 +117,7 @@ pub fn add_arrangers(
                         max_width: MAX_HAND_WIDTH,
                     }
                 } else {
-                    let local_id = get_local_id(*player_id, mp_state.turn_id, num_players);
+                    let local_id = get_local_perspective_id(*player_id, mp_state.turn_id, num_players);
                     let (x,y) = arange_arc(
                         num_players - 1, 
                         local_id ,
@@ -129,15 +134,18 @@ pub fn add_arrangers(
     }
 }
 
-
-fn get_local_id(
+// Reorders ids from players perspective.
+// Client is in position 0.  Player to left of client is 1. Next is 2. Player to right of client is num_players - 1.
+fn get_local_perspective_id(
     player_id: usize,
     local_id: usize,
     num_players: usize,
 ) -> usize {
-    let difference: isize  = isize::try_from(player_id  ).expect("Player ids should not be large enough to wrap") 
-                           - isize::try_from(local_id   ).expect("Player ids should not be large enough to wrap");
+    // Difference between client id and the other player's id
+    let difference = isize::try_from(player_id  ).expect("Player ids should not be large enough to wrap") 
+                   - isize::try_from(local_id   ).expect("Player ids should not be large enough to wrap");
     let num_players = isize::try_from(num_players).expect("Player count should not be large enough to wrap");
 
+    // Wraps ids between 0 and num_players
     (difference.rem_euclid(num_players) - 1).try_into().expect("Result should be positive")
 }

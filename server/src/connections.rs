@@ -1,6 +1,5 @@
-use bevy::app::AppExit;
-use bevy::ecs::system::SystemParam;
-use bevy_renet::renet::ServerEvent;
+
+use dos_shared::messages::lobby::FromServer;
 use dos_shared::GameState;
 use dos_shared::net_config::{
     DEFAULT_IP, 
@@ -10,11 +9,15 @@ use dos_shared::net_config::{
 };
 
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
+use bevy::app::AppExit;
+use bevy::ecs::system::SystemParam;
+
 use bevy_renet::renet::RenetServer;
 use bevy_renet::renet::ServerAuthentication;
 use bevy_renet::renet::ServerConfig;
-use dos_shared::messages::lobby::FromServer;
+use bevy_renet::renet::ServerEvent;
+use iyes_loopless::prelude::*;
+
 
 use std::marker::PhantomData;
 use std::net::UdpSocket;
@@ -42,7 +45,7 @@ impl Plugin for ConnectionListeningPlugin {
     }
 }
 
-// TODO: should take command line input instead of using constant
+// TODO: should take command line input instead of using constant ip
 fn new_renet_server() -> RenetServer {
     let server_addr = DEFAULT_IP.parse().unwrap();
     let socket = UdpSocket::bind(server_addr).unwrap();
@@ -59,9 +62,10 @@ struct ConnectionManager<'w, 's> {
     pub game_state: Res<'w,CurrentState<GameState>>,
 
     #[system_param(ignore)]
-    _phantom: PhantomData<&'s()>,
+    _phantom: PhantomData<&'s()>, // Needed for 's lifetime
 }
 
+// Handles players attempting to connect to the server (for all game states)
 fn connection_events_system(
     mut manager: ConnectionManager,
     mut server_events: EventReader<ServerEvent>,
@@ -69,6 +73,7 @@ fn connection_events_system(
 ) {
     let mut player_count_change = false;
 
+    // Iterate over all connect and disconnect events
     for event in server_events.iter() {
         match event {
             ServerEvent::ClientConnected(id, user_data) => {
@@ -120,16 +125,10 @@ impl ConnectionManager<'_,'_> {
         user_data: &[u8; 256],
     ) -> bool {
         
-        // Try and parse the player's name
-        // Reject the connection if the name can't be converted
-        let name = 
-        if let Ok(raw_str) = String::from_utf8(user_data.to_vec()) {
-            raw_str.trim_matches(char::from(0)).to_string()
+        let name = if let Some(name) = self.validate_player_name(user_data, renet_id) {
+            name
         } else {
-            self.send_reject_message(
-                renet_id, 
-                "Invalid name.".to_owned()
-            );
+            println!("Invalid name");
             return false;
         };
         
@@ -174,7 +173,58 @@ impl ConnectionManager<'_,'_> {
         player_count_updated
     }
 
+    // Returns name if it is valid, otherwise rejects the connection and returns none
+    fn validate_player_name(
+        &mut self, 
+        user_data: &[u8; 256],
+        renet_id: u64,
+    ) -> Option<String> {
+        // Try and parse the player's name
+        // Reject the connection if the name can't be converted
+        let name = 
+        if let Ok(raw_str) = String::from_utf8(user_data.to_vec()) {
+            raw_str.trim_matches(char::from(0)).to_string()
+        } else {
+            self.send_reject_message(
+                renet_id, 
+                "Invalid name.".to_owned()
+            );
+            return None;
+        };
 
+        // Reject the name if it is too long
+        if name.len() > 20 {
+            self.send_reject_message(
+                renet_id, 
+                "Name is too long".to_owned()
+            );
+            return None;
+        }
+
+        // Reject the name if it contains no characters
+        if name.is_empty() {
+            self.send_reject_message(
+                renet_id, 
+                "Name must contain at least one character".to_owned()
+            );
+            return None;
+        }
+
+        // Reject the name if is already present in the lobby
+        if let Some(player) = self.mp_state.player_from_name(&name) {
+            if !self.mp_state.is_disconnected(player) {
+                self.send_reject_message(
+                    renet_id, 
+                    "Someone else already has that name".to_owned()
+                );
+                return None;
+            }
+        }
+
+        Some(name)
+    }
+
+    // Tells a new connection to disconnect
     fn send_reject_message(
         &mut self, 
         renet_id: u64,
@@ -240,6 +290,7 @@ fn reconnections_system(
     }
 }
 
+// Disconnects clients if server is closed gracefully
 pub fn exit_system(
     mut renet_server: ResMut<RenetServer>,
     events: EventReader<AppExit>,

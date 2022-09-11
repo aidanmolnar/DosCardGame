@@ -1,28 +1,35 @@
-use dos_shared::GameInfo;
-use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
-use dos_shared::table::{Table, Location, CardReference, HandPosition};
-use dos_shared::cards::Card;
-use dos_shared::table_map::TableMap;
-use dos_shared::transfer::CardTransfer;
+use dos_shared::{
+    GameInfo, 
+    dos_game::{DosGame, DECK_REFERENCE}, 
+    table::{Table, Location, CardReference, HandPosition}, 
+    cards::Card, 
+    table_map::TableMap, 
+    transfer::CardTransfer
+};
 
-use crate::multiplayer::MultiplayerState;
-use super::graphics::{AnimationTracker, DelayedAnimationAction, AnimationAction};
-use super::sync::ClientSyncer;
-use super::table::{ClientTable, ClientItem};
+use super::{
+    table::{ClientTable, ClientItem},
+    MultiplayerState, 
+    sync::ClientSyncer, 
+    graphics::{AnimationTracker, DelayedAnimationAction, AnimationAction}, 
+};
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 
 #[derive(SystemParam)]
 pub struct ClientGame<'w,'s> {
+    // Shared game state resources
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut ClientTable>,
+    game_info: ResMut<'w, GameInfo>,
 
-    animation_tracker: AnimationTracker<'w,'s>,
-
+    // Client game state resources
     pub syncer: ResMut<'w, ClientSyncer>,
     pub mp_state: ResMut<'w, MultiplayerState>,
-    game_info: ResMut<'w, GameInfo>,
+
+    // Handles animations
+    animation_tracker: AnimationTracker<'w,'s>,
 }
 
 impl CardTransfer<ClientItem, ClientTable> for ClientGame<'_, '_> {

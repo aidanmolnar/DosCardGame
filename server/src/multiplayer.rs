@@ -1,5 +1,5 @@
-
-// Maintains an ordered list of agents
+// Maintains an ordered list of agents.  Position in list is turn id
+// Tracks which players are/have been connected to the server
 #[derive(Default)]
 pub struct MultiplayerState {
     agents: Vec<Agent>,
@@ -10,9 +10,9 @@ struct Agent {
     ty: AgentType
 }
 
-#[allow(dead_code)] // Will be used in the future
+#[allow(dead_code)] // Bots will be used in the future
 enum AgentType {
-    Player {
+    Player { // A human player connected over internet
         renet_id: u64,
         status: PlayerStatus
     },
@@ -22,11 +22,12 @@ enum AgentType {
 #[derive(PartialEq, Eq, Debug)]
 enum PlayerStatus {
     Ready,
-    SendState,
-    Disconnected,
+    SendState, // In this state if a player has recently reconnected to an in progress game
+    Disconnected, 
 }
 
 impl MultiplayerState {
+    // Add a new human player
     pub fn new_player(
         &mut self,
         name: String, 
@@ -66,6 +67,8 @@ impl MultiplayerState {
         }
     }
 
+    // Gets a player's turn id from their renet client id
+    //   TODO: Could use hashmap to avoid lookup
     pub fn player_from_renet_id(&self, renet_id: u64) -> usize {
         for (turn_id, agent) in self.agents.iter().enumerate() {
             match &agent.ty {
@@ -90,6 +93,7 @@ impl MultiplayerState {
         }
     }
 
+    // Iterate over all human players.  Returns (turn_id, renet_id)
     pub fn iter_players(&self) -> impl Iterator<Item = (usize, u64)> + '_ {
         self.agents.iter().enumerate().filter_map(
             |(turn_id, agent)|
@@ -106,6 +110,7 @@ impl MultiplayerState {
         )
     }
 
+    // Returns a list of all names of agents
     pub fn names(&self) -> Vec<String> {
         self.agents.iter().map(
             |agent|

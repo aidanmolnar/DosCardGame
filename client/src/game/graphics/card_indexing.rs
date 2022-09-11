@@ -3,7 +3,6 @@ use dos_shared::cards::{Card, CardColor, CardType};
 pub const CARD_BACK_SPRITE_INDEX: usize = 4*15;
 
 // Get the index of the card from the sprite sheet
-
 pub trait SpriteIndex {
     fn get_sprite_index(&self) -> usize;
 }
@@ -28,9 +27,3 @@ impl SpriteIndex for Card {
         }
     }
 }
-
-// impl SpriteIndex for Option<Card> {
-//     fn get_sprite_index(&self) -> usize {
-//         self.map_or(CARD_BACK_SPRITE_INDEX, |card_value| card_value.get_sprite_index())
-//     }
-// }

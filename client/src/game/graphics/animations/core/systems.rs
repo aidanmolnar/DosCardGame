@@ -4,9 +4,10 @@ use bevy::prelude::*;
 
 use std::ops::{Add,Sub,Mul};
 
+const CARD_TRANSFER_TIME: f32 = 0.1;
 
-// System for animating cards to their target locations
-pub fn run (
+// Advances linear animations
+pub fn run_system (
     mut query: Query<(&mut LinearAnimation, &mut Transform)>,
     time: Res<Time>,
 ) {
@@ -27,9 +28,9 @@ pub fn run (
     }
 }  
 
-// System for updating animation target locations
-#[allow(clippy::type_complexity)] // This is more readable than defining a new type
-pub fn retarget(
+// Checks for changed targets/offsets and updates LinearAnimation to reflect
+#[allow(clippy::type_complexity)] // Query is more readable than defining a new type imo
+pub fn retarget_system (
     mut query: 
     Query<
         (&mut LinearAnimation, &Transform, &BoardPosition, &MouseOffset),
@@ -38,8 +39,11 @@ pub fn retarget(
 ) {
     for (mut animation, transform, board_position, mouse_offset) in &mut query {
         animation.start = *transform;
-        animation.end = Transform::from_translation(board_position.position + mouse_offset.offset).with_scale(Vec3::splat(mouse_offset.scale));
-        animation.timer = Timer::from_seconds(0.1, false);
+        animation.end = Transform::from_translation(
+            board_position.position + mouse_offset.offset
+        ).with_scale(Vec3::splat(mouse_offset.scale));
+
+        animation.timer = Timer::from_seconds(CARD_TRANSFER_TIME, false);
     }
 }
 

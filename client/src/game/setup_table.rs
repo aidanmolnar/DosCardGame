@@ -24,7 +24,6 @@ impl Plugin for ClientTableSetupPlugin {
         .add_enter_system(
             TableConstructionState::TableMapCreation, 
             |commands: Commands, mp_state: Res<MultiplayerState>|{
-                dbg!(mp_state.player_names.len());
                 build_table_map(commands, mp_state.player_names.len());
             }
         )

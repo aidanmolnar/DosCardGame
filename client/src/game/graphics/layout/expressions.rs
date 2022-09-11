@@ -1,8 +1,12 @@
 #![allow(clippy::cast_precision_loss)] // Losing some precision loss on card positions is fine
 
-use super::constants::{MAX_HAND_SPACING, MAX_HAND_WIDTH, WIDTH_OFFSET};
+use super::constants::{
+    MAX_HAND_SPACING, 
+    MAX_HAND_WIDTH, 
+    WIDTH_OFFSET
+};
 
-// TODO: clean this up?, make it based on width?  How does this relate to table arranger
+// Tries to spread out cards by MAX_HAND_SPACING unless that would push the cards past MAX_HAND_WIDTH
 pub fn your_max_hand_width(hand_size: usize) -> f32 {
     f32::min(MAX_HAND_WIDTH, hand_size as f32 * MAX_HAND_SPACING)
 }
@@ -21,7 +25,7 @@ pub fn arange_arc(len: usize, i: usize, angle: f32) -> (f32, f32) {
     f32::sin_cos(angle * arange_1d(len, i))
 }
 
-// TODO: what is this?
+// Computes how far to shift cards to the side to make room for mouse-hovered card size increase
 pub fn horizontal_offset(hand_size: usize) -> f32 {
     if hand_size > 1 {
         

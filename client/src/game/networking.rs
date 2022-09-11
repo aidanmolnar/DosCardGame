@@ -1,35 +1,28 @@
-use bevy_renet::renet::RenetClient;
-use dos_shared::net_config::GAME_CHANNEL_ID;
-use dos_shared::dos_game::DosGame;
-use dos_shared::messages::game::{FromClient, FromServer, GameAction};
-use dos_shared::{DECK_SIZE, GameState};
-use iyes_loopless::state::NextState;
+use dos_shared::{
+    net_config::GAME_CHANNEL_ID, 
+    dos_game::DosGame, 
+    messages::game::{FromClient, FromServer, GameAction}, 
+    DECK_SIZE
+};
 
-use super::client_game::ClientGame;
-use super::call_dos::CallDos;
+use super::{client_game::ClientGame, call_dos::CallDos};
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
+use bevy_renet::renet::RenetClient;
 
 #[derive(SystemParam)]
 pub struct GameNetworkManager<'w, 's> {
     pub commands: Commands<'w,'s>,
-    pub game: ClientGame<'w,'s>,
     renet_client: ResMut<'w, RenetClient>,
+    pub game: ClientGame<'w,'s>,
 }
 
 // Recieves and handles messages from the server
 pub fn game_network_system(
     mut network_manager: GameNetworkManager,
 ) {
-    if !network_manager.renet_client.is_connected() {
-        network_manager.game.mp_state.disconnect();
-        network_manager.commands.remove_resource::<RenetClient>();
-
-        network_manager.commands.insert_resource(NextState(GameState::MainMenu)); 
-        return;
-    }
-
+    // Read all game messages from server
     while let Some(message) = network_manager.renet_client.receive_message(GAME_CHANNEL_ID) {
         let update = bincode::deserialize::<FromServer>(&message)
         .expect("Failed to deserialize message!");
@@ -44,6 +37,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         let action = game_update.action.clone();
         self.game.syncer.enque_all(game_update);
 
+        // Execute action
         match action {
             GameAction::DealIn => {
                  self.game.deal_starting_cards(DECK_SIZE);
@@ -73,8 +67,6 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
 
 
     pub fn send_message(&mut self, message: FromClient) {
-        dbg!(message.clone());
-
         let message = bincode::serialize(&message).expect("Failed to serialize message!");
         self.renet_client.send_message(GAME_CHANNEL_ID, message);
     }

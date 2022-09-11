@@ -1,5 +1,3 @@
-use dos_shared::GameState;
-
 mod animations;
 mod layout;
 mod assets;
@@ -9,10 +7,18 @@ mod deck;
 mod remove_cards;
 
 pub use deck::DeckBuilder;
-pub use animations::{components, FocusedCard, AnimationTracker, DelayedAnimationAction, AnimationAction};
-pub use card_indexing::{SpriteIndex,CARD_BACK_SPRITE_INDEX};
+pub use animations::{
+    components, 
+    FocusedCard, 
+    AnimationTracker, 
+    DelayedAnimationAction, 
+    AnimationAction
+};
+pub use card_indexing::{SpriteIndex, CARD_BACK_SPRITE_INDEX};
 pub use layout::constants;
 pub use assets::DosButtonHandle;
+
+use dos_shared::GameState;
 
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
@@ -26,6 +32,8 @@ impl Plugin for GraphicsPlugin {
 
         .add_startup_system(assets::load_assets)
         .add_startup_system(camera::add_camera)
-        .add_enter_system(GameState::PostGame, remove_cards::remove_all_cards);
+
+        // Clear cards when game is over or disconnected
+        .add_enter_system(GameState::MainMenu, remove_cards::remove_all_cards);
     }
 }

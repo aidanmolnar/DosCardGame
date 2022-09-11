@@ -3,6 +3,7 @@ use dos_shared::GameState;
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
+// Immediately moves the server back to the main menu state once game is over
 pub struct PostgamePlugin;
 
 impl Plugin for PostgamePlugin {

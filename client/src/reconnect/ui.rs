@@ -3,7 +3,7 @@ use bevy_egui::{EguiContext, egui};
 
 use crate::multiplayer::MultiplayerState;
 
-pub fn reconnect_ui(
+pub fn reconnect_ui_system(
     mut egui_context: ResMut<EguiContext>, 
     mp_state: Res<MultiplayerState>,
 ) {

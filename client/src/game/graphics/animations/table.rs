@@ -1,7 +1,7 @@
 use dos_shared::cards::Card;
 
 use dos_shared::messages::lobby::TableSnapshot;
-use dos_shared::table::{Table, BasicTable, CardWrapper};
+use dos_shared::table::{Table, BasicTable};
 
 use bevy::prelude::{Entity, Component};
 
@@ -9,18 +9,20 @@ use crate::game::graphics::DeckBuilder;
 
 // Animation representation of a card for tables and trackers
 #[derive(Copy, Clone, Debug)]
-pub struct AnimationItem(pub Option<Card>, pub Entity);
+pub struct AnimationItem(
+    pub Option<Card>, // The card value (if known)
+    pub Entity // The entity that represents the card (has sprite, pickable bundle, etc.)
+);
 
-impl CardWrapper for AnimationItem {
-    fn card(&self) ->&Card {
-        self.0.as_ref().expect("Card value unknown")
-    }
-
-    fn card_mut(&mut self) -> &mut Card {
-        self.0.as_mut().expect("Card value unknown")
-    }
+// A table of cards used for animations and local client effects.
+// Updates sequentially based on animation timings.
+#[derive(Component, Debug, Clone)]
+pub enum AnimationTable {
+    Sorted(SortedTable),
+    Unsorted(BasicTable<AnimationItem>),
 }
 
+// A table where cards are sorted by their value
 #[derive(Debug, Clone)]
 pub struct SortedTable {
     entities: BasicTable<Entity>, // Ordered by actual hand position
@@ -28,6 +30,7 @@ pub struct SortedTable {
 }
 
 impl SortedTable {
+    // Gets the position of the entity when sorted by card value
     fn sorted_index(&self, entity: Entity) -> Option<usize> {
         self.cards.iter()
         .map(|x|x.1)
@@ -44,7 +47,6 @@ impl SortedTable {
     }
 }
 
-// TODO: Goals: implement all required methods in a coherent way.  Reasonable efficiency
 impl AnimationTable {
     pub const fn new_sorted() -> Self {
         Self::Sorted(
@@ -169,6 +171,7 @@ impl Table<AnimationItem> for SortedTable {
     fn last_mut(
         &mut self,
     ) -> Option<&mut AnimationItem> {
+        // TODO: Would need to make sure that cards remain sorted after update 
         panic!("Can't mutate sorted table.")
     }
 
@@ -222,12 +225,7 @@ impl Table<AnimationItem> for SortedTable {
 
 }
 
-#[derive(Component, Debug, Clone)]
-pub enum AnimationTable {
-    Sorted(SortedTable),
-    Unsorted(BasicTable<AnimationItem>),
-}
-
+// Directly delegates trait to variants
 impl Table<AnimationItem> for AnimationTable {
     fn remove(
         &mut self,

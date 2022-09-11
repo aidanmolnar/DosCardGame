@@ -1,6 +1,6 @@
-use std::time::Duration;
-
 use bevy_renet::renet::{RenetConnectionConfig, ReliableChannelConfig};
+
+use std::time::Duration;
 
 pub const LOBBY_CHANNEL_ID: u8 = 0;
 pub const GAME_CHANNEL_ID: u8 = 1;
@@ -15,6 +15,7 @@ pub const DEFAULT_IP: &str = "127.0.0.1:3333";
 #[must_use]
 pub fn connection_config() -> RenetConnectionConfig {
     RenetConnectionConfig {
+
         send_channels_config: 
             vec![
                 ReliableChannelConfig {
@@ -28,6 +29,7 @@ pub fn connection_config() -> RenetConnectionConfig {
                     ..Default::default()
                 }.into()
             ],
+
         receive_channels_config: 
             vec![
                 ReliableChannelConfig {
@@ -41,6 +43,7 @@ pub fn connection_config() -> RenetConnectionConfig {
                     ..Default::default()
                 }.into()
             ],
+            
         ..Default::default()
     }
 }

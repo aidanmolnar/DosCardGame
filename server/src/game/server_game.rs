@@ -1,20 +1,22 @@
-use bevy::utils::HashMap;
-use dos_shared::cards::{Card, CardType, CardColor};
-use dos_shared::dos_game::{DosGame, DECK_REFERENCE};
-use dos_shared::messages::lobby::{TableSnapshot, GameSnapshot};
-use dos_shared::table_map::TableMap;
-use dos_shared::transfer::CardTransfer;
 use dos_shared::{
+    messages::lobby::{TableSnapshot, GameSnapshot},
+    cards::{Card, CardType, CardColor}, 
+    dos_game::{DosGame, DECK_REFERENCE}, 
     table::{CardReference, HandPosition, Location, Table}, 
-    GameInfo, GameState
+    table_map::TableMap, 
+    transfer::CardTransfer, 
+    GameInfo, 
+    GameState
 };
 
 use crate::game::call_dos::CallDos;
 
-use super::sync::ServerSyncer;
-use super::table::ServerTable;
+use super::{sync::ServerSyncer, table::ServerTable};
 
-use bevy::prelude::*;
+use bevy::{
+    prelude::*, 
+    utils::HashMap
+};
 use bevy::ecs::system::SystemParam;
 use iyes_loopless::state::NextState;
 
@@ -30,6 +32,8 @@ pub struct ServerGame<'w,'s> {
 }
 
 impl ServerGame<'_,'_> {
+    // Caches the card value if it will become visible to the player
+    // Values are extracted and sent to player when sending game message
     fn record_card_value(
         &mut self, 
         from: &Location,
@@ -44,6 +48,7 @@ impl ServerGame<'_,'_> {
         }
     }
 
+    // Generates a complete snapshot of the entire state of the game for reconnecting a player
     pub fn get_snapshot(&self, player: usize) -> GameSnapshot {
         let mut tables = HashMap::new();
 
@@ -73,7 +78,7 @@ impl CardTransfer<Card, ServerTable> for ServerGame<'_, '_> {
         location: &Location
     ) -> & ServerTable {
         let entity = *self.map.0.get(location).expect("Table entity not found for location");
-        self.tables.get(entity).expect("Table does not exist for table entity")
+        self.tables.get(entity).expect("Table does not exist on table entity")
     }
 
     fn get_table_mut(
@@ -81,7 +86,7 @@ impl CardTransfer<Card, ServerTable> for ServerGame<'_, '_> {
         location: &Location
     ) -> & mut ServerTable {
         let entity = *self.map.0.get(location).expect("Table entity not found for location");
-        self.tables.get_mut(entity).expect("Table does not exist for table entity").into_inner()
+        self.tables.get_mut(entity).expect("Table does not exist on table entity").into_inner()
     }
 
 }
@@ -95,6 +100,8 @@ impl DosGame<Card, ServerTable> for ServerGame<'_,'_> {
        &mut self.game_info
     }
 
+    // Tracks conditions that depend on card values that are not visible to players
+    // Conditions are extracted and sent to player when sending game message
     fn server_condition<F>(&mut self, condition: F) -> bool
     where F: Fn(&Self) -> bool {
         let res = condition(self);

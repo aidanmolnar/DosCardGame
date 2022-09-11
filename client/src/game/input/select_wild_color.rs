@@ -1,19 +1,27 @@
-use dos_shared::cards::{Card,CardColor, CardType};
-use dos_shared::dos_game::{DosGame, TurnState};
-use dos_shared::messages::game::{FromClient, GameAction};
+use dos_shared::{
+    cards::{Card,CardColor, CardType}, 
+    dos_game::{DosGame, TurnState}, 
+    messages::game::{FromClient, GameAction}, 
+    GameState
+};
 
-use crate::game::GameState;
-use crate::game::graphics::components::LinearAnimation;
-use crate::game::graphics::{DeckBuilder, SpriteIndex};
-use crate::game::networking::GameNetworkManager;
-use crate::game::client_game::ClientGame;
+use crate::game::{
+    graphics::{
+        components::LinearAnimation, 
+        DeckBuilder, 
+        SpriteIndex
+    }, 
+    networking::GameNetworkManager, 
+    client_game::ClientGame
+};
 
 use bevy::prelude::*;
 use bevy_mod_picking::PickingEvent;
 use iyes_loopless::prelude::*;
 
-const BUTTON_START: (f32,f32,f32) = (0.,0.,200.);
+const BUTTON_START: (f32,f32,f32) = (-200.,0.,200.);
 
+// Adds four buttons for specifying what color a wildcard should be when played.
 pub struct WildCardPlugin;
 
 impl Plugin for WildCardPlugin {
@@ -22,18 +30,18 @@ impl Plugin for WildCardPlugin {
 
         .add_enter_system(
             GameState::InGame, 
-            wildcard_select_setup
+            setup_system
         )
         .add_exit_system(
             GameState::InGame, 
-            wildcard_buttons_cleanup
+            cleanup_system
         )
         .add_system(
-            wildcard_button_clicked_system
+            clicked_system
             .run_in_state(GameState::InGame)
         )
         .add_system(
-            wildcard_button_display_system
+            display_system
             .run_in_state(GameState::InGame)
         );
     }
@@ -45,7 +53,8 @@ struct WildCardButton {
     target_position: Vec3
 }
 
-fn wildcard_select_setup(
+// Makes a button for each color
+fn setup_system(
     mut deck_builder: DeckBuilder,
     mut commands: Commands,
 ) {
@@ -83,6 +92,7 @@ fn wildcard_select_setup(
     );
 }
 
+// Makes a single wildcard select button
 fn make_wildcard_button(
     deck_builder: &mut DeckBuilder,
     commands: &mut Commands,
@@ -92,7 +102,7 @@ fn make_wildcard_button(
 
     let index = Card{color: wildcard_button.color, ty: CardType::Wild}.get_sprite_index();
 
-    let e = deck_builder.make_pickable_sprite(transform, index);
+    let e = deck_builder.make_pickable_card_sprite(transform, index);
     commands.entity(e)
     .insert(Visibility{is_visible: false})
     .insert(LinearAnimation{
@@ -103,7 +113,9 @@ fn make_wildcard_button(
     .insert(wildcard_button);
 }
 
-fn wildcard_button_display_system(
+// Handles turning the buttons on and off
+// Buttons move out from discard pile where wildcard was played
+fn display_system(
     card_tracker: ClientGame,
     mut previous_turn_state: Local<TurnState>,
     mut query: Query<(&WildCardButton, &mut Visibility, &mut LinearAnimation, &Transform)>,
@@ -134,17 +146,23 @@ fn wildcard_button_display_system(
     }
 }
 
-fn wildcard_button_clicked_system (
+// Handling when the button is clicked
+fn clicked_system (
     mut events: EventReader<PickingEvent>,
     buttons: Query<(Entity, &WildCardButton)>,
     mut network_manager: GameNetworkManager,
 ) {
+    // Iterates over all click events
     for event in events.iter() {
         if let PickingEvent::Clicked(e) = event {
+
+            // Checks if the click was on the button
             for (button_entity, button) in &buttons {
                 if *e == button_entity && 
                 !network_manager.game.has_delayed_transfers() &&
+                // Checks if the action is allowed
                 network_manager.game.validate_declare_wildcard_color(network_manager.game.mp_state.turn_id, &button.color) {
+
                     // Update the local card color
                     network_manager.game.declare_wildcard_color(&button.color);
 
@@ -156,7 +174,7 @@ fn wildcard_button_clicked_system (
     }
 }
 
-fn wildcard_buttons_cleanup(
+fn cleanup_system(
     mut commands: Commands,
     cards: Query<Entity, With<WildCardButton>>,
 ) {

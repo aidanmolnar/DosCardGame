@@ -1,12 +1,18 @@
-use dos_shared::{table::{BasicTable, Table, CardWrapper}, cards::Card, messages::lobby::TableSnapshot};
+use dos_shared::{
+    table::{BasicTable, Table, CardWrapper}, 
+    cards::Card, 
+    messages::lobby::TableSnapshot
+};
 
 use bevy::prelude::*;
 
+// Table of cards 
+// These tables are updated immediately in the same frame that the client receives the update from the server
 #[derive(Component, Debug, Clone)]
 pub struct ClientTable (BasicTable<ClientItem>);
 
 #[derive(Debug, Clone)]
-pub struct ClientItem (pub Option<Card>);
+pub struct ClientItem (pub Option<Card>); // None if card is face-down / not known to this client
 
 impl CardWrapper for ClientItem {
     fn card(&self) ->&Card {
@@ -42,6 +48,7 @@ impl ClientTable {
         )
     }
 
+    // Used when reconnecting if lost game information
     pub fn from_snapshot(snapshot: TableSnapshot) -> Self {
         match snapshot {
             TableSnapshot::Known(cards) => Self::new_with_cards(cards),
@@ -50,6 +57,7 @@ impl ClientTable {
     }
 }
 
+// Thin wrapper over basic table
 impl Table<ClientItem> for ClientTable {
     fn remove(
         &mut self,
@@ -104,7 +112,7 @@ impl Table<ClientItem> for ClientTable {
     }
 
     fn shuffle(&mut self) {
-        // Doesn't actually need to be shuffled.  Just wiped
+        // Doesn't need to be shuffled. (Just reset card values when transferring based on vsiiblity rules)
     }
 }
 

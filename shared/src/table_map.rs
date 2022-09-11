@@ -5,9 +5,13 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use iyes_loopless::prelude::*;
 
+// A map from a location (ex. deck, discard pile, a players hand) to the entity that stores Table 
 #[derive(Default)]
 pub struct TableMap (pub HashMap<Location, Entity>);
 
+// Adds the table map and entities for each table at every location.
+// Also automatically advances TableConstructionState
+// Cleans up table map and table entities when game is back at main menu
 pub struct TableConstructionPlugin;
 
 impl Plugin for TableConstructionPlugin {
@@ -30,12 +34,13 @@ impl Plugin for TableConstructionPlugin {
 
         // Clear table map and entities when game/round ends
         .add_enter_system(
-            GameState::PostGame, 
+            GameState::MainMenu, 
             remove_tables.run_if_resource_exists::<TableMap>()
         );
     }
 }
 
+// Progressivly build table map at start of the game. Need table map before tables can be added
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub enum TableConstructionState {
     NotStarted,

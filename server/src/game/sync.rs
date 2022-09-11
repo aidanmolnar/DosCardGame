@@ -4,9 +4,13 @@ use crate::multiplayer::MultiplayerState;
 
 use bevy::prelude::*;
 
+// Stores information that clients will need to reproduce game state that they lack because of visibility rules
 pub struct ServerSyncer {
-    cards: Vec<Vec<Card>>, 
-    conditions: Vec<bool>,
+    cards: 
+        Vec< // Unique list for each player
+            Vec<Card> // Cards that will become visible to player after update
+        >,
+    conditions: Vec<bool>, // Game logic conditions that depend on cards not visible to player. Shared list for all players
 }
 
 impl ServerSyncer {

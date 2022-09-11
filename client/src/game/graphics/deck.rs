@@ -11,17 +11,23 @@ use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::PickableBundle;
 use dos_shared::cards::Card;
 
+// Builds card entities from assets and resource handles
 #[derive(SystemParam)]
 pub struct DeckBuilder<'w, 's> {
     commands: Commands<'w,'s>,
-    meshes: ResMut<'w, Assets<Mesh>>,
-    materials: ResMut<'w, Assets<ColorMaterial>>,
+    meshes: Res<'w, Assets<Mesh>>,
+    materials: Res<'w, Assets<ColorMaterial>>,
     texture_atlases: Res<'w, Assets<TextureAtlas>>,
     card_handles: Res<'w, CardHandles>,
 }
 
 impl<'w, 's> DeckBuilder<'w, 's> {
-    pub fn make_unknown_cards(&mut self, num_cards: usize) -> Vec<AnimationItem> {
+
+    // Create a new vector of face-down cards at the deck location
+    pub fn make_unknown_cards(
+        &mut self, 
+        num_cards: usize
+    ) -> Vec<AnimationItem> {
 
         let mut items = Vec::new();
 
@@ -37,7 +43,11 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         items
     }
 
-    pub fn make_known_cards(&mut self, cards: Vec<Card>) -> Vec<AnimationItem> {
+    // Create a new vector of face-up cards at the deck location
+    pub fn make_known_cards(
+        &mut self, 
+        cards: Vec<Card>
+    ) -> Vec<AnimationItem> {
 
         let mut items = Vec::new();
 
@@ -53,13 +63,19 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         items
     }
 
-    fn make_card(&mut self, sprite_index: usize, z: f32) -> Entity {
+    // Spawns a single card
+    fn make_card(
+        &mut self, 
+        sprite_index: usize, 
+        z: f32
+    ) -> Entity {
 
         let translation = Vec3::new(DECK_LOCATION.0,DECK_LOCATION.1, z);
         let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
 
-        let entity = self.make_pickable_sprite(transform, sprite_index);
+        let entity = self.make_pickable_card_sprite(transform, sprite_index);
         
+        // Add animation components
         self.commands.entity(entity)
         .insert(
             LinearAnimation {
@@ -82,8 +98,12 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         entity
     }
 
-
-    pub fn make_pickable_sprite(&mut self, transform: Transform, index: usize) -> Entity {
+    // Spawns a card without animation components (used to make buttons)
+    pub fn make_pickable_card_sprite (
+        &mut self, 
+        transform: Transform, 
+        index: usize
+    ) -> Entity {
         self.commands.spawn()
         .insert_bundle(
             SpriteSheetBundle {
@@ -96,8 +116,8 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                 ..default()
         }).insert_bundle(
             MaterialMesh2dBundle {
-                mesh: self.meshes.add(Mesh::from(shape::Quad::new(Vec2::new(240.,360.)))).into(),
-                material: self.materials.add(ColorMaterial::from(Color::Rgba { red: 0., green: 0., blue: 0., alpha: 0. })),
+                mesh: self.meshes.get_handle(self.card_handles.mesh.clone()).into(),
+                material: self.materials.get_handle(self.card_handles.material.clone()),
                 transform,
                 ..default()
             })

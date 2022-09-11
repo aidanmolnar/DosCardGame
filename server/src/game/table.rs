@@ -1,4 +1,7 @@
-use dos_shared::{cards::Card, table::{Table, BasicTable}};
+use dos_shared::{
+    cards::Card, 
+    table::{Table, BasicTable}
+};
 
 use bevy::prelude::Component;
 
@@ -25,6 +28,7 @@ impl Default for ServerTable {
     }
 }
 
+// Thin wrapper over basic table
 impl Table<Card> for ServerTable {
     fn remove(
         &mut self,

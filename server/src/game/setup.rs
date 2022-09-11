@@ -1,6 +1,8 @@
-use dos_shared::table::Location;
-use dos_shared::cards::new_deck;
-use dos_shared::table_map::TableMap;
+use dos_shared::{
+    table::Location, 
+    cards::new_deck, 
+    table_map::TableMap
+};
 
 use super::table::ServerTable;
 
@@ -15,6 +17,7 @@ pub fn add_tables(
             Location::Deck => {
                 ServerTable::new(new_deck())
             },
+            // An empty table if not deck
             _ => ServerTable::default(),
         };
 

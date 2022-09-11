@@ -1,11 +1,3 @@
-use dos_shared::GameInfo;
-use dos_shared::table_map::{TableConstructionPlugin, TableConstructionState, build_table_map};
-
-use crate::multiplayer::MultiplayerState;
-use self::call_dos::CallDos;
-
-use super::GameState;
-
 mod sync;
 mod networking;
 mod setup;
@@ -16,9 +8,22 @@ mod call_dos;
 
 pub use server_game::ServerGame;
 
+use dos_shared::{
+    GameInfo, 
+    table_map::{
+        TableConstructionPlugin, 
+        TableConstructionState, 
+        build_table_map
+    }
+};
+
+use crate::multiplayer::MultiplayerState;
+use super::GameState;
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 
+// Adds game resources and systems
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
@@ -36,12 +41,6 @@ impl Plugin for GamePlugin {
         .add_exit_system(
             GameState::MainMenu, 
             sync::setup_syncer
-        )
-
-        // Clear optional game resources when exiting to main menu
-        .add_enter_system(
-            GameState::MainMenu, 
-            |mut commands: Commands| {commands.remove_resource::<CallDos>()}
         )
 
         // Setup table map and tables, then deal out starting cards.  Plugin advances state automatically
@@ -66,8 +65,13 @@ impl Plugin for GamePlugin {
             .run_in_state(GameState::InGame)
         )
 
-
-        .add_system(call_dos::call_dos_graceperiod
+        // "Call dos" systems
+        //  TODO: make plugin
+        .add_enter_system(
+            GameState::MainMenu, 
+            |mut commands: Commands| {commands.remove_resource::<call_dos::CallDos>()}
+        )
+        .add_system(call_dos::call_dos_graceperiod_system
             .run_in_state(GameState::InGame)
             .run_if_resource_exists::<call_dos::CallDos>()
         );

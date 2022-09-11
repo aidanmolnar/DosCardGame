@@ -20,15 +20,13 @@ fn copy_from_str(dest:&mut [u8], src:&str){
 // Attempts to establish a connection with a given network address
 // Sends the player name if successful
 pub fn new_renet_client (address: SocketAddr, name: &str) -> Result<RenetClient, RenetError> {
-    let socket = UdpSocket::bind("127.0.0.1:0")?;
-    let connection_config = connection_config();
-
+    // Convert the name to a byte array to send to server
     let mut bytes = [0; 256];
     copy_from_str(&mut bytes, name);
     let user_data = Some(bytes);
     
+    // Generate a client id from system time
     let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
-
     #[allow(clippy::cast_possible_truncation)] // Truncation is intended
     let client_id = current_time.as_millis() as u64;
 
@@ -38,6 +36,9 @@ pub fn new_renet_client (address: SocketAddr, name: &str) -> Result<RenetClient,
         server_addr: address,
         user_data,
     };
+
+    let socket = UdpSocket::bind("127.0.0.1:0")?;
+    let connection_config = connection_config();
 
     RenetClient::new (
         current_time, 

@@ -1,7 +1,14 @@
-use crate::table::{Table, CardWrapper, Location, CardReference, HandPosition};
-use crate::cards::{Card, CardType, CardColor};
-use crate::transfer::CardTransfer;
-use crate::{GameInfo, NUM_STARTING_CARDS, CARDS_TO_RETAIN};
+use crate::{
+    table::{Table, CardWrapper, Location, CardReference, HandPosition}, 
+    cards::{Card, CardType, CardColor}, 
+    transfer::CardTransfer, 
+    GameInfo, 
+    NUM_STARTING_CARDS
+};
+
+// Cards to refrain from dealing
+// 9 chosen so that at least one of them is not a wild card
+const CARDS_TO_RETAIN: usize = 9;
 
 pub const DECK_REFERENCE: CardReference = 
 CardReference {
@@ -22,15 +29,14 @@ CardReference {
     hand_position: HandPosition::Last
 };
 
-// TODO: Rename "Default" state to "Normal" or something similar to avoid confusion about it not being actual default state lol
+// Used for determining what actions are valid
 #[derive(PartialEq, Eq, Default, Debug)]
 pub enum TurnState {
-    Default, 
-    StagedCard, // Could be determined by checking staging table
-    // Above is even more weird because clients are (currently) not synced with this behavior
-    WildcardColorSelect, // Could be determined by checking discard pile top card
-    ServerDealingStartingCards, #[default] // Could be determined by checking if there is a card on the discard pile
-    Victory, // *TODO* No cards left and there is a card in the discard pile
+    TurnStart, // How every turn starts, waiting for a normal player action
+    StagedCard, // Card is in staging table
+    WildcardColorSelect, // Wild card has been played, but its color has not been chosen
+    ServerDealingStartingCards, #[default] // Server has not yet dealt any cards, discard pile is empty
+    Victory, // A player has no cards left and discard pile has at least 1 card
 }
 
 pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>: 
@@ -48,14 +54,13 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                 return TurnState::StagedCard;
             }
 
-            TurnState::Default
+            TurnState::TurnStart
         } else {
             TurnState::ServerDealingStartingCards
         }
     }
 
     fn deal_starting_cards(&mut self, deck_size: usize) {
-        
         // Deal the player hand cards
         let mut count = 0;
         for _ in 0..NUM_STARTING_CARDS {
@@ -65,7 +70,6 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
                 self.transfer(&DECK_REFERENCE, &to);
 
                 // Exit before dealing last card so that it can be used for discard pile
-                // TODO: this panics if num starting cards is very large
                 if count >= deck_size - CARDS_TO_RETAIN {
                     return
                 }
@@ -74,6 +78,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
 
         // Deal the discard pile cards
+        // Top of discard pile can't start as wild
         loop {
             self.transfer(
                 &DECK_REFERENCE,
@@ -87,10 +92,12 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
+    // A player plays a valid card
     fn play_card(
         & mut self,
         card_reference: &CardReference, 
     ) {
+        // Move the card
         self.transfer(
             card_reference, 
             &DISCARD_REFERENCE
@@ -104,15 +111,14 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
             }
         );
 
-        //TODO: Check if a player has Dos or is out of cards
+        // Check for "call dos" event or if player has won
         if hand.len() == 2 {
             self.someone_has_two_cards(self.game_info().current_turn());
-            // This is tricky, because its a time based action that can happen whenever
         } else if hand.len() == 0 {
             self.victory(self.game_info().current_turn());
-            // Move to post game?
         }
 
+        // Handle special card effects and advancing the turn
         // TODO: If stacking is not allowed in the future (by rules options), draw-x cards should deal immediately and skip the next player
         // Note: Wild and DrawFour don't end a players turn because the player must select a color
         match card.ty {
@@ -148,6 +154,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         
     }
 
+    // Check if player can perform above action
     fn validate_play_card(
         &self,
         player: usize,
@@ -164,7 +171,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
 
         // Check that it is their turn and the turn state is correct for playing
         let turn_state = self.get_turn_state();
-        if self.is_players_turn(player) && (turn_state == TurnState::Default || turn_state == TurnState::StagedCard) {
+        if self.is_players_turn(player) && (turn_state == TurnState::TurnStart || turn_state == TurnState::StagedCard) {
 
             // Check that the card actually exists
             self.get(card_reference)
@@ -185,6 +192,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
+    // A player asks to draw cards until they get one they can play
     fn draw_cards(
         &mut self,
     ) {
@@ -246,13 +254,15 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
+    // Check if player can perform above action
     fn validate_draw_cards(
         &self,
         player: usize,
     ) -> bool {
-        self.is_players_turn(player) && self.get_turn_state() == TurnState::Default
+        self.is_players_turn(player) && self.get_turn_state() == TurnState::TurnStart
     }
     
+    // A player elects to not play the last card they were dealt after drawing on their turn
     fn keep_last_drawn_card(
         &mut self,
     ) {
@@ -264,6 +274,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         self.game_info_mut().next_turn();
     }
 
+    // Check if player can perform above action
     fn validate_keep_last_drawn_card(
         &self,
         player: usize,
@@ -271,6 +282,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         self.is_players_turn(player) && self.get_turn_state() == TurnState::StagedCard
     }
 
+    // A player declares the color of a wildcard
     fn declare_wildcard_color(
         &mut self,
         color: &CardColor,
@@ -282,6 +294,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         self.game_info_mut().next_turn();
     }
 
+    // Check if player can perform above action
     fn validate_declare_wildcard_color(
         &self,
         player: usize,
@@ -294,6 +307,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
+    // A player with two cards left did not "call dos" before a different player.
     fn punish_missed_dos(&mut self, player: usize) {
         let to = CardReference{
             location: Location::Hand{
@@ -328,6 +342,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
        player == self.game_info().current_turn()
     }
 
+    // Checks if a player can see a card at the given location
     fn is_visible(
         &self,
         location: &Location,
@@ -345,16 +360,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         }
     }
 
-    // In some cases the visible state of the board is not enough for the client to reproduce an action
-    // For example: when a different player asks to draw cards, a client wihtout visibility can't know how many the other is passed before they are able to play
-    // This function checks if the condition is true on the server and increments a counter each check
-    // On the client it decrements the counter until it is zero, which results in the same number of checks before the value is true
-    // TODO: Allow more than one / nested conditions. Currently there can only be one for each message
-    fn server_condition<F>(
-        &mut self, 
-        condition: F
-    ) -> bool
-    where F: Fn(&Self) -> bool;
+    //// Following must be implemented on client and server:
 
     fn game_info(
         &self
@@ -375,6 +381,16 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
         to: &CardReference,
     );
 
+    // In some cases the visible state of the board is not enough for the client to reproduce an action
+    // For example: when a different player asks to draw cards, a client wihtout visibility can't know how many the other is passed before they are able to play
+    // This function stores the result of the condition on the server.  The results are then sent to the client.  The client then uses the stored results in order.
+    fn server_condition<F>(
+        &mut self, 
+        condition: F
+    ) -> bool
+    where F: Fn(&Self) -> bool;
+
+
     fn reshuffle(&mut self);
 
     fn victory(&mut self, winner: usize);
@@ -382,7 +398,7 @@ pub trait DosGame<T: CardWrapper, U: Table<T> + 'static>:
     fn someone_has_two_cards(&mut self, player: usize);
 }
 
-
+// Checks if a card can be played to the discard pile
 fn is_valid_move(card: Card, discard_pile: Card) -> bool {
     card.ty == CardType::Wild || 
     card.ty == CardType::DrawFour ||

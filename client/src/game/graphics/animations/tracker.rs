@@ -1,20 +1,24 @@
-use dos_shared::GameState;
-use dos_shared::cards::Card;
-use dos_shared::table::{Location, CardReference, HandPosition};
-use dos_shared::table_map::TableMap;
-use dos_shared::transfer::CardTransfer;
+use dos_shared::{
+    GameState, 
+    cards::Card, 
+    table::{Location, CardReference, HandPosition}, 
+    table_map::TableMap, 
+    transfer::CardTransfer
+};
+
+use crate::{
+    game::call_dos::CallDos, 
+    postgame::Victory
+};
+
+use super::{
+    card_indexing::{CARD_BACK_SPRITE_INDEX, SpriteIndex}, 
+    table::{AnimationTable, AnimationItem}, 
+    core::components::MouseOffset
+};
+
+use bevy::{ecs::system::SystemParam, prelude::*};
 use iyes_loopless::state::NextState;
-
-use crate::game::call_dos::CallDos;
-use crate::postgame::Victory;
-
-use super::card_indexing::CARD_BACK_SPRITE_INDEX;
-use super::table::{AnimationTable, AnimationItem};
-use super::core::components::MouseOffset;
-use super::card_indexing::SpriteIndex;
-
-use bevy::ecs::system::SystemParam;
-use bevy::prelude::*;
 
 use std::collections::VecDeque;
 
@@ -23,13 +27,12 @@ use std::collections::VecDeque;
 pub struct AnimationTracker<'w,'s> {
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut AnimationTable>,
-
     pub animation_queue: ResMut<'w, AnimationActionQueue>,
-    
     sprites: Query<'w, 's, &'static mut TextureAtlasSprite>,
     commands: Commands<'w, 's>,
 }
 
+// Stores game events in a queue, so they can be animated sequentially instead of all at once
 #[derive(Default)]
 pub struct AnimationActionQueue {
     queue: VecDeque<DelayedAnimationAction>,
@@ -38,7 +41,7 @@ pub struct AnimationActionQueue {
 
 pub struct DelayedAnimationAction {
     pub action: AnimationAction,
-    pub delay: f32,
+    pub delay: f32, // How long to wait before executing the next action
 }
 
 pub enum AnimationAction {
@@ -56,6 +59,7 @@ pub enum AnimationAction {
     SomeoneHasTwoCards,
 }
 
+// Wait between actions and execute them after delay
 pub fn update_animation_actions(
     mut animation_tracker: AnimationTracker,
     time: Res<Time>,
@@ -85,7 +89,12 @@ pub fn update_animation_actions(
 }
 
 impl AnimationTracker<'_,'_> {
-    pub fn set_sprite(&mut self, item: &AnimationItem, new_card: Option<Card>) {
+    // Change the sprite of a card
+    pub fn set_sprite(
+        &mut self, 
+        item: &AnimationItem, 
+        new_card: Option<Card>, // None indicates facedown card
+    ) {
         let mut sprite = self.sprites.get_mut(item.1).unwrap();
 
         if let Some(card) = new_card {
@@ -138,6 +147,7 @@ impl AnimationTracker<'_,'_> {
         self.push(to, item);
     }
 
+    // Changes the value of the discard pile.  Used for setting wild card colors.
     fn set_discard_last(&mut self, card: Option<Card>) {
         let discard = self.get_mut(
             &CardReference{

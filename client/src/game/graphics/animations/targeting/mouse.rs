@@ -1,45 +1,49 @@
-use dos_shared::table::Location;
-use dos_shared::cards::Card;
-use dos_shared::table::Table;
-use dos_shared::table_map::TableMap;
+use dos_shared::{
+    table::{Location,Table}, 
+    cards::Card, 
+    table_map::TableMap
+};
 
-use super::core::components::MouseOffset;
-use super::layout::{
-    expressions::horizontal_offset, 
-    constants::{
-        HIGHLIGHT_SCALE, 
-        HIGHLIGHT_Y_OFFSET
-    }};
-use super::AnimationTable;
-
+use super::{
+    core::components::MouseOffset, 
+    AnimationTable, 
+    layout::{
+        expressions::horizontal_offset, 
+        constants::{
+            HIGHLIGHT_SCALE, 
+            HIGHLIGHT_Y_OFFSET
+        }
+}};
 
 use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, HoverEvent};
 
+// Resource that keeps track of which card the player has moused over
+// None if no card is moused over
 #[derive(Default)]
 pub struct FocusedCard (pub Option<FocusedCardData>);
 
 pub struct FocusedCardData {
-    pub location: Location,
-    pub hand_index: usize,
-    pub sorted_index: Option<usize>,
-    pub card_value: Option<Card>,
+    pub location: Location, // Table card is in
+    pub hand_index: usize, // Position based on insertion order
+    pub sorted_index: Option<usize>, // None if not a sorted table
+    pub card_value: Option<Card>, // None if face down
 }
 
-
-// Only run on picking event
+// Updates focused card resource based on mouse overs
 pub fn focus_system (
     mut focused_card: ResMut<FocusedCard>,
     mut events: EventReader<PickingEvent>,
     map: Res<TableMap>,
     tables: Query<&AnimationTable>, 
 ) {
-    let mut focus_entity_option = None;
-    let mut update_event = false;
+    let mut focus_entity_option = None; // Potential hovered entity
+    let mut hover_event_occured = false;
 
+    // Loop over mouse hover events events
     for event in events.iter() {
         if let PickingEvent::Hover(hover_event) = event {
-            update_event = true;
+            hover_event_occured = true;
 
             match hover_event {
                 HoverEvent::JustEntered(entity) => {focus_entity_option = Some(*entity)}
@@ -48,9 +52,10 @@ pub fn focus_system (
         }
     }
     
-    if update_event {
+    if hover_event_occured {
         if let Some(focus_entity) = focus_entity_option {
-           focused_card.0 = 
+            // Get focused card data for hovered entity
+            focused_card.0 = 
             locate_card (
                 &map,
                 &tables,
@@ -63,23 +68,25 @@ pub fn focus_system (
 }
 
 
-
-// Brute force, could be sped up with some sort of hashing scheme but require a lot of transactional logic/time whenever a card is moved
-// TODO: Add a Location component to each card so we don't have to check all the cards in every table
+// Get location, index information, and card value from card entity
+//   Brute force (iterates through every table), could be sped up with some sort of hashing scheme but require a lot of transactional logic/time whenever a card is moved.
+//   Maybe could add a Location component to each card so we don't have to check all the cards in every table
 fn locate_card (
     map: &Res<TableMap>,
     tables: &Query<&AnimationTable>,
     entity: Entity
 ) -> Option<FocusedCardData> {
+    // Loop over every table
     for (location, table_entity) in &map.0 {
-        let table 
-            = tables.get(*table_entity).unwrap();
+        let table = tables.get(*table_entity).unwrap();
         
+        // Check if card is in table
         if let Some(hand_index) = table.actual_index(entity) {
 
-            // TODO: clean this up, kind of hacky right now
+            // Extract other info
             let card_value = table.card(entity);
             let sorted_index = table.sorted_index(entity);
+
             return Some(FocusedCardData {
                 location: *location,
                 hand_index,
@@ -88,9 +95,10 @@ fn locate_card (
             })
         }
     }
-    None
+    None // Not a card entity
 }
 
+// Recalculates and updates mouse offsets when a new card is focused or a card is unfocused
 pub fn update_system (
     tables: Query<&AnimationTable>,
     changed_tables: Query<&AnimationTable, Changed<AnimationTable>>,
@@ -102,7 +110,8 @@ pub fn update_system (
         return
     }
 
-    // Skip tables that aren't sorted
+    // Iterate over all tables that are sorted.  Only sorted tables have a mouse over effect. 
+    //   TODO: Could use table map and hand_id to get just the local players hand
     for table in tables.iter()
     .filter(|x| matches!(x, AnimationTable::Sorted(_))) {
 
@@ -116,6 +125,7 @@ pub fn update_system (
                     sorted_index,
                 );
             } else {
+                // If the focused card is in an unsorted table
                 reset_offsets(
                     &mut mouse_offsets, 
                     table.iter_entities()
@@ -131,6 +141,7 @@ pub fn update_system (
     }
 }
 
+// Set the offset to zero and the scale to one for all entities iterated over
 fn reset_offsets <'a> (
     mouse_offsets: &mut Query<&mut MouseOffset>,
     entities: impl Iterator<Item = &'a Entity>,
@@ -148,18 +159,20 @@ fn calculate_offsets <'a> (
     mouse_offsets: &mut Query<&mut MouseOffset>,
     entities: impl Iterator<Item = &'a Entity>,
     num_cards: usize,
-    focused_index: usize,
+    focused_index: usize, // The sorted index, not actual hand position
 ) {
+    // Computes how far to shift cards to the side to make room for focused card size increase
     let offset = horizontal_offset(num_cards);
 
     for (i, entity) in entities.enumerate() {
-        let mut mouse_offset  
-            = mouse_offsets.get_mut(*entity).unwrap();
+        let mut mouse_offset = mouse_offsets.get_mut(*entity).unwrap();
         
         if i == focused_index {
+            // Scale up focused card
             mouse_offset.offset = HIGHLIGHT_Y_OFFSET * Vec3::Y;
             mouse_offset.scale = HIGHLIGHT_SCALE;
         } else {
+            // Shift non-focused cards to side
             let offset_dir = if i > focused_index {1.} else {-1.};
             mouse_offset.offset = offset * offset_dir * Vec3::X;
             mouse_offset.scale = 1.;

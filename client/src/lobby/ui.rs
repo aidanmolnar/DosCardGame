@@ -1,18 +1,19 @@
 use dos_shared::net_config::DEFAULT_IP;
+
 use crate::connections::new_renet_client;
-use super::networking::send_start_game;
-use super::MultiplayerState;
+
+use super::{networking::send_start_game, MultiplayerState};
 
 use bevy::prelude::*;
 use bevy_egui::{egui::{self, Color32}, EguiContext};
 use bevy_renet::renet::RenetClient;
 use bevy_egui::egui::Ui;
 
-
+// Lobby ui information
 pub struct UiState {
-    ip: String,
-    name: String,
-    error: String,
+    ip: String, 
+    name: String, 
+    error: String, // For displaying connection errors
 }
 
 impl UiState {
@@ -35,7 +36,7 @@ impl Default for UiState {
 }
 
 // A barebones egui for connecting to the game
-pub fn lobby_ui(
+pub fn lobby_ui_system(
     mut egui_context: ResMut<EguiContext>, 
     mut ui_state: ResMut<UiState>, 
     mut mp_state: ResMut<MultiplayerState>,
@@ -91,6 +92,7 @@ pub fn lobby_ui(
     });
 }
 
+// Create a button for connecting to the server. Also tracks connection progress
 fn connect_button_ui (
     ui: &mut Ui,
     ui_state: &mut UiState,
@@ -113,6 +115,11 @@ fn connect_button_ui (
         // Check name is valid
         if name.len() > 20 {
             ui_state.error = "Name is too long".to_string();
+            return;
+        }
+
+        if name.is_empty() {
+            ui_state.error = "Name is too short".to_string();
             return;
         }
 

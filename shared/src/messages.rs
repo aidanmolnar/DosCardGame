@@ -1,16 +1,18 @@
+use super::{
+    cards::{Card, CardColor}, 
+    table::CardReference
+};
 
-use super::cards::{Card, CardColor};
-use super::table::CardReference;
-
+// Messages sent over lobby channel
 pub mod lobby {
+    use crate::{table::Location, GameInfo, cards::Card};
+
     use bevy::utils::HashMap;
     use serde::{Serialize, Deserialize};
 
-    use crate::{table::Location, GameInfo, cards::Card};
-
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromServer {
-        CurrentPlayers { player_names: Vec<String>, turn_id: usize},
+        CurrentPlayers {player_names: Vec<String>, turn_id: usize},
         StartGame,
         Reject{reason: String},
         Reconnect (GameSnapshot)
@@ -18,30 +20,32 @@ pub mod lobby {
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum TableSnapshot {
-        Known(Vec<Card>),
-        Unknown(usize),
+        Known(Vec<Card>), // Player can see cards in the table
+        Unknown(usize), // Player cannot see cards in the table
     }
 
+    // Complete game state for reconnecting to an ongoing game
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct GameSnapshot {
-        pub tables: HashMap<Location, TableSnapshot>,
+        pub tables: HashMap<Location, TableSnapshot>, // All information about card positions and values
         pub game_info: GameInfo,
-        pub dos: Option<usize>,
+        pub dos: Option<usize>, // Whether someone can "call dos"
     }
+
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromClient {
-        Connect {name: String},
-        StartGame,
+        StartGame, 
+        // TODO: Additional variants in future when setting custom rules?
     }
-
-    
 }
 
+// Messages sent over game channel
 pub mod game {
     use super::{Card, CardColor, CardReference};
     use serde::{Serialize, Deserialize};
 
+    // Any action that advances the game state
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum GameAction {
         DealIn,
@@ -54,20 +58,17 @@ pub mod game {
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct CallDosInfo {
-        pub player: usize,
-        pub caller: usize, 
+        pub player: usize, // Player who has two cards remaining
+        pub caller: usize, // Player who called that someone has two cards remaning
     }
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct FromServer {
         pub action: GameAction,
-        pub conditions: Vec<bool>,
-        pub cards: Vec<Card>,
+        pub conditions: Vec<bool>, // Game logic conditions that client can't know because not all cards are visible to the client
+        pub cards: Vec<Card>, // Cards that have just become visible to client
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub struct FromClient(pub GameAction);
-
-    
-
 }

@@ -1,8 +1,8 @@
-
+// Holds lobby state
 #[derive(Default, Debug)]
 pub struct MultiplayerState {
     pub player_names: Vec<String>,
-    pub turn_id: usize,
+    pub turn_id: usize, // Zero is lobby leader
 }
 
 impl MultiplayerState {

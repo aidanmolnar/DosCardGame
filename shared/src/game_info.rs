@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 
-
+// This struct stores all game information that is not related to card positions or "call dos" events
+// Namely: turn advancement, current turn tracking, turn direction, draw two / draw four stacking
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GameInfo {
     num_players: usize,
@@ -34,7 +35,7 @@ impl GameInfo {
     }
 
     pub fn next_turn(&mut self)  {
-        let offset = match &self.direction {
+        let step = match &self.direction {
             Direction::Clockwise => 1,
             Direction::CounterClockwise => -1,
         };
@@ -42,8 +43,8 @@ impl GameInfo {
         let current_turn = isize::try_from(self.current_turn).expect("Player count should not be large enough to wrap");
         let num_players  = isize::try_from(self.num_players ).expect("Player count should not be large enough to wrap");
 
-        let total = current_turn + offset;
-        self.current_turn = total.rem_euclid(num_players) as usize;
+        let total = current_turn + step;
+        self.current_turn = total.rem_euclid(num_players) as usize; // Loop back around once below zero or at num_players
     }
 
     pub fn skip_turn(&mut self) {

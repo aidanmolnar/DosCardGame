@@ -1,17 +1,19 @@
-use bevy_renet::renet::RenetServer;
-use dos_shared::net_config::GAME_CHANNEL_ID;
-use dos_shared::dos_game::DosGame;
-use dos_shared::messages::game::{CallDosInfo, FromClient, FromServer, GameAction};
+use dos_shared::{
+    net_config::GAME_CHANNEL_ID, 
+    dos_game::DosGame, 
+    messages::game::{CallDosInfo, FromClient, FromServer, GameAction}
+};
 
 use crate::multiplayer::MultiplayerState;
 
-use super::server_game::ServerGame;
-use super::call_dos::CallDos;
+use super::{
+    server_game::ServerGame, 
+    call_dos::CallDos
+};
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
-
-use::bincode;
+use bevy_renet::renet::RenetServer;
 
 
 #[derive(SystemParam)]
@@ -29,27 +31,27 @@ pub fn game_network_system (
 
             let player = manager.mp_state.player_from_renet_id(client_id);
 
-            // TODO: don't expect
-            let update= bincode::deserialize(&message)
-            .expect("Couldn't deserialize message"); 
-
-            manager.handle_update(
-                update,   
-                player, 
-            );
+            // Disconnect player if message is invalid
+            if let Ok(update) = bincode::deserialize(&message) {
+                manager.handle_update(update, player);
+            } else {
+                manager.disconnect(player);
+            }
         }
     }
 }
 
 impl<'w,'s> GameNetworkManager<'w,'s> {
 
-    // TODO: Replace panics
+    // Process game actions from clients
     fn handle_update(
         &mut self,
         update: FromClient, 
         player: usize,
     ) {
-        dbg!(update.clone());
+        // For each action, checks if client can make that action.
+        // If it can, then updates server game state and sends actions to client.
+        // If it can't, then the client is desynced and is disconnected.  Client can reconnect to get game state sent
 
         match update.0 {
             GameAction::PlayCard (card)=> {
@@ -59,7 +61,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.send_to_filtered(GameAction::PlayCard(card), |p|p!=player);
                 } else {
                     println!("Invalid play card");
-                    self.handle_disconnect(player);
+                    self.disconnect(player);
                 }
             },
             GameAction::DrawCards => {
@@ -69,7 +71,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.send_to_all(GameAction::DrawCards);
                 } else {
                     println!("Invalid draw cards");
-                    self.handle_disconnect(player);
+                    self.disconnect(player);
                 }
             },
             GameAction::KeepStaging => {
@@ -79,7 +81,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.send_to_filtered(GameAction::KeepStaging, |p|p!=player);
                 } else {
                     println!("Invalid keep last drawn card");
-                    self.handle_disconnect(player);
+                    self.disconnect(player);
                 }
             },
             GameAction::DiscardWildColor(color) => {
@@ -89,11 +91,10 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                     self.send_to_filtered(GameAction::DiscardWildColor(color), |p|p!=player);
                 } else {
                     println!("Invalid wildcard select color");
-                    self.handle_disconnect(player);
+                    self.disconnect(player);
                 }
             },
             GameAction::CallDos{..} => {
-                // TODO: Try to clean up
                 if let Some(call_dos) = &mut self.game.call_dos {
                     if player == call_dos.player {
                         let action = GameAction::CallDos (
@@ -106,25 +107,26 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                         self.game.commands.remove_resource::<CallDos>();
                         self.send_to_all(action);
                     } else {
-                        // Start the timer running if it is not already running
+                        // Start the graceperiod timer running if it is not already running
                         if call_dos.graceperiod.is_none() {
                             call_dos.caller = Some(player);
                             call_dos.graceperiod = Some(Timer::from_seconds(0.5, false));
                         }
                     }
                 } else {
-                    // This isn't necessarily a desync, just client not receiving call dos message yet.
+                    // This isn't necessarily a desync, just client not receiving update on message sent
                     println!("Invalid call dos");
                 }
             }
             GameAction::DealIn => {
+                // Clients cannot send this message
                 println!("Invalid client action");
-                self.handle_disconnect(player);
+                self.disconnect(player);
             }
         }
     }
 
-    
+    // Sends a message to players that meet a condition.
     pub fn send_to_filtered<F> (
         &mut self,
         action: GameAction,
@@ -155,7 +157,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
         self.send_to_filtered(action, |_|{true});
     }
 
-    fn handle_disconnect(&mut self, player: usize) {
+    fn disconnect(&mut self, player: usize) {
         let renet_id = self.mp_state.renet_id_from_player(player);
         self.renet_server.disconnect(renet_id);
 

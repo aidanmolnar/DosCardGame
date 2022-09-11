@@ -1,9 +1,3 @@
-use dos_shared::GameInfo;
-use dos_shared::messages::lobby::GameSnapshot;
-
-use super::GameState;
-use super::MultiplayerState;
-
 mod client_game;
 mod input;
 mod networking;
@@ -15,10 +9,15 @@ mod call_dos;
 
 pub use call_dos::CallDos;
 
+use dos_shared::{GameInfo, messages::lobby::GameSnapshot};
+
+use super::{GameState, MultiplayerState};
+
 use bevy::prelude::*;
 use iyes_loopless::prelude::*;
 use bevy_mod_picking::{PickingPlugin,InteractablePickingPlugin, PickingEvent };
 
+// Resources and systems for in-game
 pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
@@ -30,23 +29,17 @@ impl Plugin for GamePlugin {
         // Spawn tables for managing state
         .add_plugin(setup_table::ClientTableSetupPlugin)
 
-        .add_plugin(graphics::GraphicsPlugin)
-
         // Create resource for controlling turn advancement
         .add_exit_system(
             GameState::MainMenu, 
             insert_game_info
         )
 
-        // Clear optional game resources when exiting to main menu
-        .add_enter_system(
-            GameState::MainMenu, 
-            |mut commands: Commands| {commands.remove_resource::<CallDos>()}
-        )
-
-        
         // Create resource for caching cards that become visible
         .init_resource::<sync::ClientSyncer>()
+
+        // Plugin for assets, camera, and animations
+        .add_plugin(graphics::GraphicsPlugin)
 
         // Handle messages from server
         .add_system(networking::game_network_system
@@ -71,8 +64,10 @@ fn insert_game_info(
     snapshot_opt: Option<Res<GameSnapshot>>,
 ) {
     if let Some(snapshot) = snapshot_opt {
+        // Accept from server (when reconnecting)
         commands.insert_resource(snapshot.game_info.clone());
     } else {
+        // Create initial state
         commands.insert_resource(
             GameInfo::new(mp_state.player_names.len())
         );

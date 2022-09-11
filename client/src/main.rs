@@ -38,7 +38,7 @@ fn main() {
         })
         .add_plugins(DefaultPlugins)
 
-        // Networking
+        // Networking 
         .add_plugin(RenetClientPlugin)
         .init_resource::<MultiplayerState>()
 
