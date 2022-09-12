@@ -13,3 +13,5 @@ A multiplayer UNO clone written in rust with Bevy.
 * Disconnected clients can reconnect to the game
 * Card transfering animations
 * Shared client / server game logic
+* Sorted player hands
+* Somewhat ugly animated shader background
