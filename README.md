@@ -1,6 +1,6 @@
 ## Dos Card Game
 
-# A multiplayer UNO clone written in rust with Bevy.
+A multiplayer UNO clone written in rust with Bevy.
 
 # Lobby:
 ![image](https://user-images.githubusercontent.com/43870861/189592385-0c52ebd9-75d8-480f-ac7e-71f25b1572ba.png)
