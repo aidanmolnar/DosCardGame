@@ -1,6 +1,8 @@
 mod networking;
 mod ui;
 
+use crate::game::AssetState;
+
 use super::{GameState, MultiplayerState, connections};
 
 use bevy::prelude::*;
@@ -21,6 +23,7 @@ impl Plugin for LobbyPlugin {
         .add_system(
             ui::lobby_ui_system
             .run_in_state(GameState::MainMenu)
+            .run_in_state(AssetState::Loaded)
         )
         .add_system_to_stage(CoreStage::PostUpdate,
             networking::lobby_network_system

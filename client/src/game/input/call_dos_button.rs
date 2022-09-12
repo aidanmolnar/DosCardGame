@@ -1,3 +1,4 @@
+use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use dos_shared::messages::game::{FromClient, GameAction};
 
 use crate::game::{
@@ -10,10 +11,7 @@ use crate::game::{
     }, 
 };
 
-use bevy::{
-    prelude::*, 
-    sprite::MaterialMesh2dBundle
-};
+use bevy::prelude::*;
 use bevy_mod_picking::{PickingEvent, PickableBundle};
 use iyes_loopless::prelude::*;
 
@@ -56,24 +54,22 @@ struct CallDosButton;
 fn setup_system(
     mut commands: Commands,
     handles: Res<DosButtonHandle>,
-    meshes: Res<Assets<Mesh>>,
-    materials: Res<Assets<ColorMaterial>>,
+    mut sprite_params: Sprite3dParams,
 ) {
     let transform = Transform::from_translation(Vec3{x: DECK_LOCATION.0+ 300., y:DECK_LOCATION.1, z:0.1});
 
     commands.spawn()
-    .insert_bundle(
-        SpriteBundle {
-            texture: handles.texture.clone(),
-            transform,
-            ..default()
-    }).insert_bundle(
-        MaterialMesh2dBundle {
-            mesh: meshes.get_handle(handles.mesh.clone()).into(),
-            material: materials.get_handle(handles.material.clone()),
-            transform,
-            ..default()
-        })
+    .insert_bundle(Sprite3d {
+        image: handles.texture.clone(),
+
+        pixels_per_metre: 1.,
+        partial_alpha: true,
+        unlit: true,
+
+        transform,
+        
+        ..default()
+    }.bundle(&mut sprite_params))
     .insert_bundle(PickableBundle::default())
     .insert(Visibility{is_visible: false})
     .insert(CallDosButton);

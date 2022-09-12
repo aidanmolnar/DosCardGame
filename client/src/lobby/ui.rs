@@ -5,9 +5,8 @@ use crate::connections::new_renet_client;
 use super::{networking::send_start_game, MultiplayerState};
 
 use bevy::prelude::*;
-use bevy_egui::{egui::{self, Color32}, EguiContext};
+use bevy_egui::{egui::{self, Color32, TextEdit} , EguiContext};
 use bevy_renet::renet::RenetClient;
-use bevy_egui::egui::Ui;
 
 // Lobby ui information
 pub struct UiState {
@@ -43,22 +42,27 @@ pub fn lobby_ui_system(
     mut commands: Commands,
     mut renet_client_opt: Option<ResMut<RenetClient>>,
 ) {
-    egui::SidePanel::left("left_panel").show(
+    egui::SidePanel::left("left_panel")
+    .min_width(400.)
+    .max_width(400.)
+    .show(egui_context.ctx_mut(), |ui| {
 
-        egui_context.ctx_mut(), |ui| {
+        ui.heading("Lobby");
 
-        ui.label("Lobby");
+        ui.separator();
+
 
         ui.horizontal(|ui| {
             ui.label("Server Address: ");
-            ui.text_edit_singleline(&mut ui_state.ip);
+            TextEdit::singleline(&mut ui_state.ip).desired_width(f32::INFINITY).show(ui);
         });
 
         ui.horizontal(|ui| {
             ui.label("Name: ");
-            ui.text_edit_singleline(&mut ui_state.name);
+            TextEdit::singleline(&mut ui_state.name).desired_width(f32::INFINITY).show(ui);
         });
 
+    
         connect_button_ui(
             ui, 
             ui_state.as_mut(), 
@@ -72,15 +76,19 @@ pub fn lobby_ui_system(
         }
 
         if !mp_state.player_names.is_empty() && renet_client_opt.is_some() {
-            ui.label("Players:");
-
-            for player in &mp_state.player_names {
-                ui.label(player);
-            }
+            ui.separator();
+            ui.heading("Players:");
+            egui::Grid::new("players").show(ui, |ui| {
+                for player in &mp_state.player_names {
+                    ui.label(player);
+                    ui.end_row();
+                }
+            });
         }
 
         if let Some(renet_client) = renet_client_opt.as_mut() {
             if renet_client.is_connected() && mp_state.turn_id == 0 {
+                ui.separator();
                 ui.label("You are the Lobby Leader");
                 if ui.button("Start Game").clicked() {
                     send_start_game(renet_client);
@@ -94,7 +102,7 @@ pub fn lobby_ui_system(
 
 // Create a button for connecting to the server. Also tracks connection progress
 fn connect_button_ui (
-    ui: &mut Ui,
+    ui: &mut egui::Ui,
     ui_state: &mut UiState,
     mp_state: &mut MultiplayerState,
     commands: &mut Commands,

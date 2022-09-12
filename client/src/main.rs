@@ -26,12 +26,14 @@ use iyes_loopless::prelude::*;
 use postgame::PostGamePlugin;
 use bevy_renet::RenetClientPlugin;
 
+
+
 fn main() {
     App::new()
         .insert_resource(WindowDescriptor {
             title: "Dos!".to_string(),
-            width: 1280.,
-            height: 720.,
+            width: 1920.,
+            height: 1080.,
             resizable: true,
             position: WindowPosition::Centered(MonitorSelection::Primary),
             ..default()
@@ -44,7 +46,6 @@ fn main() {
 
         // Starting state
         .add_loopless_state(GameState::MainMenu)
-
         // Dos plugins
         .add_plugin(LobbyPlugin)
         .add_plugin(GamePlugin)

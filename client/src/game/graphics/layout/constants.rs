@@ -1,9 +1,6 @@
 use super::assets::{CARD_HEIGHT, CARD_WIDTH};
 
 /// Constants for displaying game interface
-
-pub const HEIGHT_SCALE: f32 = 2000.; // The fixed logical height of the window
-
 pub const DECK_LOCATION: (f32, f32) = (200.,0.);
 pub const DISCARD_LOCATION: (f32, f32) = (-200.,0.);
 pub const STAGING_LOCATION: (f32, f32) = (0., -400.);

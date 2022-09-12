@@ -1,3 +1,5 @@
+use dos_shared::cards::Card;
+
 use super::SpriteIndex;
 use super::animations::AnimationItem;
 use super::assets::CardHandles;
@@ -7,18 +9,16 @@ use super::animations::components::{BoardPosition, MouseOffset, LinearAnimation}
 
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
-use bevy::sprite::MaterialMesh2dBundle;
 use bevy_mod_picking::PickableBundle;
-use dos_shared::cards::Card;
+use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+
 
 // Builds card entities from assets and resource handles
 #[derive(SystemParam)]
 pub struct DeckBuilder<'w, 's> {
     commands: Commands<'w,'s>,
-    meshes: Res<'w, Assets<Mesh>>,
-    materials: Res<'w, Assets<ColorMaterial>>,
-    texture_atlases: Res<'w, Assets<TextureAtlas>>,
     card_handles: Res<'w, CardHandles>,
+    sprite_params: Sprite3dParams<'w,'s>,
 }
 
 impl<'w, 's> DeckBuilder<'w, 's> {
@@ -105,23 +105,22 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         index: usize
     ) -> Entity {
         self.commands.spawn()
-        .insert_bundle(
-            SpriteSheetBundle {
-                sprite: TextureAtlasSprite { 
-                    index, 
-                    ..default() 
-                },
-                texture_atlas: self.texture_atlases.get_handle(&self.card_handles.atlas),
-                transform,
-                ..default()
-        }).insert_bundle(
-            MaterialMesh2dBundle {
-                mesh: self.meshes.get_handle(self.card_handles.mesh.clone()).into(),
-                material: self.materials.get_handle(self.card_handles.material.clone()),
-                transform,
-                ..default()
-            })
-        .insert_bundle(PickableBundle::default())
+        .insert_bundle(AtlasSprite3d {
+            atlas: self.card_handles.atlas.clone(),
+
+            pixels_per_metre: 1.,
+            partial_alpha: true,
+            unlit: true,
+
+            transform,
+            index,
+
+            // transform: Transform::from_xyz(0., 0., 0.),
+            // pivot: Some(Vec2::new(0.5, 0.5)),
+
+            ..default()
+        }.bundle(&mut self.sprite_params)
+        ).insert_bundle(PickableBundle::default())
         .id()
     }
 }

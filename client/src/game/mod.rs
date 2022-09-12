@@ -8,6 +8,7 @@ mod sync;
 mod call_dos;
 
 pub use call_dos::CallDos;
+pub use graphics::AssetState;
 
 use dos_shared::{GameInfo, messages::lobby::GameSnapshot};
 

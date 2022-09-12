@@ -299,6 +299,29 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_asset_loader"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91275716531c98d9907ee8c57854d11e3688780a9cefc66b1d4da601a3e3c41e"
+dependencies = [
+ "anyhow",
+ "bevy",
+ "bevy_asset_loader_derive",
+ "iyes_loopless",
+]
+
+[[package]]
+name = "bevy_asset_loader_derive"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e721755806423f711c0934295872808adb20d379b3073c679ed544960fc84b6d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "bevy_audio"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -763,6 +786,15 @@ dependencies = [
  "rectangle-pack",
  "serde",
  "thiserror",
+]
+
+[[package]]
+name = "bevy_sprite3d"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e2b138624a10afbea36bfbcbc0ebd89c4d5927d4b42131edc6c5433fb0ec3f0"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]
@@ -1441,9 +1473,11 @@ name = "dos-client"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "bevy_asset_loader",
  "bevy_egui",
  "bevy_mod_picking",
  "bevy_renet",
+ "bevy_sprite3d",
  "bincode",
  "dos-shared",
  "futures-lite",

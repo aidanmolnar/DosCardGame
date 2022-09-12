@@ -1,3 +1,4 @@
+use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
 use dos_shared::{
     GameState, 
     cards::Card, 
@@ -7,7 +8,7 @@ use dos_shared::{
 };
 
 use crate::{
-    game::call_dos::CallDos, 
+    game::{call_dos::CallDos, graphics::assets::CardHandles}, 
     postgame::Victory
 };
 
@@ -28,8 +29,11 @@ pub struct AnimationTracker<'w,'s> {
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut AnimationTable>,
     pub animation_queue: ResMut<'w, AnimationActionQueue>,
-    sprites: Query<'w, 's, &'static mut TextureAtlasSprite>,
+    transforms: Query<'w, 's, &'static Transform>,
+
     commands: Commands<'w, 's>,
+    sprite_params: Sprite3dParams<'w,'s>,
+    card_handles: Res<'w, CardHandles>,
 }
 
 // Stores game events in a queue, so they can be animated sequentially instead of all at once
@@ -95,13 +99,26 @@ impl AnimationTracker<'_,'_> {
         item: &AnimationItem, 
         new_card: Option<Card>, // None indicates facedown card
     ) {
-        let mut sprite = self.sprites.get_mut(item.1).unwrap();
+        //let mut sprite = self.sprites.get_mut(item.1).unwrap();
+        let index = new_card.map_or(CARD_BACK_SPRITE_INDEX, |card| card.get_sprite_index());
 
-        if let Some(card) = new_card {
-            sprite.index = card.get_sprite_index();
-        } else {
-            sprite.index = CARD_BACK_SPRITE_INDEX;
-        }
+        let transform = self.transforms.get(item.1).expect("Entity did not have transform");
+
+        self.commands.entity(item.1).insert_bundle(AtlasSprite3d {
+            atlas: self.card_handles.atlas.clone(),
+
+            pixels_per_metre: 1.,
+            partial_alpha: true,
+            unlit: true,
+
+            transform: *transform,
+            index,
+
+            // transform: Transform::from_xyz(0., 0., 0.),
+            // pivot: Some(Vec2::new(0.5, 0.5)),
+
+            ..default()
+        }.bundle(&mut self.sprite_params));
     }
 
     pub fn reset_mouse_offset(&mut self, item: &AnimationItem) {
