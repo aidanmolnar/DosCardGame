@@ -37,7 +37,7 @@ pub fn new_renet_client (address: SocketAddr, name: &str) -> Result<RenetClient,
         user_data,
     };
 
-    let socket = UdpSocket::bind("127.0.0.1:0")?;
+    let socket = UdpSocket::bind("0.0.0.0:0")?;
     let connection_config = connection_config();
 
     RenetClient::new (

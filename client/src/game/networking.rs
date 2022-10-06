@@ -7,6 +7,10 @@ use dos_shared::{
 
 use super::{client_game::ClientGame, call_dos::CallDos};
 
+
+// Marker resource spawned when drawing cards before server sends message
+pub struct WaitingForCards;
+
 use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
 use bevy_renet::renet::RenetClient;
@@ -46,6 +50,7 @@ impl<'w,'s> GameNetworkManager<'w,'s> {
                 self.game.play_card(&card);
             },
             GameAction::DrawCards => {
+                self.commands.remove_resource::<WaitingForCards>();
                 self.game.draw_cards();
             },
             GameAction::KeepStaging => {

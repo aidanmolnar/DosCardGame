@@ -47,9 +47,11 @@ impl Plugin for ConnectionListeningPlugin {
 
 // TODO: should take command line input instead of using constant ip
 fn new_renet_server() -> RenetServer {
-    let server_addr = DEFAULT_IP.parse().unwrap();
-    let socket = UdpSocket::bind(server_addr).unwrap();
+    
+    let socket = UdpSocket::bind("0.0.0.0:3333").unwrap();
     let connection_config = connection_config();
+
+    let server_addr = DEFAULT_IP.parse().unwrap();
     let server_config = ServerConfig::new(99, PROTOCOL_ID, server_addr, ServerAuthentication::Unsecure);
     let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
     RenetServer::new(current_time, server_config, connection_config, socket).unwrap()
