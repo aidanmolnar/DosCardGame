@@ -3,13 +3,24 @@
     "tasks": [
         {
             "label": "Run Task",
-            "dependsOn": ["Terminate All Tasks", "Copy Assets", "Build Lib", "Build Client", "Build Server", "Run Both"],
+            "dependsOn": [
+                "Terminate All Tasks",
+                "Copy Assets",
+                "Build Lib",
+                "Build Client",
+                "Build Server",
+                "Run Both"
+            ],
             "dependsOrder": "sequence"
-
         },
         {
             "label": "Run Both",
-            "dependsOn": ["Run Server", "Run Client", "Run Client", "Run Client"],
+            "dependsOn": [
+                "Run Server",
+                "Run Client",
+                "Run Client",
+                "Run Client"
+            ],
             "dependsOrder": "parallel"
         },
         {
@@ -17,7 +28,7 @@
             "command": "dos-client.exe",
             "group": "test",
             "options": {
-                "cwd": "${workspaceFolder}/target/debug/",
+                "cwd": "${workspaceFolder}/target/release/",
                 "env": {
                     "RUST_BACKTRACE": "1",
                 }
@@ -32,8 +43,12 @@
             "label": "Run Server",
             "command": "dos-server.exe",
             "group": "test",
+            "args": [
+                "127.0.0.1",
+                "3333"
+            ],
             "options": {
-                "cwd": "${workspaceFolder}/target/debug",
+                "cwd": "${workspaceFolder}/target/release",
                 "env": {
                     "RUST_BACKTRACE": "1",
                 }
@@ -47,7 +62,7 @@
         {
             "label": "Build Lib",
             "type": "shell",
-            "command": "cargo build -p dos-shared",
+            "command": "cargo build --release -p dos-shared",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -61,7 +76,7 @@
         {
             "label": "Build Client",
             "type": "shell",
-            "command": "cargo build -p dos-client",
+            "command": "cargo build --release -p dos-client",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -75,7 +90,7 @@
         {
             "label": "Build Server",
             "type": "shell",
-            "command": "cargo build -p dos-server",
+            "command": "cargo build --release -p dos-server",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -89,7 +104,7 @@
         {
             "label": "Copy Assets",
             "type": "shell",
-            "command": "xcopy '${workspaceFolder}\\client\\assets\\' '${workspaceFolder}\\target\\debug\\assets\\' /Y /I",
+            "command": "xcopy '${workspaceFolder}\\client\\assets\\' '${workspaceFolder}\\target\\release\\assets\\' /Y /I",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"

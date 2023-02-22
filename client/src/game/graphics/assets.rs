@@ -19,3 +19,10 @@ pub struct DosButtonHandle {
     #[asset(path = "call_dos_button.png")]
     pub texture: Handle<Image>,
 }
+
+// Handles to the turn direction indicator resources
+#[derive(AssetCollection)]
+pub struct TurnDirectionIndicatorHandle {
+    #[asset(path = "cycle.png")]
+    pub texture: Handle<Image>,
+}
