@@ -40,7 +40,6 @@ impl Plugin for ConnectionListeningPlugin {
 }
 
 fn new_renet_server() -> RenetServer {
-<<<<<<< HEAD
     let ip = std::env::args()
         .nth(1)
         .unwrap_or_else(|| DEFAULT_IP.to_string());
@@ -63,15 +62,7 @@ fn new_renet_server() -> RenetServer {
     let current_time = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap();
-=======
-    
-    let socket = UdpSocket::bind("0.0.0.0:3333").unwrap();
-    let connection_config = connection_config();
 
-    let server_addr = DEFAULT_IP.parse().unwrap();
-    let server_config = ServerConfig::new(99, PROTOCOL_ID, server_addr, ServerAuthentication::Unsecure);
-    let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
->>>>>>> b6845185cb965e679f4278b4da23350f75dde8aa
     RenetServer::new(current_time, server_config, connection_config, socket).unwrap()
 }
 
