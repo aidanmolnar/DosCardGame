@@ -6,7 +6,7 @@ use dos_shared::{
 
 use crate::game::{
     graphics::FocusedCard, 
-    networking::GameNetworkManager
+    networking::{GameNetworkManager, WaitingForCards}
 };
 
 use bevy::prelude::*;
@@ -17,9 +17,14 @@ pub fn play_card_system (
     mut network_manager: GameNetworkManager,
     mut events: EventReader<PickingEvent>,
     focused_card: Res<FocusedCard>,
+    waiting_for_cards: Option<Res<WaitingForCards>>,
 ) {
     // Do not allow player to submit an action until the animation state has caught up to the actual game state
     if network_manager.game.has_delayed_transfers() {
+        return;
+    }
+    
+    if waiting_for_cards.is_some() {
         return;
     }
 
@@ -58,6 +63,7 @@ fn handle_play_card(
                 Location::Deck => {
                     if network_manager.game.validate_draw_cards(player) {
                         network_manager.send_message(FromClient(GameAction::DrawCards));
+                        network_manager.commands.insert_resource(WaitingForCards);
                     }
                 },
                 Location::Hand { player_id } if player_id == player =>  {

@@ -6,8 +6,12 @@ pub const LOBBY_CHANNEL_ID: u8 = 0;
 pub const GAME_CHANNEL_ID: u8 = 1;
 
 pub const PROTOCOL_ID: u64 = 7;
+<<<<<<< HEAD
 pub const DEFAULT_IP: &str = "127.0.0.1";
 pub const DEFAULT_PORT: &str = "3333";
+=======
+pub const DEFAULT_IP: &str = "3.136.248.212:3333";
+>>>>>>> b6845185cb965e679f4278b4da23350f75dde8aa
 
 // Renet channel configuration used by client and server
 // Two reliable channels:
