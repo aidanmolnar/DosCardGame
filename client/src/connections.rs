@@ -42,13 +42,7 @@ pub fn new_renet_client(address: SocketAddr, name: &str) -> Result<RenetClient, 
     let socket = UdpSocket::bind("0.0.0.0:0")?;
     let connection_config = connection_config();
 
-    RenetClient::new(
-        current_time,
-        socket,
-        client_id,
-        connection_config,
-        authentication,
-    )
+    RenetClient::new(current_time, socket, connection_config, authentication)
 }
 
 // Gracefully disconnects when closing the app instead of relying on timeout

@@ -1,4 +1,6 @@
 // Small file to mirror server.
 
-#[derive(Default)]
+use bevy::prelude::Resource;
+
+#[derive(Default, Resource)]
 pub struct CallDos;

@@ -66,7 +66,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
             .insert(LinearAnimation {
                 start: transform,
                 end: transform,
-                timer: Timer::from_seconds(0.01, false),
+                timer: Timer::from_seconds(0.01, TimerMode::Once),
             })
             .insert(BoardPosition {
                 position: translation,
@@ -82,8 +82,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
     // Spawns a card without animation components (used to make buttons)
     pub fn make_pickable_card_sprite(&mut self, transform: Transform, index: usize) -> Entity {
         self.commands
-            .spawn()
-            .insert_bundle(
+            .spawn(
                 AtlasSprite3d {
                     atlas: self.card_handles.atlas.clone(),
                     pixels_per_metre: 1.,
@@ -95,7 +94,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
                 }
                 .bundle(&mut self.sprite_params),
             )
-            .insert_bundle(PickableBundle::default())
+            .insert(PickableBundle::default())
             .id()
     }
 }

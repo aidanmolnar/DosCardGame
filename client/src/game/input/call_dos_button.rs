@@ -2,17 +2,14 @@ use bevy_sprite3d::{Sprite3d, Sprite3dParams};
 use dos_shared::messages::game::{FromClient, GameAction};
 
 use crate::game::{
-    GameState,
-    networking::GameNetworkManager, 
     call_dos::CallDos,
-    graphics::{
-        DosButtonHandle, 
-        constants::DECK_LOCATION
-    }, 
+    graphics::{constants::DECK_LOCATION, DosButtonHandle},
+    networking::GameNetworkManager,
+    GameState,
 };
 
 use bevy::prelude::*;
-use bevy_mod_picking::{PickingEvent, PickableBundle};
+use bevy_mod_picking::{PickableBundle, PickingEvent};
 use iyes_loopless::prelude::*;
 
 // Adds a button for calling when you have two cards left, or that someone else has two cards left and did not call.
@@ -21,30 +18,14 @@ pub struct CallDosPlugin;
 
 impl Plugin for CallDosPlugin {
     fn build(&self, app: &mut App) {
-        app
-
-        .add_enter_system(
-            GameState::InGame, 
-            setup_system,
-        )
-        .add_exit_system(
-            GameState::InGame, 
-            cleanup_system
-        )
-        .add_system(
-            display_system
-            .run_in_state(GameState::InGame)
-        )
-        .add_system(
-            clicked_system
-            .run_in_state(GameState::InGame)
-        )
-
-        // Remove game resource when exiting to main menu as well
-        .add_enter_system(
-            GameState::MainMenu, 
-            |mut commands: Commands| {commands.remove_resource::<CallDos>()}
-        );
+        app.add_enter_system(GameState::InGame, setup_system)
+            .add_exit_system(GameState::InGame, cleanup_system)
+            .add_system(display_system.run_in_state(GameState::InGame))
+            .add_system(clicked_system.run_in_state(GameState::InGame))
+            // Remove game resource when exiting to main menu as well
+            .add_enter_system(GameState::MainMenu, |mut commands: Commands| {
+                commands.remove_resource::<CallDos>();
+            });
     }
 }
 
@@ -56,23 +37,30 @@ fn setup_system(
     handles: Res<DosButtonHandle>,
     mut sprite_params: Sprite3dParams,
 ) {
-    let transform = Transform::from_translation(Vec3{x: DECK_LOCATION.0+ 300., y:DECK_LOCATION.1, z:0.1});
+    let transform = Transform::from_translation(Vec3 {
+        x: DECK_LOCATION.0 + 300.,
+        y: DECK_LOCATION.1,
+        z: 0.1,
+    });
 
-    commands.spawn()
-    .insert_bundle(Sprite3d {
-        image: handles.texture.clone(),
+    commands
+        .spawn(
+            Sprite3d {
+                image: handles.texture.clone(),
 
-        pixels_per_metre: 1.,
-        partial_alpha: true,
-        unlit: true,
+                pixels_per_metre: 1.,
+                partial_alpha: true,
+                unlit: true,
 
-        transform,
-        
-        ..default()
-    }.bundle(&mut sprite_params))
-    .insert_bundle(PickableBundle::default())
-    .insert(Visibility{is_visible: false})
-    .insert(CallDosButton);
+                transform,
+
+                ..default()
+            }
+            .bundle(&mut sprite_params),
+        )
+        .insert(PickableBundle::default())
+        .insert(Visibility { is_visible: false })
+        .insert(CallDosButton);
 }
 
 // Turns the button on and off
@@ -94,7 +82,7 @@ fn display_system(
 }
 
 // Handling when the button is clicked
-fn clicked_system (
+fn clicked_system(
     buttons: Query<Entity, With<CallDosButton>>,
     mut network_manager: GameNetworkManager,
     mut commands: Commands,
@@ -103,11 +91,9 @@ fn clicked_system (
     // Iterates over all click events
     for event in events.iter() {
         if let PickingEvent::Clicked(e) = event {
-
             // Checks if the click was on the button
             for button_entity in &buttons {
-                if *e == button_entity && !network_manager.game.has_delayed_transfers()
-                { 
+                if *e == button_entity && !network_manager.game.has_delayed_transfers() {
                     // Send a message to execute action on server
                     network_manager.send_message(FromClient(GameAction::CallDos(None)));
                     commands.remove_resource::<CallDos>();
@@ -117,10 +103,7 @@ fn clicked_system (
     }
 }
 
-fn cleanup_system(
-    mut commands: Commands,
-    cards: Query<Entity, With<CallDosButton>>,
-) {
+fn cleanup_system(mut commands: Commands, cards: Query<Entity, With<CallDosButton>>) {
     for entity in &cards {
         commands.entity(entity).despawn();
     }

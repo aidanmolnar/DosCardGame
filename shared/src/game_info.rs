@@ -1,8 +1,9 @@
+use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 
 // This struct stores all game information that is not related to card positions or "call dos" events
 // Namely: turn advancement, current turn tracking, turn direction, draw two / draw four stacking
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Resource)]
 pub struct GameInfo {
     num_players: usize,
     current_turn: usize,

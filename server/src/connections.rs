@@ -28,12 +28,16 @@ impl Plugin for ConnectionListeningPlugin {
         let server = new_renet_server();
 
         app.insert_resource(server)
-            .add_system(connection_events_system.run_on_event::<ServerEvent>())
+            .add_system(
+                connection_events_system
+                    .run_on_event::<ServerEvent>()
+                    .label("connect_events"),
+            )
             .add_system(
                 reconnections_system
                     .run_in_state(GameState::Reconnect)
                     .run_on_event::<ServerEvent>()
-                    .after(connection_events_system),
+                    .after("connect_events"),
             )
             .add_system_to_stage(CoreStage::PostUpdate, exit_system);
     }

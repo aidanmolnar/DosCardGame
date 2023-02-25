@@ -108,7 +108,7 @@ fn make_wildcard_button(
     .insert(LinearAnimation{
         start: transform, 
         end: transform, 
-        timer: Timer::from_seconds(0.01, false)
+        timer: Timer::from_seconds(0.01, TimerMode::Once)
     })
     .insert(wildcard_button);
 }
@@ -130,7 +130,7 @@ fn display_system(
                 visibility.is_visible = true;
                 animation.start = *transform;
                 animation.end = Transform::from_translation(button.target_position);
-                animation.timer = Timer::from_seconds(0.4, false);
+                animation.timer = Timer::from_seconds(0.4, TimerMode::Once);
             }
         } else {
             // Toggled Off
@@ -138,7 +138,7 @@ fn display_system(
                 visibility.is_visible = false;
                 animation.start = *transform;
                 animation.end = Transform::from_translation(Vec3{x:BUTTON_START.0,y:BUTTON_START.1,z:BUTTON_START.2});
-                animation.timer = Timer::from_seconds(0.01, false);
+                animation.timer = Timer::from_seconds(0.01, TimerMode::Once);
             }
         }
 

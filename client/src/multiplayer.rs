@@ -1,5 +1,7 @@
+use bevy::prelude::Resource;
+
 // Holds lobby state
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Resource)]
 pub struct MultiplayerState {
     pub player_names: Vec<String>,
     pub turn_id: usize, // Zero is lobby leader

@@ -6,6 +6,8 @@ use iyes_loopless::prelude::*;
 
 use super::assets::TurnDirectionIndicatorHandle;
 
+const ROTATION_RATE: f32 = std::f32::consts::TAU * 2. / 60.; // 2 rotations per minute
+
 #[derive(Component)]
 struct TurnDirectionIndicator;
 
@@ -25,8 +27,7 @@ pub fn setup_indicator(
     handle: Res<TurnDirectionIndicatorHandle>,
 ) {
     commands
-        .spawn()
-        .insert_bundle(
+        .spawn(
             Sprite3d {
                 image: handle.texture.clone(),
                 pixels_per_metre: 3.,
@@ -35,13 +36,13 @@ pub fn setup_indicator(
                 transform: Transform::from_translation(Vec3 {
                     x: 0.,
                     y: 0.,
-                    z: 0.1,
+                    z: 0.05,
                 }),
                 ..default()
             }
             .bundle(&mut params),
         )
-        .insert_bundle(PickableBundle::default())
+        .insert(PickableBundle::default())
         .insert(TurnDirectionIndicator);
 }
 
@@ -54,6 +55,7 @@ fn cleanup_indicator(mut commands: Commands, query: Query<Entity, With<TurnDirec
 fn spin_indicator(
     mut query: Query<&mut Transform, With<TurnDirectionIndicator>>,
     game_info: Res<GameInfo>,
+    time: Res<Time>,
     mut last_direction: Local<TurnDirection>,
 ) {
     for mut transform in query.iter_mut() {
@@ -61,8 +63,12 @@ fn spin_indicator(
             transform.rotate_x(std::f32::consts::PI);
         }
         match game_info.current_direction() {
-            TurnDirection::Clockwise => transform.rotate_z(-0.01),
-            TurnDirection::CounterClockwise => transform.rotate_z(0.01),
+            TurnDirection::Clockwise => {
+                transform.rotate_z(-ROTATION_RATE * time.delta_seconds());
+            }
+            TurnDirection::CounterClockwise => {
+                transform.rotate_z(ROTATION_RATE * time.delta_seconds());
+            }
         }
     }
 

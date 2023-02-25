@@ -1,41 +1,45 @@
 use super::{
-    cards::{Card, CardColor}, 
-    table::CardReference
+    cards::{Card, CardColor},
+    table::CardReference,
 };
 
 // Messages sent over lobby channel
 pub mod lobby {
-    use crate::{table::Location, GameInfo, cards::Card};
+    use crate::{cards::Card, table::Location, GameInfo};
 
-    use bevy::utils::HashMap;
-    use serde::{Serialize, Deserialize};
+    use bevy::{prelude::Resource, utils::HashMap};
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromServer {
-        CurrentPlayers {player_names: Vec<String>, turn_id: usize},
+        CurrentPlayers {
+            player_names: Vec<String>,
+            turn_id: usize,
+        },
         StartGame,
-        Reject{reason: String},
-        Reconnect (GameSnapshot)
+        Reject {
+            reason: String,
+        },
+        Reconnect(GameSnapshot),
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum TableSnapshot {
         Known(Vec<Card>), // Player can see cards in the table
-        Unknown(usize), // Player cannot see cards in the table
+        Unknown(usize),   // Player cannot see cards in the table
     }
 
     // Complete game state for reconnecting to an ongoing game
-    #[derive(Serialize, Deserialize, Debug, Clone)]
+    #[derive(Serialize, Deserialize, Debug, Clone, Resource)]
     pub struct GameSnapshot {
         pub tables: HashMap<Location, TableSnapshot>, // All information about card positions and values
         pub game_info: GameInfo,
         pub dos: Option<usize>, // Whether someone can "call dos"
     }
 
-
     #[derive(Serialize, Deserialize, Debug, Clone)]
     pub enum FromClient {
-        StartGame, 
+        StartGame,
         // TODO: Additional variants in future when setting custom rules?
     }
 }
@@ -43,7 +47,7 @@ pub mod lobby {
 // Messages sent over game channel
 pub mod game {
     use super::{Card, CardColor, CardReference};
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
 
     // Any action that advances the game state
     #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -66,7 +70,7 @@ pub mod game {
     pub struct FromServer {
         pub action: GameAction,
         pub conditions: Vec<bool>, // Game logic conditions that client can't know because not all cards are visible to the client
-        pub cards: Vec<Card>, // Cards that have just become visible to client
+        pub cards: Vec<Card>,      // Cards that have just become visible to client
     }
 
     #[derive(Serialize, Deserialize, Debug, Clone)]

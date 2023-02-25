@@ -36,7 +36,7 @@ pub struct AnimationTracker<'w, 's> {
 }
 
 // Stores game events in a queue, so they can be animated sequentially instead of all at once
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct AnimationActionQueue {
     queue: VecDeque<DelayedAnimationAction>,
     timer: Timer,
@@ -84,7 +84,7 @@ pub fn update_animation_actions(mut animation_tracker: AnimationTracker, time: R
             }
 
             animation_tracker.animation_queue.timer =
-                Timer::from_seconds(delayed_action.delay, false);
+                Timer::from_seconds(delayed_action.delay, TimerMode::Once);
         }
     }
 }
@@ -104,7 +104,7 @@ impl AnimationTracker<'_, '_> {
             .get(item.1)
             .expect("Entity did not have transform");
 
-        self.commands.entity(item.1).insert_bundle(
+        self.commands.entity(item.1).insert(
             AtlasSprite3d {
                 atlas: self.card_handles.atlas.clone(),
 

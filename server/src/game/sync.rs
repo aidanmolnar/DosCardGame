@@ -5,11 +5,12 @@ use crate::multiplayer::MultiplayerState;
 use bevy::prelude::*;
 
 // Stores information that clients will need to reproduce game state that they lack because of visibility rules
+#[derive(Resource)]
 pub struct ServerSyncer {
-    cards: 
-        Vec< // Unique list for each player
-            Vec<Card> // Cards that will become visible to player after update
-        >,
+    cards: Vec<
+        // Unique list for each player
+        Vec<Card>, // Cards that will become visible to player after update
+    >,
     conditions: Vec<bool>, // Game logic conditions that depend on cards not visible to player. Shared list for all players
 }
 
@@ -20,7 +21,7 @@ impl ServerSyncer {
             players.push(Vec::new());
         }
         Self {
-            cards: players, 
+            cards: players,
             conditions: Vec::new(),
         }
     }
@@ -29,7 +30,7 @@ impl ServerSyncer {
         self.cards[player].push(card);
     }
 
-    pub fn take_player_cards(&mut self, player: usize) -> Vec<Card>{
+    pub fn take_player_cards(&mut self, player: usize) -> Vec<Card> {
         std::mem::take(&mut self.cards[player])
     }
 
@@ -42,11 +43,6 @@ impl ServerSyncer {
     }
 }
 
-pub fn setup_syncer(
-    mp_state: Res<MultiplayerState>,
-    mut commands: Commands,
-) {
-    commands.insert_resource(
-        ServerSyncer::new(mp_state.num_agents())
-    );
+pub fn setup_syncer(mp_state: Res<MultiplayerState>, mut commands: Commands) {
+    commands.insert_resource(ServerSyncer::new(mp_state.num_agents()));
 }

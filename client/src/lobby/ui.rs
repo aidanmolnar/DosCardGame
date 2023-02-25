@@ -12,6 +12,7 @@ use bevy_egui::{
 use bevy_renet::renet::RenetClient;
 
 // Lobby ui information
+#[derive(Resource)]
 pub struct UiState {
     ip: String,
     name: String,
