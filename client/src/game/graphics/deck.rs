@@ -10,7 +10,7 @@ use super::SpriteIndex;
 use bevy::ecs::system::SystemParam;
 use bevy::prelude::*;
 use bevy_mod_picking::PickableBundle;
-use bevy_sprite3d::{AtlasSprite3d, Sprite3dParams};
+use bevy_sprite3d::{AtlasSprite3d, Sprite3d, Sprite3dParams};
 
 // Builds card entities from assets and resource handles
 #[derive(SystemParam)]
@@ -59,6 +59,7 @@ impl<'w, 's> DeckBuilder<'w, 's> {
         let transform = Transform::from_translation(translation).with_scale(Vec3::splat(1.0));
 
         let entity = self.make_pickable_card_sprite(transform, sprite_index);
+        let glow = self.make_glow();
 
         // Add animation components
         self.commands
@@ -74,9 +75,36 @@ impl<'w, 's> DeckBuilder<'w, 's> {
             .insert(MouseOffset {
                 offset: Vec3::ZERO,
                 scale: 1.,
-            });
+            })
+            .add_child(glow);
 
         entity
+    }
+
+    pub fn make_glow(&mut self) -> Entity {
+        let bundle = Sprite3d {
+            image: self.card_handles.glow.clone(),
+            pixels_per_metre: 1.,
+            partial_alpha: true,
+            unlit: true,
+            transform: Transform::from_translation(Vec3::new(0.0, 0.0, -0.005)),
+            ..default()
+        }
+        .bundle(&mut self.sprite_params);
+
+        // Update material color
+        // TODO: Currently this unecessarily updates the color for each glow created (only needs to happen once)
+        let handle = bundle.pbr.material.clone();
+        let mut material = self.sprite_params.materials.get_mut(&handle).unwrap();
+        material.base_color = Color::BLUE;
+
+        self.commands
+            .spawn(bundle)
+            .insert(VisibilityBundle {
+                visibility: Visibility { is_visible: false },
+                ..default()
+            })
+            .id()
     }
 
     // Spawns a card without animation components (used to make buttons)

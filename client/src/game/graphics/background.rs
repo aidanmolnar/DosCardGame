@@ -41,6 +41,6 @@ struct BackgroundMaterial {}
 
 impl Material for BackgroundMaterial {
     fn fragment_shader() -> ShaderRef {
-        "background.wgsl".into()
+        "shaders\\background.wgsl".into()
     }
 }

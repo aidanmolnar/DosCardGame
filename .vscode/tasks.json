@@ -104,7 +104,7 @@
         {
             "label": "Copy Assets",
             "type": "shell",
-            "command": "xcopy '${workspaceFolder}\\client\\assets\\' '${workspaceFolder}\\target\\release\\assets\\' /Y /I",
+            "command": "xcopy '${workspaceFolder}\\client\\assets\\' '${workspaceFolder}\\target\\release\\assets\\' /Y /I /e",
             "group": "test",
             "options": {
                 "cwd": "${workspaceFolder}"

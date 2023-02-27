@@ -7,6 +7,6 @@ pub fn remove_all_cards(
     cards: Query<Entity, (With<BoardPosition>, With<MouseOffset>)>,
 ) {
     for entity in &cards {
-        commands.entity(entity).despawn();
+        commands.entity(entity).despawn_recursive();
     }
 }

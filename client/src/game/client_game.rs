@@ -1,25 +1,25 @@
 use dos_shared::{
-    GameInfo, 
-    dos_game::{DosGame, DECK_REFERENCE}, 
-    table::{Table, Location, CardReference, HandPosition}, 
-    cards::Card, 
-    table_map::TableMap, 
-    transfer::CardTransfer
+    cards::Card,
+    dos_game::{DosGame, DECK_REFERENCE},
+    table::{CardReference, HandPosition, Location, Table},
+    table_map::TableMap,
+    transfer::CardTransfer,
+    GameInfo,
 };
 
 use super::{
-    table::{ClientTable, ClientItem},
-    MultiplayerState, 
-    sync::ClientSyncer, 
-    graphics::{AnimationTracker, DelayedAnimationAction, AnimationAction}, 
+    graphics::{AnimationAction, AnimationTracker, DelayedAnimationAction},
+    sync::ClientSyncer,
+    table::{ClientItem, ClientTable},
+    MultiplayerState,
 };
 
-use bevy::prelude::*;
 use bevy::ecs::system::SystemParam;
+use bevy::prelude::*;
 
 #[derive(SystemParam)]
-pub struct ClientGame<'w,'s> {
-    // Shared game state resources
+pub struct ClientGame<'w, 's> {
+    // Game state resources
     map: Res<'w, TableMap>,
     tables: Query<'w, 's, &'static mut ClientTable>,
     game_info: ResMut<'w, GameInfo>,
@@ -29,28 +29,35 @@ pub struct ClientGame<'w,'s> {
     pub mp_state: ResMut<'w, MultiplayerState>,
 
     // Handles animations
-    animation_tracker: AnimationTracker<'w,'s>,
+    animation_tracker: AnimationTracker<'w, 's>,
 }
 
 impl CardTransfer<ClientItem, ClientTable> for ClientGame<'_, '_> {
-    fn get_table(
-        & self, 
-        location: &Location
-    ) -> & ClientTable {
-        let entity = *self.map.0.get(location).expect("Table entity not found for location");
-        self.tables.get(entity).expect("Table does not exist for table entity")
+    fn get_table(&self, location: &Location) -> &ClientTable {
+        let entity = *self
+            .map
+            .0
+            .get(location)
+            .expect("Table entity not found for location");
+        self.tables
+            .get(entity)
+            .expect("Table does not exist for table entity")
     }
 
-    fn get_table_mut(
-        & mut self, 
-        location: &Location
-    ) -> & mut ClientTable {
-        let entity = *self.map.0.get(location).expect("Table entity not found for location");
-        self.tables.get_mut(entity).expect("Table does not exist for table entity").into_inner()
+    fn get_table_mut(&mut self, location: &Location) -> &mut ClientTable {
+        let entity = *self
+            .map
+            .0
+            .get(location)
+            .expect("Table entity not found for location");
+        self.tables
+            .get_mut(entity)
+            .expect("Table does not exist for table entity")
+            .into_inner()
     }
 }
 
-impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
+impl DosGame<ClientItem, ClientTable> for ClientGame<'_, '_> {
     fn game_info(&self) -> &GameInfo {
         &self.game_info
     }
@@ -60,24 +67,23 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
     }
 
     fn server_condition<F>(&mut self, _condition: F) -> bool
-    where F: Fn(&Self) -> bool {
+    where
+        F: Fn(&Self) -> bool,
+    {
         self.syncer.deque_condition()
     }
 
-    fn set_discard_last(
-        &mut self, 
-        card: Option<Card>
-    ) {
-        let discard = self.get_mut(
-            &CardReference{
-                location: Location::DiscardPile, 
-                hand_position: HandPosition::Last
-            }
-        ).expect("No discarded card");
+    fn set_discard_last(&mut self, card: Option<Card>) {
+        let discard = self
+            .get_mut(&CardReference {
+                location: Location::DiscardPile,
+                hand_position: HandPosition::Last,
+            })
+            .expect("No discarded card");
         discard.0 = card;
 
-        self.animation_tracker.enque_action(DelayedAnimationAction{
-            action: AnimationAction::SetDiscardLast{card},
+        self.animation_tracker.enque_action(DelayedAnimationAction {
+            action: AnimationAction::SetDiscardLast { card },
             delay: 0.1,
         });
     }
@@ -101,7 +107,7 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
         } else {
             #[allow(clippy::collapsible_else_if)] // Makes it more readable imo
             if self.is_visible(&to.location, self.mp_state.turn_id) {
-                // Get the value
+                // Get the value from server
                 Some(self.syncer.deque_card())
             } else {
                 // Set to None
@@ -112,8 +118,12 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
 
         self.push(to, item);
 
-        self.animation_tracker.enque_action(DelayedAnimationAction{
-            action: AnimationAction::Transfer{from: *from, to: *to, card},
+        self.animation_tracker.enque_action(DelayedAnimationAction {
+            action: AnimationAction::Transfer {
+                from: *from,
+                to: *to,
+                card,
+            },
             delay: 0.1,
         });
     }
@@ -121,34 +131,31 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_,'_> {
     fn reshuffle(&mut self) {
         while self.get_table(&Location::DiscardPile).len() > 1 {
             self.transfer(
-                &CardReference { location: Location::DiscardPile, hand_position:HandPosition::Index(0)}, 
-                &DECK_REFERENCE
+                &CardReference {
+                    location: Location::DiscardPile,
+                    hand_position: HandPosition::Index(0),
+                },
+                &DECK_REFERENCE,
             );
         }
     }
 
-
     fn victory(&mut self, winner: usize) {
-        self.animation_tracker.enque_action(
-            DelayedAnimationAction { 
-                action: AnimationAction::Victory{winner}, 
-                delay: 0.5 
-            }
-        );
+        self.animation_tracker.enque_action(DelayedAnimationAction {
+            action: AnimationAction::Victory { winner },
+            delay: 0.5,
+        });
     }
 
     fn someone_has_two_cards(&mut self, _player: usize) {
-        self.animation_tracker.enque_action(
-            DelayedAnimationAction{ 
-                action: AnimationAction::SomeoneHasTwoCards, 
-                delay: 0.0
-            }
-        );
+        self.animation_tracker.enque_action(DelayedAnimationAction {
+            action: AnimationAction::SomeoneHasTwoCards,
+            delay: 0.0,
+        });
     }
-
 }
 
-impl ClientGame<'_,'_> {
+impl ClientGame<'_, '_> {
     pub fn has_delayed_transfers(&self) -> bool {
         !self.animation_tracker.is_empty()
     }

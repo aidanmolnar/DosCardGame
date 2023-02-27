@@ -13,6 +13,7 @@ use crate::{
 };
 
 use super::{
+    card_effects::UpdateCardEffectsEvent,
     card_indexing::{SpriteIndex, CARD_BACK_SPRITE_INDEX},
     core::components::MouseOffset,
     table::{AnimationItem, AnimationTable},
@@ -33,6 +34,7 @@ pub struct AnimationTracker<'w, 's> {
     commands: Commands<'w, 's>,
     sprite_params: Sprite3dParams<'w, 's>,
     card_handles: Res<'w, CardHandles>,
+    card_effects_events: EventWriter<'w, 's, UpdateCardEffectsEvent>,
 }
 
 // Stores game events in a queue, so they can be animated sequentially instead of all at once
@@ -104,6 +106,7 @@ impl AnimationTracker<'_, '_> {
             .get(item.1)
             .expect("Entity did not have transform");
 
+        // TODO: Should do this by changing AtlasSprite3dComponent index
         self.commands.entity(item.1).insert(
             AtlasSprite3d {
                 atlas: self.card_handles.atlas.clone(),
@@ -166,6 +169,10 @@ impl AnimationTracker<'_, '_> {
 
         self.reset_mouse_offset(&item);
         self.set_sprite(&item, card);
+        self.card_effects_events.send(UpdateCardEffectsEvent {
+            card_entity: item.1,
+            location: to.location,
+        });
         item.0 = card;
 
         self.push(to, item);

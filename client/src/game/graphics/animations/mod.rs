@@ -1,3 +1,4 @@
+mod card_effects;
 mod core;
 mod setup_table;
 mod table;
@@ -6,7 +7,7 @@ mod tracker;
 
 pub use self::{
     core::components,
-    table::AnimationItem,
+    table::{AnimationItem, AnimationTable},
     targeting::FocusedCard,
     tracker::{AnimationAction, AnimationTracker, DelayedAnimationAction},
 };
@@ -24,6 +25,7 @@ impl Plugin for AnimationPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(core::CoreAnimationPlugin)
             .add_plugin(targeting::TargetingPlugin)
+            .add_plugin(card_effects::CardEffectsPlugin)
             // Create table arrangers and animation tables
             .add_enter_system(
                 TableConstructionState::TableCreation,

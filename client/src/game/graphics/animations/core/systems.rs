@@ -22,7 +22,7 @@ pub fn run_system(mut query: Query<(&mut LinearAnimation, &mut Transform)>, time
 }
 
 // Checks for changed targets/offsets and updates LinearAnimation to reflect
-#[allow(clippy::type_complexity)] // Query is more readable than defining a new type imo
+#[allow(clippy::type_complexity)]
 pub fn retarget_system(
     mut query: Query<
         (
