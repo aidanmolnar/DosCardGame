@@ -59,7 +59,7 @@ pub enum AnimationAction {
         card: Option<Card>,
     },
     Victory {
-        winner: usize,
+        winner: String,
     },
     SomeoneHasTwoCards,
 }
@@ -197,7 +197,7 @@ impl AnimationTracker<'_, '_> {
         self.animation_queue.queue.is_empty()
     }
 
-    fn victory(&mut self, winner: usize) {
+    fn victory(&mut self, winner: String) {
         println!("player with id {winner} won the game!");
         self.commands.insert_resource(Victory { winner });
         self.commands

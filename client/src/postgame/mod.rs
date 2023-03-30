@@ -11,7 +11,7 @@ pub struct PostGamePlugin;
 // Holds which player won the game
 #[derive(Resource)]
 pub struct Victory {
-    pub winner: usize,
+    pub winner: String,
 }
 
 impl Plugin for PostGamePlugin {

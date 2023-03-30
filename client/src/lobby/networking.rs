@@ -62,7 +62,7 @@ fn handle_lobby_update(
             player_names,
             turn_id,
         } => {
-            mp_state.connect(player_names);
+            mp_state.connect(player_names); // TODO/ADVICE: Winner could be a different player or out of bounds
             mp_state.turn_id = turn_id;
 
             // Update to current players during game means someone disconnected

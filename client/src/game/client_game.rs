@@ -142,7 +142,9 @@ impl DosGame<ClientItem, ClientTable> for ClientGame<'_, '_> {
 
     fn victory(&mut self, winner: usize) {
         self.animation_tracker.enque_action(DelayedAnimationAction {
-            action: AnimationAction::Victory { winner },
+            action: AnimationAction::Victory {
+                winner: self.mp_state.player_names[winner].clone(),
+            },
             delay: 0.5,
         });
     }
