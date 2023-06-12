@@ -12,6 +12,9 @@ categories = ["games"]
 [dependencies]
 dos-shared = { path = "../shared" }
 
+reqwest = {version = "0.11.18", features = ["json", "blocking"] }
+serde = { version = "1.0.163", features = ["derive"] }
+futures.io = "0.3.28"
 bevy = "0.9.1"
 bevy_renet = "0.0.6"
 iyes_loopless = "0.9.1"
