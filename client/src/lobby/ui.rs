@@ -1,8 +1,9 @@
 use dos_shared::net_config::{DEFAULT_IP, DEFAULT_PORT};
+use iyes_loopless::state::NextState;
 
 use crate::connections::new_renet_client;
 
-use super::{networking::send_start_game, MultiplayerState};
+use super::{networking::send_start_game, MultiplayerState, OnboardingState, onboarding_ui::UserChoice};
 
 use bevy::prelude::*;
 use bevy_egui::{
@@ -15,8 +16,8 @@ use bevy_renet::renet::RenetClient;
 #[derive(Resource)]
 pub struct UiState {
     ip: String,
-    name: String,
-    error: String, // For displaying connection errors
+    pub name: String,
+    pub error: String, // For displaying connection errors
 }
 
 impl UiState {
@@ -51,19 +52,11 @@ pub fn lobby_ui_system(
         .max_width(400.)
         .show(egui_context.ctx_mut(), |ui| {
             ui.heading("Lobby");
-
             ui.separator();
 
             ui.horizontal(|ui| {
                 ui.label("Server Address: ");
                 TextEdit::singleline(&mut ui_state.ip)
-                    .desired_width(f32::INFINITY)
-                    .show(ui);
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Name: ");
-                TextEdit::singleline(&mut ui_state.name)
                     .desired_width(f32::INFINITY)
                     .show(ui);
             });
@@ -120,7 +113,11 @@ fn connect_button_ui(
             mp_state.disconnect();
             commands.remove_resource::<RenetClient>();
         }
-    } else if ui.button("Connect").clicked() {
+    } else if ui.button("Back").clicked() {
+        commands.insert_resource(NextState(OnboardingState::NotOnboarded));
+        commands.insert_resource(NextState(UserChoice::None));
+    }
+    else if ui.button("Connect").clicked() {
         let address = ui_state.ip.clone();
         let name = ui_state.name.clone();
 

@@ -29,7 +29,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             window: WindowDescriptor {
-                title: "Dos!".to_string(),
+                title: "Dos: A Card Game".to_string(),
                 width: 1920.,
                 height: 1080.,
                 resizable: true,
